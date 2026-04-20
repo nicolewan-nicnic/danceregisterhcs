@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>HCS Register</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root {
+  --navy:#1a2340;--navy-mid:#243060;--crimson:#8b1a2e;--crimson-light:#a82038;
+  --teal:#1d5c4a;--salmon:#e8a090;--salmon-light:#f5d5cc;
+  --paper:#faf9f7;--paper-warm:#f4f0ea;--border:#ddd8d0;
+  --ink:#1a2340;--ink-soft:#5a6070;--ink-muted:#9098a8;--white:#ffffff;
+  --shadow:0 2px 16px rgba(26,35,64,.10);--radius:10px;--radius-sm:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-size:15px;line-height:1.5}
+.app-header{background:var(--navy);color:white;padding:14px 20px 12px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(26,35,64,.3)}
+.app-title-block{flex:1}
+.app-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;letter-spacing:.03em;color:white;line-height:1.1}
+.app-subtitle{font-size:11px;opacity:.5;font-weight:300;margin-top:1px}
+.sync-status{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:500;cursor:pointer;white-space:nowrap}
+.sync-ok{background:var(--teal);color:white}.sync-warn{background:#b8860b;color:white}
+.sync-err{background:var(--crimson);color:white}.sync-none{background:rgba(255,255,255,.12);color:rgba(255,255,255,.6)}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--navy);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);border-top:1px solid rgba(255,255,255,.08)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;color:rgba(255,255,255,.35);border:none;background:none;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif;font-weight:500;letter-spacing:.04em;text-transform:uppercase;gap:4px;transition:color .2s}
+.nav-btn.active{color:var(--salmon)}.nav-btn svg{width:22px;height:22px}
+.main{padding-bottom:calc(68px + env(safe-area-inset-bottom))}.page{display:none}.page.active{display:block}
+.section-header{padding:20px 20px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.section-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--navy);line-height:1.1}
+.section-sub{font-size:12px;color:var(--ink-soft);margin-top:3px}
+.card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);margin:0 16px 12px;overflow:hidden;border:1px solid var(--border)}
+.card-header{padding:12px 16px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--paper-warm)}
+.card-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft)}
+.card-body{padding:14px 16px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--crimson);color:white}.btn-primary:active{background:var(--crimson-light)}
+.btn-navy{background:var(--navy);color:white}.btn-teal{background:var(--teal);color:white}
+.btn-ghost{background:var(--paper-warm);color:var(--ink);border:1px solid var(--border)}.btn-ghost:active{background:var(--border)}
+.btn-sm{padding:6px 12px;font-size:12px}.btn-full{width:100%;justify-content:center}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.form-input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);background:white;transition:border-color .15s;-webkit-appearance:none}
+.form-input:focus{outline:none;border-color:var(--navy)}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.form-hint{font-size:11px;color:var(--ink-muted);margin-top:4px}
+/* CALENDAR */
+.cal-wrapper{overflow-x:auto;padding:0 16px 16px}
+.cal-table{width:100%;border-collapse:collapse;min-width:520px;background:white;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.cal-table th{background:var(--paper-warm);padding:10px 12px;text-align:left;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);border-bottom:2px solid var(--border);white-space:nowrap}
+.cal-table td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.cal-table tr:last-child td{border-bottom:none}
+.cal-month{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;min-width:68px;border-right:1px solid var(--border);background:var(--paper-warm);padding:8px 10px}
+.cal-date-cell{min-width:40px;text-align:center;padding:4px 2px;border-right:1px solid #ece8e0}
+.date-num{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;margin:0 auto;font-size:13px;transition:all .15s;cursor:pointer;user-select:none;font-family:'Cormorant Garamond',serif;font-weight:600}
+.date-num.lesson{color:var(--ink)}.date-num.lesson:hover{background:var(--paper-warm)}
+.date-num.closed{background:var(--teal)!important;color:white!important}
+.date-num.performance{background:var(--salmon)!important;color:white!important}
+.date-num.junior-cancelled{background:var(--salmon-light);color:var(--ink-soft)}
+.date-num.empty{cursor:default}
+.cal-row-special td{background:#fdf5f3!important}
+.cal-notes{font-family:'DM Sans',sans-serif;font-size:11px;color:var(--ink-soft);padding:6px 10px;min-width:160px;line-height:1.5}
+.note-red{color:var(--crimson)}.note-perf{color:var(--crimson);font-style:italic}
+.cal-legend{display:flex;flex-wrap:wrap;gap:12px;padding:8px 16px 10px;font-size:12px;color:var(--ink-soft);align-items:center}
+.leg-item{display:flex;align-items:center;gap:5px}
+.leg-dot{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+/* REGISTER */
+.register-controls{padding:0 16px 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.term-select{flex:1;min-width:160px;padding:9px 30px 9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;background:white;color:var(--ink);-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%235a6070' d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.register-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 0 8px}
+.register-table{border-collapse:collapse;min-width:100%}
+.register-table th,.register-table td{border:1px solid var(--border);padding:0}
+.register-table th{background:var(--navy);color:white;font-size:10px;font-weight:500;text-align:center;white-space:nowrap;padding:6px 6px;font-family:'DM Sans',sans-serif}
+.register-table .name-col{background:var(--paper-warm);text-align:left;padding:8px 12px;font-size:13px;font-weight:500;white-space:nowrap;position:sticky;left:0;z-index:2;min-width:128px;border-right:2px solid var(--border)}
+.register-table .name-header{position:sticky;left:0;z-index:3;background:var(--navy)}
+.register-table .date-header{min-width:42px;font-size:10px;line-height:1.3}
+.register-table .date-header.performance{background:#4a5870}
+.register-table .date-header.past{background:#293658}
+.register-table .section-row td{background:var(--navy-mid);color:rgba(255,255,255,.55);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 12px}
+.register-table .section-row td.sticky-name{position:sticky;left:0;z-index:2;background:var(--navy)}
+.att-cell{text-align:center;cursor:pointer;width:42px;height:34px;font-size:13px;user-select:none;transition:background .1s}
+.att-cell:active{opacity:.7}
+.att-cell.present{background:#d4edd9;color:var(--teal)}
+.att-cell.absent{background:#f5d5cc;color:var(--crimson)}
+.att-cell.na{background:var(--paper-warm);color:var(--ink-muted);font-size:10px}
+.att-cell.empty{background:white}.att-cell.cancelled{background:var(--paper-warm);cursor:default;color:var(--ink-muted);font-size:10px}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,35,64,.55);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--paper);border-radius:18px 18px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:20px 20px calc(20px + env(safe-area-inset-bottom));transform:translateY(20px);transition:transform .25s}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:22px;margin-bottom:16px;color:var(--navy)}
+.modal-footer{display:flex;gap:10px;margin-top:16px}
+/* PEOPLE */
+.person-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.person-item:last-child{border-bottom:none}
+.person-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;color:white}
+.person-name{font-weight:600;font-size:14px}.person-meta{font-size:12px;color:var(--ink-soft);margin-top:1px}
+.person-actions{margin-left:auto;display:flex;gap:6px}
+.class-badge{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:2px 8px;border-radius:20px}
+.badge-junior{background:#f5d5cc;color:var(--crimson)}.badge-senior{background:#d0d8f0;color:var(--navy)}.badge-both{background:#d4edd9;color:var(--teal)}
+/* INVOICE */
+.invoice-preview{background:white;border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin:0 16px 12px;font-size:13px;line-height:1.6}
+.invoice-header-bar{background:var(--navy);margin:-24px -24px 20px;padding:18px 24px;display:flex;justify-content:space-between;align-items:flex-start}
+.invoice-brand{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--salmon);font-weight:600}
+.invoice-school-name{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px}
+.invoice-meta{text-align:right;color:rgba(255,255,255,.65);font-size:11px;line-height:1.8}
+.invoice-from-to{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.invoice-section-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-muted);font-weight:600;margin-bottom:4px}
+.invoice-address{font-size:12px;line-height:1.6;color:var(--ink)}
+.invoice-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+.invoice-table th{background:var(--navy);color:white;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.invoice-table td{padding:8px 12px;border-bottom:1px solid var(--border)}
+.invoice-table tr:nth-child(even) td{background:var(--paper-warm)}
+.invoice-total-row td{border-top:2px solid var(--navy)!important;font-weight:700;font-size:14px}
+.invoice-grand{text-align:right;margin-top:10px;font-size:18px;font-weight:700;font-family:'Cormorant Garamond',serif}
+.invoice-grand span{color:var(--crimson)}
+.invoice-payment{background:var(--paper-warm);border-radius:var(--radius-sm);padding:12px 14px;margin-top:14px;font-size:12px}
+.invoice-payment-title{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:5px}
+/* SETUP */
+.setup-overlay{position:fixed;inset:0;background:var(--navy);z-index:300;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+.setup-card{background:var(--paper);border-radius:16px;padding:28px 24px;max-width:480px;width:100%}
+.setup-brand{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);text-align:center;margin-bottom:3px}
+.setup-brand span{color:var(--crimson)}.setup-tagline{text-align:center;color:var(--ink-soft);font-size:13px;margin-bottom:22px}
+.setup-step{display:none}.setup-step.active{display:block}
+.setup-step-title{font-family:'Cormorant Garamond',serif;font-size:22px;margin-bottom:5px;color:var(--navy)}
+.setup-step-sub{font-size:13px;color:var(--ink-soft);margin-bottom:18px}
+.step-dots{display:flex;justify-content:center;gap:6px;margin-bottom:20px}
+.step-dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:background .2s}
+.step-dot.active{background:var(--crimson)}
+/* CELL POPUP */
+.cell-popup{position:fixed;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 4px 24px rgba(26,35,64,.18);z-index:150;min-width:185px;overflow:hidden}
+.cell-popup-item{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
+.cell-popup-item:last-child{border-bottom:none}.cell-popup-item:hover{background:var(--paper-warm)}
+.cell-popup-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+/* TOAST */
+.toast{position:fixed;bottom:calc(78px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(12px);background:var(--navy);color:white;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:500;z-index:400;opacity:0;transition:all .3s;white-space:nowrap;box-shadow:0 4px 20px rgba(26,35,64,.3)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* PILLS */
+.pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.pill{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:white;transition:all .15s;color:var(--ink-soft)}
+.pill.active{background:var(--navy);color:white;border-color:var(--navy)}
+.empty-state{text-align:center;padding:40px 24px;color:var(--ink-soft)}
+.empty-state svg{opacity:.2;margin-bottom:12px}
+.empty-state h3{font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:6px;color:var(--navy)}
+.empty-state p{font-size:13px}
+.fade-in{animation:fadeIn .3s ease both}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.scroll-hint{text-align:center;font-size:11px;color:var(--ink-muted);padding:2px 0 6px}
+.gsheet-link{color:var(--navy);text-decoration:underline}
+.instruction-steps{counter-reset:step}
+.instruction-step{counter-increment:step;display:flex;gap:10px;margin-bottom:10px;font-size:13px;line-height:1.5}
+.instruction-step::before{content:counter(step);background:var(--crimson);color:white;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px}
+@media(min-width:640px){.main{max-width:640px;margin:0 auto}.bottom-nav{max-width:640px;left:50%;transform:translateX(-50%)}}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="cell-popup" id="cellPopup" style="display:none;">
+  <div class="cell-popup-item" onclick="setCellState('lesson')"><div class="cell-popup-dot" style="border:2px solid #ccc;"></div>Lesson</div>
+  <div class="cell-popup-item" onclick="setCellState('junior-cancelled')"><div class="cell-popup-dot" style="background:var(--salmon-light);border:1px solid var(--salmon);"></div>Junior cancelled</div>
+  <div class="cell-popup-item" onclick="setCellState('performance')"><div class="cell-popup-dot" style="background:var(--salmon);"></div>Performance</div>
+  <div class="cell-popup-item" onclick="setCellState('closed')"><div class="cell-popup-dot" style="background:var(--teal);"></div>Closed / Holiday</div>
+  <div class="cell-popup-item" onclick="setCellState('remove')" style="color:var(--crimson);"><div class="cell-popup-dot" style="background:var(--crimson);"></div>Remove date</div>
+  <div class="cell-popup-item" onclick="closeCellPopup()" style="color:var(--ink-muted);">✕ Cancel</div>
+</div>
+<div class="setup-overlay" id="setupOverlay">
+  <div class="setup-card">
+    <div class="setup-brand">Harrow <span>Chinese</span> School</div>
+    <div class="setup-tagline">Register & Invoice System</div>
+    <div class="step-dots" id="setupDots"></div>
+    <div class="setup-step active" id="step0">
+      <div class="setup-step-title">Connect Google Sheets</div>
+      <div class="setup-step-sub">All data lives in a Google Sheet you own. One-time setup (~20 min).</div>
+      <div class="instruction-steps">
+        <div class="instruction-step">Go to <a href="https://console.cloud.google.com" target="_blank" class="gsheet-link">console.cloud.google.com</a> and create a new project.</div>
+        <div class="instruction-step">Enable <strong>Google Sheets API</strong> and <strong>Google Drive API</strong>.</div>
+        <div class="instruction-step">Credentials → Create OAuth 2.0 Client ID → Web Application. Add your app URL to Authorised JavaScript Origins.</div>
+        <div class="instruction-step">Copy your <strong>Client ID</strong> and paste below.</div>
+      </div>
+      <div class="form-group" style="margin-top:14px;">
+        <label class="form-label">Google OAuth Client ID</label>
+        <input type="text" class="form-input" id="setupClientId" placeholder="xxxx.apps.googleusercontent.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sheet ID (blank = create new)</label>
+        <input type="text" class="form-input" id="setupSheetId" placeholder="/d/THIS_PART/edit">
+      </div>
+      <div id="quickStartBox" style="margin-top:12px;padding:14px;background:var(--paper-warm);border-radius:8px;text-align:center;">
+        <strong style="color:var(--navy);display:block;margin-bottom:5px;">Skip setup — load 2025–26 dates</strong>
+        <span style="font-size:12px;color:var(--ink-soft);">Start immediately with pre-loaded term dates.</span>
+        <button class="btn btn-teal btn-full" style="margin-top:10px;" onclick="quickStart()">Load 2025–26 & Start →</button>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button class="btn btn-ghost btn-sm" onclick="skipSetup()">Skip (demo mode)</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="connectGoogle()">Continue →</button>
+      </div>
+    </div>
+    <div class="setup-step" id="step1">
+      <div class="setup-step-title">School Settings</div>
+      <div class="setup-step-sub">Appears on all invoices.</div>
+      <div class="form-group"><label class="form-label">School Name</label><input type="text" class="form-input" id="setupSchoolName" value="Harrow Chinese School"></div>
+      <div class="form-group"><label class="form-label">School Address</label><textarea class="form-input" id="setupSchoolAddress" rows="3">Pinner High School&#10;Beaulieu Dr, Pinner&#10;HA5 1NB</textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Lesson Value (£)</label><input type="number" class="form-input" id="setupLessonValue" value="70" step="0.01"></div>
+        <div class="form-group"><label class="form-label">Academic Year</label><input type="text" class="form-input" id="setupAcYear" value="2025-26"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="goSetupStep(0)">← Back</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="goSetupStep(2)">Next →</button>
+      </div>
+    </div>
+    <div class="setup-step" id="step2">
+      <div class="setup-step-title">Teachers</div>
+      <div class="setup-step-sub">Add up to 4 teachers. Invoice details added in Settings.</div>
+      <div id="setupTeacherList"></div>
+      <button class="btn btn-ghost" style="width:100%;justify-content:center;" onclick="addSetupTeacher()" id="addTeacherBtn">+ Add Teacher</button>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="goSetupStep(1)">← Back</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="goSetupStep(3)">Next →</button>
+      </div>
+    </div>
+    <div class="setup-step" id="step3">
+      <div class="setup-step-title">Generate Term Dates</div>
+      <div class="setup-step-sub">All Saturdays generated — edit afterwards.</div>
+      <div id="setupTermsList"></div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="goSetupStep(2)">← Back</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="finishSetup()">Finish Setup ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal"><div class="modal-handle"></div><div id="modalBody"></div></div>
+</div>
+<header class="app-header">
+  <div class="app-title-block">
+    <div class="app-title">Harrow Chinese School</div>
+    <div class="app-subtitle">Register & Invoice System</div>
+  </div>
+  <div class="sync-status sync-none" id="syncStatus" onclick="syncNow()">Offline</div>
+</header>
+<main class="main">
+  <div class="page active" id="pageRegister">
+    <div class="section-header">
+      <div><div class="section-title">Register</div><div class="section-sub" id="registerSub">Weekly attendance</div></div>
+    </div>
+    <div class="register-controls">
+      <select class="term-select" id="termSelector" onchange="loadRegister()"></select>
+      <button class="btn btn-sm btn-ghost" onclick="jumpToToday()">Today</button>
+    </div>
+    <div class="scroll-hint">← scroll dates →</div>
+    <div class="register-wrapper" id="registerWrapper">
+      <div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No register yet</h3><p>Set up terms and dates to begin</p></div>
+    </div>
+  </div>
+  <div class="page" id="pageDates">
+    <div class="section-header">
+      <div><div class="section-title">Term Dates</div><div class="section-sub">Tap any date to change its type</div></div>
+      <button class="btn btn-sm btn-primary" onclick="showAddDateModal()">+ Date</button>
+    </div>
+    <div class="register-controls">
+      <select class="term-select" id="termSelectorDates" onchange="loadDatesPage()"></select>
+      <button class="btn btn-sm btn-ghost" onclick="showGenerateModal()">⟳ Generate</button>
+    </div>
+    <div class="cal-legend">
+      <div class="leg-item"><div class="leg-dot" style="border:1.5px solid #ccc;background:white;color:var(--ink);font-size:9px;font-weight:700;">6</div><span>Lesson</span></div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--teal);"></div><span>Closed</span></div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--salmon);"></div><span>Performance</span></div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--salmon-light);color:var(--ink-soft);font-size:9px;font-weight:700;">6</div><span>Junior cancelled</span></div>
+    </div>
+    <div class="cal-wrapper" id="calWrapper"><div class="empty-state"><h3>No dates yet</h3><p>Use Generate to create term dates</p></div></div>
+  </div>
+  <div class="page" id="pagePeople">
+    <div class="section-header"><div><div class="section-title">People</div><div class="section-sub">Teachers & students</div></div></div>
+    <div class="card fade-in">
+      <div class="card-header"><span class="card-title">Teachers</span><button class="btn btn-sm btn-ghost" onclick="showAddPersonModal('teacher')">+ Add</button></div>
+      <div id="teacherList"></div>
+    </div>
+    <div class="card fade-in">
+      <div class="card-header"><span class="card-title">Students</span><button class="btn btn-sm btn-ghost" onclick="showAddPersonModal('student')">+ Add</button></div>
+      <div id="studentList"></div>
+    </div>
+  </div>
+  <div class="page" id="pageInvoices">
+    <div class="section-header"><div><div class="section-title">Invoices</div><div class="section-sub">Generate teacher invoices</div></div></div>
+    <div class="card fade-in">
+      <div class="card-header"><span class="card-title">Invoice Period</span></div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">From Term</label><select class="form-input" id="invoiceFromTerm" onchange="previewInvoice()"></select></div>
+          <div class="form-group"><label class="form-label">To Term</label><select class="form-input" id="invoiceToTerm" onchange="previewInvoice()"></select></div>
+        </div>
+        <button class="btn btn-navy btn-full" onclick="downloadAllInvoices()">⬇ Download All Teacher Invoices</button>
+      </div>
+    </div>
+    <div class="card fade-in">
+      <div class="card-header"><span class="card-title">Individual Preview</span></div>
+      <div class="card-body">
+        <div class="form-group"><label class="form-label">Teacher</label><select class="form-input" id="invoiceTeacher" onchange="previewInvoice()"></select></div>
+        <button class="btn btn-primary btn-full" onclick="downloadSingleInvoice()">⬇ Download PDF</button>
+      </div>
+    </div>
+    <div id="invoicePreviewArea"></div>
+  </div>
+  <div class="page" id="pageSettings">
+    <div class="section-header"><div><div class="section-title">Settings</div></div></div>
+    <div class="card fade-in">
+      <div class="card-header"><span class="card-title">School Details</span></div>
+      <div class="card-body">
+        <div class="form-group"><label class="form-label">School Name</label><input type="text" class="form-input" id="settSchoolName"></div>
+        <div class="form-group"><label class="form-label">School Address</label><textarea class="form-input" id="settSchoolAddress" rows="3"></textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Lesson Value (£)</label><input type="number" class="form-input" id="settLessonValue" step="0.01"></div>
+          <div class="form-group"><label class="form-label">Academic Year</label><input type="text" class="form-input" id="settAcYear"></div>
+        </div>
+        <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+      </div>
+    </div>
+    <div class="card fade-in">
+      <div class="card-header"><span class="card-title">Google Sheets</span></div>
+      <div class="card-body">
+        <div class="form-group"><label class="form-label">OAuth Client ID</label><input type="text" class="form-input" id="settClientId"></div>
+        <div class="form-group"><label class="form-label">Sheet ID</label><input type="text" class="form-input" id="settSheetId"></div>
+        <div style="display:flex;gap:8px;"><button class="btn btn-navy" onclick="reconnectGoogle()">Reconnect</button><button class="btn btn-ghost" onclick="saveGoogleSettings()">Save</button></div>
+      </div>
+    </div>
+    <div class="card fade-in">
+      <div class="card-header"><span class="card-title">Term Management</span></div>
+      <div class="card-body"><div id="termManageList"></div><button class="btn btn-ghost btn-full" style="margin-top:8px;" onclick="showAddTermModal()">+ Add Term</button></div>
+    </div>
+    <div class="card fade-in" id="teacherSettingsCard">
+      <div class="card-header"><span class="card-title">Teacher Invoice Details</span></div>
+      <div id="teacherSettingsBody"></div>
+    </div>
+    <div style="height:24px;"></div>
+  </div>
+</main>
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="navRegister" onclick="showPage('Register')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg>Register
+  </button>
+  <button class="nav-btn" id="navDates" onclick="showPage('Dates')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="3"/></svg>Dates
+  </button>
+  <button class="nav-btn" id="navPeople" onclick="showPage('People')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 2.7-6 6-6s6 2 6 6"/><circle cx="17" cy="10" r="2.5"/><path d="M21 20c0-3-1.5-4.5-4-4.5"/></svg>People
+  </button>
+  <button class="nav-btn" id="navInvoices" onclick="showPage('Invoices')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg>Invoices
+  </button>
+  <button class="nav-btn" id="navSettings" onclick="showPage('Settings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings
+  </button>
+</nav>
+<script>
+const PRELOADED={terms:[
+  {id:'2025_26_T1',name:'Autumn',label:'Autumn 2025',dates:[
+    {id:'D20250906',date:'2025-09-06',type:'junior-cancelled',label:'Senior only'},
+    {id:'D20250913',date:'2025-09-13',type:'lesson',label:''},
+    {id:'D20250920',date:'2025-09-20',type:'lesson',label:''},
+    {id:'D20250927',date:'2025-09-27',type:'lesson',label:''},
+    {id:'D20251004',date:'2025-10-04',type:'lesson',label:''},
+    {id:'D20251011',date:'2025-10-11',type:'lesson',label:''},
+    {id:'D20251018',date:'2025-10-18',type:'lesson',label:''},
+    {id:'D20251025',date:'2025-10-25',type:'lesson',label:''},
+    {id:'D20251101',date:'2025-11-01',type:'closed',label:'Half Term'},
+    {id:'D20251108',date:'2025-11-08',type:'lesson',label:''},
+    {id:'D20251115',date:'2025-11-15',type:'lesson',label:''},
+    {id:'D20251122',date:'2025-11-22',type:'lesson',label:''},
+    {id:'D20251129',date:'2025-11-29',type:'lesson',label:''},
+    {id:'D20251206',date:'2025-12-06',type:'lesson',label:''},
+    {id:'D20251213',date:'2025-12-13',type:'lesson',label:''},
+    {id:'D20251220',date:'2025-12-20',type:'closed',label:"X'mas Holiday"},
+    {id:'D20251227',date:'2025-12-27',type:'closed',label:"X'mas Holiday"}
+  ]},
+  {id:'2025_26_T2',name:'Spring',label:'Spring 2026',dates:[
+    {id:'D20260103',date:'2026-01-03',type:'closed',label:'New Year Holiday'},
+    {id:'D20260110',date:'2026-01-10',type:'lesson',label:''},
+    {id:'D20260117',date:'2026-01-17',type:'lesson',label:''},
+    {id:'D20260124',date:'2026-01-24',type:'lesson',label:''},
+    {id:'D20260131',date:'2026-01-31',type:'lesson',label:''},
+    {id:'D20260207',date:'2026-02-07',type:'lesson',label:''},
+    {id:'D20260214',date:'2026-02-14',type:'lesson',label:''},
+    {id:'D20260221',date:'2026-02-21',type:'closed',label:'Half Term'},
+    {id:'D20260228',date:'2026-02-28',type:'performance',label:'CNY Celebration'},
+    {id:'D20260307',date:'2026-03-07',type:'lesson',label:''},
+    {id:'D20260314',date:'2026-03-14',type:'lesson',label:''},
+    {id:'D20260321',date:'2026-03-21',type:'lesson',label:''},
+    {id:'D20260328',date:'2026-03-28',type:'lesson',label:''}
+  ]},
+  {id:'2025_26_T3',name:'Summer',label:'Summer 2026',dates:[
+    {id:'D20260404',date:'2026-04-04',type:'closed',label:'Easter Holiday'},
+    {id:'D20260411',date:'2026-04-11',type:'closed',label:'Easter Holiday'},
+    {id:'D20260418',date:'2026-04-18',type:'closed',label:'Easter Holiday'},
+    {id:'D20260425',date:'2026-04-25',type:'lesson',label:''},
+    {id:'D20260502',date:'2026-05-02',type:'lesson',label:''},
+    {id:'D20260509',date:'2026-05-09',type:'lesson',label:''},
+    {id:'D20260516',date:'2026-05-16',type:'lesson',label:''},
+    {id:'D20260523',date:'2026-05-23',type:'lesson',label:''},
+    {id:'D20260530',date:'2026-05-30',type:'closed',label:'Half Term'},
+    {id:'D20260606',date:'2026-06-06',type:'lesson',label:''},
+    {id:'D20260613',date:'2026-06-13',type:'lesson',label:''},
+    {id:'D20260620',date:'2026-06-20',type:'lesson',label:''},
+    {id:'D20260627',date:'2026-06-27',type:'lesson',label:''},
+    {id:'D20260704',date:'2026-07-04',type:'lesson',label:''},
+    {id:'D20260711',date:'2026-07-11',type:'performance',label:'End of Year Ceremony (散學禮)'}
+  ]}
+]};
+
+let APP={settings:{schoolName:'Harrow Chinese School',schoolAddress:'Pinner High School\nBeaulieu Dr, Pinner\nHA5 1NB',lessonValue:70,academicYear:'2025-26',clientId:'',sheetId:''},teachers:[],students:[],terms:[],attendance:{},demoMode:false,setupDone:false};
+
+function saveLocal(){try{localStorage.setItem('hcs_v3',JSON.stringify(APP));}catch(e){}}
+function loadLocal(){try{const d=localStorage.getItem('hcs_v3');if(d){Object.assign(APP,JSON.parse(d));return true;}}catch(e){}return false;}
+
+function showPage(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page'+n).classList.add('active');
+  document.getElementById('nav'+n).classList.add('active');
+  closeCellPopup();
+  if(n==='Register')loadRegister();
+  if(n==='Dates')loadDatesPage();
+  if(n==='People')loadPeoplePage();
+  if(n==='Invoices')loadInvoicesPage();
+  if(n==='Settings')loadSettingsPage();
+}
+
+let curStep=0,setupTCount=0;
+function initSetupDots(){
+  const d=document.getElementById('setupDots');d.innerHTML='';
+  for(let i=0;i<4;i++){const dot=document.createElement('div');dot.className='step-dot'+(i===0?' active':'');dot.id='dot'+i;d.appendChild(dot);}
+  const tl=document.getElementById('setupTermsList');
+  tl.innerHTML=['Autumn','Spring','Summer'].map((n,i)=>`<div class="card" style="margin:0 0 10px;padding:14px;"><div style="font-weight:700;font-size:13px;margin-bottom:10px;">${n} Term</div><div class="form-row"><div class="form-group" style="margin:0;"><label class="form-label">Start</label><input type="date" class="form-input" id="t${i+1}start"></div><div class="form-group" style="margin:0;"><label class="form-label">End</label><input type="date" class="form-input" id="t${i+1}end"></div></div></div>`).join('');
+}
+function goSetupStep(n){
+  document.getElementById('step'+curStep).classList.remove('active');document.getElementById('dot'+curStep).classList.remove('active');
+  curStep=n;document.getElementById('step'+n).classList.add('active');document.getElementById('dot'+n).classList.add('active');
+}
+function connectGoogle(){APP.settings.clientId=document.getElementById('setupClientId').value.trim();APP.settings.sheetId=document.getElementById('setupSheetId').value.trim();goSetupStep(1);}
+function skipSetup(){APP.demoMode=true;goSetupStep(1);}
+function addSetupTeacher(){
+  if(setupTCount>=4)return;setupTCount++;
+  const l=document.getElementById('setupTeacherList');const d=document.createElement('div');
+  d.style.cssText='display:flex;gap:8px;margin-bottom:8px;';
+  d.innerHTML=`<input type="text" class="form-input setup-teacher-name" placeholder="Teacher ${setupTCount} full name">`;
+  l.appendChild(d);if(setupTCount>=4)document.getElementById('addTeacherBtn').style.display='none';
+}
+function finishSetup(){
+  APP.settings.schoolName=document.getElementById('setupSchoolName').value||'Harrow Chinese School';
+  APP.settings.schoolAddress=document.getElementById('setupSchoolAddress').value;
+  APP.settings.lessonValue=parseFloat(document.getElementById('setupLessonValue').value)||70;
+  APP.settings.academicYear=document.getElementById('setupAcYear').value||'2025-26';
+  APP.teachers=[];
+  document.querySelectorAll('.setup-teacher-name').forEach((el,i)=>{
+    if(el.value.trim())APP.teachers.push({id:'T'+(i+1),name:el.value.trim(),address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:el.value.trim().split(' ').map(w=>w[0]).join('').toUpperCase(),archived:false});
+  });
+  APP.terms=[];const tnames=['Autumn','Spring','Summer'];
+  for(let t=1;t<=3;t++){
+    const s=document.getElementById('t'+t+'start').value,e=document.getElementById('t'+t+'end').value;
+    const id=APP.settings.academicYear.replace('-','_')+'_T'+t;
+    APP.terms.push({id,name:tnames[t-1],label:`${tnames[t-1]} ${APP.settings.academicYear}`,dates:s&&e?generateSaturdays(s,e):[]});
+  }
+  APP.setupDone=true;saveLocal();document.getElementById('setupOverlay').style.display='none';initApp();
+}
+function quickStart(){
+  APP.terms=JSON.parse(JSON.stringify(PRELOADED.terms));
+  APP.settings.academicYear='2025-26';APP.setupDone=true;APP.demoMode=true;
+  saveLocal();document.getElementById('setupOverlay').style.display='none';initApp();showToast('2025–26 dates loaded ✓');
+}
+function generateSaturdays(s,e){
+  const dates=[];let d=new Date(s+'T12:00:00');
+  while(d.getDay()!==6)d.setDate(d.getDate()+1);
+  const end=new Date(e+'T12:00:00');
+  while(d<=end){const ds=d.toISOString().slice(0,10);dates.push({id:'D'+ds.replace(/-/g,''),date:ds,type:'lesson',label:''});d.setDate(d.getDate()+7);}
+  return dates;
+}
+
+function populateTermSelectors(){
+  ['termSelector','termSelectorDates','invoiceFromTerm','invoiceToTerm'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.innerHTML=APP.terms.map(t=>`<option value="${t.id}">${t.label}</option>`).join('');
+  });
+  const to=document.getElementById('invoiceToTerm');if(to&&APP.terms.length)to.value=APP.terms[APP.terms.length-1].id;
+}
+function getActiveTerm(sid='termSelector'){const sel=document.getElementById(sid);const id=sel?.value||APP.terms[0]?.id;return APP.terms.find(t=>t.id===id)||APP.terms[0];}
+
+// CALENDAR VIEW
+let activeCellPopup=null;
+function loadDatesPage(){
+  const term=getActiveTerm('termSelectorDates');const wrapper=document.getElementById('calWrapper');
+  if(!term||!term.dates.length){wrapper.innerHTML=`<div class="empty-state"><h3>No dates</h3><p>Use Generate to create Saturdays</p></div>`;return;}
+  const sorted=[...term.dates].sort((a,b)=>a.date.localeCompare(b.date));
+  const byMonth={};
+  sorted.forEach(d=>{
+    const dt=new Date(d.date+'T12:00:00');
+    const key=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+    if(!byMonth[key])byMonth[key]={month:dt.toLocaleString('en-GB',{month:'long'}),dates:[]};
+    byMonth[key].dates.push(d);
+  });
+  let rows='';
+  Object.values(byMonth).forEach(({month,dates})=>{
+    const notes=[];
+    dates.forEach(d=>{
+      const dt=new Date(d.date+'T12:00:00');const day=dt.getDate();
+      const mon=dt.toLocaleString('en-GB',{month:'short'});
+      if(d.type==='closed')notes.push({txt:`${ordinal(day)} ${mon} – ${d.label||'Closed'}`,perf:false});
+      if(d.type==='performance')notes.push({txt:`${ordinal(day)} ${mon} – ${d.label||'Performance'}`,perf:true});
+      if(d.type==='junior-cancelled')notes.push({txt:`${ordinal(day)} ${mon}* – Senior class only`,perf:false});
+    });
+    const hasSpecial=dates.some(d=>d.type==='closed'||d.type==='performance');
+    const rowCls=hasSpecial?'cal-row-special':'';
+    const cells=[];
+    for(let i=0;i<5;i++){
+      const d=dates[i];
+      if(!d){cells.push(`<td class="cal-date-cell"></td>`);continue;}
+      const dt=new Date(d.date+'T12:00:00');const day=dt.getDate();
+      const star=d.type==='junior-cancelled'||d.type==='performance'?'*':'';
+      cells.push(`<td class="cal-date-cell"><div class="date-num ${d.type}" onclick="openCellPopup(event,'${term.id}','${d.id}')">${day}${star}</div></td>`);
+    }
+    const notesHtml=notes.map(n=>`<span class="${n.perf?'note-perf':'note-red'}">${n.txt}</span>`).join('<br>')||'';
+    rows+=`<tr class="${rowCls}"><td class="cal-month">${month}</td>${cells.join('')}<td class="cal-notes">${notesHtml}</td></tr>`;
+  });
+  wrapper.innerHTML=`<table class="cal-table"><thead><tr><th>Month</th><th style="text-align:center;min-width:40px;">1st</th><th style="text-align:center;min-width:40px;">2nd</th><th style="text-align:center;min-width:40px;">3rd</th><th style="text-align:center;min-width:40px;">4th</th><th style="text-align:center;min-width:40px;">5th</th><th>School closed / Special dates</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function ordinal(n){const s=['th','st','nd','rd'],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);}
+
+function openCellPopup(e,termId,dateId){
+  e.stopPropagation();activeCellPopup={termId,dateId};
+  const popup=document.getElementById('cellPopup');popup.style.display='block';
+  const rect=e.target.getBoundingClientRect();
+  let top=rect.bottom+4,left=rect.left;
+  if(left+195>window.innerWidth)left=window.innerWidth-200;
+  if(top+200>window.innerHeight)top=rect.top-200;
+  popup.style.top=top+'px';popup.style.left=left+'px';
+}
+function setCellState(nt){
+  if(!activeCellPopup)return;
+  const {termId,dateId}=activeCellPopup;
+  const term=APP.terms.find(t=>t.id===termId);if(!term)return;
+  if(nt==='remove'){
+    const hasAtt=Object.keys(APP.attendance).some(k=>k.includes('|'+dateId+'|'));
+    if(hasAtt&&!confirm('This date has attendance data. Remove anyway?')){closeCellPopup();return;}
+    if(hasAtt)Object.keys(APP.attendance).forEach(k=>{if(k.includes('|'+dateId+'|'))delete APP.attendance[k];});
+    term.dates=term.dates.filter(d=>d.id!==dateId);
+  }else{const d=term.dates.find(x=>x.id===dateId);if(d)d.type=nt;}
+  saveLocal();closeCellPopup();loadDatesPage();showToast('Updated ✓');
+}
+function closeCellPopup(){document.getElementById('cellPopup').style.display='none';activeCellPopup=null;}
+document.addEventListener('click',e=>{if(!document.getElementById('cellPopup').contains(e.target))closeCellPopup();});
+
+function showAddDateModal(){
+  const term=getActiveTerm('termSelectorDates')||APP.terms[0];
+  openModal(`<div class="modal-title">Add Date</div>
+    <div class="form-group"><label class="form-label">Term</label><select class="form-input" id="mdTermId">${APP.terms.map(t=>`<option value="${t.id}">${t.label}</option>`).join('')}</select></div>
+    <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" id="mdDate"></div>
+    <div class="form-group"><label class="form-label">Type</label><div class="pill-row"><div class="pill active" id="ptLesson" onclick="selType('lesson')">Lesson</div><div class="pill" id="ptJunior" onclick="selType('junior-cancelled')">Junior cancelled</div><div class="pill" id="ptPerf" onclick="selType('performance')">Performance</div><div class="pill" id="ptClosed" onclick="selType('closed')">Closed</div></div><input type="hidden" id="mdType" value="lesson"></div>
+    <div class="form-group"><label class="form-label">Label (optional)</label><input type="text" class="form-input" id="mdLabel" placeholder="e.g. Chinese New Year Celebration"></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveNewDate()">Add</button></div>`);
+  if(term)document.getElementById('mdTermId').value=term.id;
+}
+function selType(t){
+  document.getElementById('mdType').value=t;
+  ['Lesson','Junior','Perf','Closed'].forEach(x=>{const el=document.getElementById('pt'+x);if(el)el.classList.remove('active');});
+  const m={lesson:'Lesson','junior-cancelled':'Junior',performance:'Perf',closed:'Closed'};
+  const el=document.getElementById('pt'+m[t]);if(el)el.classList.add('active');
+}
+function saveNewDate(){
+  const tId=document.getElementById('mdTermId')?.value;const term=APP.terms.find(t=>t.id===tId);if(!term)return;
+  const date=document.getElementById('mdDate').value;const type=document.getElementById('mdType').value;const label=document.getElementById('mdLabel').value.trim();
+  if(!date){showToast('Pick a date');return;}
+  const id='D'+date.replace(/-/g,'');if(term.dates.find(x=>x.id===id)){showToast('Date already exists');return;}
+  term.dates.push({id,date,type,label});saveLocal();closeModal();loadDatesPage();showToast('Date added ✓');
+}
+function showGenerateModal(){
+  const term=getActiveTerm('termSelectorDates');
+  openModal(`<div class="modal-title">Generate Saturdays</div>
+    <p style="font-size:13px;color:var(--ink-soft);margin-bottom:16px;">Adds all Saturdays for <strong>${term?.label||''}</strong>. Existing dates preserved.</p>
+    <div class="form-row"><div class="form-group"><label class="form-label">Start</label><input type="date" class="form-input" id="genStart"></div><div class="form-group"><label class="form-label">End</label><input type="date" class="form-input" id="genEnd"></div></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="doGenerate()">Generate</button></div>`);
+}
+function doGenerate(){
+  const term=getActiveTerm('termSelectorDates');if(!term)return;
+  const s=document.getElementById('genStart').value,e=document.getElementById('genEnd').value;
+  if(!s||!e){showToast('Enter both dates');return;}
+  let added=0;generateSaturdays(s,e).forEach(d=>{if(!term.dates.find(x=>x.id===d.id)){term.dates.push(d);added++;}});
+  saveLocal();closeModal();loadDatesPage();showToast(`Added ${added} Saturday${added!==1?'s':''}`);
+}
+
+// REGISTER
+const CYCLES={present:'absent',absent:'na',na:'empty',empty:'present'};
+const SYMS={present:'✓',absent:'✗',na:'N/A',empty:''};
+const today=new Date().toISOString().slice(0,10);
+function loadRegister(){
+  const term=getActiveTerm('termSelector');if(!term)return;
+  const vis=[...term.dates].filter(d=>d.type!=='closed').sort((a,b)=>a.date.localeCompare(b.date));
+  if(!vis.length){document.getElementById('registerWrapper').innerHTML=`<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No active dates</h3><p>Add lesson or performance dates</p></div>`;return;}
+  document.getElementById('registerSub').textContent=term.label;
+  const teachers=APP.teachers.filter(t=>!t.archived);
+  const senior=APP.students.filter(s=>!s.archived&&s.classStatus==='senior');
+  const trans=APP.students.filter(s=>!s.archived&&s.classStatus==='both');
+  const junior=APP.students.filter(s=>!s.archived&&s.classStatus==='junior');
+  let html=`<table class="register-table"><thead><tr><th class="name-header name-col">Name</th>`;
+  vis.forEach(d=>{
+    const isPast=d.date<=today,isPerf=d.type==='performance';
+    const cls=isPerf?'date-header performance':(isPast?'date-header past':'date-header');
+    const dt=new Date(d.date+'T12:00:00');
+    html+=`<th class="${cls}"><div>${dt.getDate()}</div><div style="font-weight:300;opacity:.7;font-size:9px;">${dt.toLocaleString('en-GB',{month:'short'})}</div><div style="font-size:8px;opacity:.5;">${isPerf?'P':'L'}</div></th>`;
+  });
+  html+=`</tr></thead><tbody>`;
+  html+=secRow('Teachers',vis.length);teachers.forEach(p=>{html+=pRow(p,'teacher',term,vis);});
+  html+=secRow('Senior (高班)',vis.length);senior.forEach(p=>{html+=pRow(p,'student',term,vis);});
+  if(trans.length){html+=secRow('Transitioning',vis.length);trans.forEach(p=>{html+=pRow(p,'student',term,vis);});}
+  html+=secRow('Junior (初班)',vis.length);junior.forEach(p=>{html+=pRow(p,'student',term,vis);});
+  html+=`</tbody></table>`;
+  document.getElementById('registerWrapper').innerHTML=html;
+}
+function secRow(l,c){return `<tr class="section-row"><td class="sticky-name">${l}</td>${'<td></td>'.repeat(c)}</tr>`;}
+function pRow(p,type,term,dates){
+  let r=`<tr><td class="name-col">${p.name}${p.classStatus==='both'?' <span class="class-badge badge-both" style="font-size:9px;">T</span>':''}</td>`;
+  dates.forEach(d=>{
+    const key=`${term.id}|${d.id}|${p.id}`;const att=APP.attendance[key]||'empty';
+    const jCancel=d.type==='junior-cancelled'&&type==='student'&&p.classStatus==='junior';
+    if(jCancel){r+=`<td class="att-cell cancelled">–</td>`;}
+    else{r+=`<td class="att-cell ${att}" onclick="toggleAtt('${key}')" data-key="${key}">${SYMS[att]||''}</td>`;}
+  });
+  return r+'</tr>';
+}
+function toggleAtt(key){
+  const el=document.querySelector(`[data-key="${key}"]`);if(!el)return;
+  const cur=APP.attendance[key]||'empty';const next=CYCLES[cur];
+  next==='empty'?delete APP.attendance[key]:(APP.attendance[key]=next);
+  el.className='att-cell '+(next==='empty'?'empty':next);el.textContent=SYMS[next]||'';saveLocal();
+}
+function jumpToToday(){
+  const w=document.getElementById('registerWrapper'),term=getActiveTerm();if(!term)return;
+  const dates=[...term.dates].filter(d=>d.type!=='closed').sort((a,b)=>a.date.localeCompare(b.date));
+  const idx=dates.findIndex(d=>d.date>=today);if(idx>=0)w.scrollLeft=Math.max(0,128+idx*43-60);
+}
+
+// PEOPLE
+function loadPeoplePage(){
+  const teachers=APP.teachers.filter(t=>!t.archived);
+  document.getElementById('teacherList').innerHTML=teachers.length?teachers.map(t=>`<div class="person-item"><div class="person-avatar" style="background:var(--crimson);">${ini(t.name)}</div><div><div class="person-name">${t.name}</div><div class="person-meta">${t.accountNo?'Invoice details saved':'No invoice details yet'}</div></div><div class="person-actions"><button class="btn btn-sm btn-ghost" onclick="showEditPersonModal('teacher','${t.id}')">Edit</button><button class="btn btn-sm btn-ghost" onclick="archivePerson('teacher','${t.id}')">Archive</button></div></div>`).join(''):`<div class="card-body" style="color:var(--ink-muted);font-size:13px;">No teachers yet.</div>`;
+  const students=APP.students.filter(s=>!s.archived);
+  document.getElementById('studentList').innerHTML=students.length?students.map(s=>{const b=s.classStatus==='junior'?'badge-junior':s.classStatus==='senior'?'badge-senior':'badge-both';const l=s.classStatus==='junior'?'Junior (初班)':s.classStatus==='senior'?'Senior (高班)':'Both';return`<div class="person-item"><div class="person-avatar" style="background:var(--navy);">${ini(s.name)}</div><div><div class="person-name">${s.name}</div><div class="person-meta"><span class="class-badge ${b}">${l}</span></div></div><div class="person-actions"><button class="btn btn-sm btn-ghost" onclick="showEditPersonModal('student','${s.id}')">Edit</button><button class="btn btn-sm btn-ghost" onclick="archivePerson('student','${s.id}')">Archive</button></div></div>`;}).join(''):`<div class="card-body" style="color:var(--ink-muted);font-size:13px;">No students yet.</div>`;
+}
+function showAddPersonModal(type){
+  if(type==='teacher'){openModal(`<div class="modal-title">Add Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" placeholder="Full name"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher',null)">Add</button></div>`);}
+  else{openModal(`<div class="modal-title">Add Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" placeholder="Full name"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill active" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill" id="pBoth" onclick="selClass('both')">Both</div></div><input type="hidden" id="mpClass" value="junior"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student',null)">Add</button></div>`);}
+}
+function selClass(c){document.getElementById('mpClass').value=c;['Junior','Senior','Both'].forEach(x=>{const el=document.getElementById('p'+x);if(el)el.classList.toggle('active',x.toLowerCase()===c||(x==='Both'&&c==='both'));});}
+function showEditPersonModal(type,id){
+  if(type==='teacher'){const t=APP.teachers.find(x=>x.id===id);if(!t)return;openModal(`<div class="modal-title">Edit Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${t.name}"></div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="mpAddress" rows="3">${t.address||''}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="mpBank" value="${t.bankName||''}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="mpSort" value="${t.sortCode||''}" placeholder="00-00-00"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="mpAcc" value="${t.accountNo||''}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="mpPrefix" value="${t.invoicePrefix||''}"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher','${id}')">Save</button></div>`);}
+  else{const s=APP.students.find(x=>x.id===id);if(!s)return;openModal(`<div class="modal-title">Edit Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${s.name}"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill ${s.classStatus==='junior'?'active':''}" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill ${s.classStatus==='senior'?'active':''}" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill ${s.classStatus==='both'?'active':''}" id="pBoth" onclick="selClass('both')">Both</div></div><input type="hidden" id="mpClass" value="${s.classStatus}"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student','${id}')">Save</button></div>`);}
+}
+function savePerson(type,id){
+  const name=document.getElementById('mpName')?.value.trim();if(!name){showToast('Enter a name');return;}
+  if(type==='teacher'){
+    if(id){const t=APP.teachers.find(x=>x.id===id);t.name=name;t.address=document.getElementById('mpAddress')?.value||t.address;t.bankName=document.getElementById('mpBank')?.value||t.bankName;t.sortCode=document.getElementById('mpSort')?.value||t.sortCode;t.accountNo=document.getElementById('mpAcc')?.value||t.accountNo;t.invoicePrefix=document.getElementById('mpPrefix')?.value||t.invoicePrefix;}
+    else{if(APP.teachers.filter(t=>!t.archived).length>=4){showToast('Max 4 teachers');return;}APP.teachers.push({id:'T'+Date.now(),name,address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:name.split(' ').map(w=>w[0]).join('').toUpperCase(),archived:false});}
+  }else{
+    const cls=document.getElementById('mpClass')?.value||'junior';
+    if(id){const s=APP.students.find(x=>x.id===id);s.name=name;s.classStatus=cls;}
+    else APP.students.push({id:'S'+Date.now(),name,classStatus:cls,archived:false});
+  }
+  saveLocal();closeModal();loadPeoplePage();showToast('Saved ✓');
+}
+function archivePerson(type,id){openModal(`<div class="modal-title">Archive?</div><p style="color:var(--ink-soft);font-size:14px;margin-bottom:16px;">Hidden from register. Historical data preserved.</p><div class="modal-footer"><button class="btn btn-ghost" style="flex:1;" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="doArchive('${type}','${id}')">Archive</button></div>`);}
+function doArchive(type,id){const l=type==='teacher'?APP.teachers:APP.students;const p=l.find(x=>x.id===id);if(p)p.archived=true;saveLocal();closeModal();loadPeoplePage();showToast('Archived');}
+
+// INVOICES
+function loadInvoicesPage(){
+  populateTermSelectors();
+  document.getElementById('invoiceTeacher').innerHTML=APP.teachers.filter(t=>!t.archived).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  previewInvoice();
+}
+function calcPay(teacherId,fromId,toId){
+  const fi=APP.terms.findIndex(t=>t.id===fromId),ti=APP.terms.findIndex(t=>t.id===toId);
+  if(fi<0||ti<0)return null;
+  let total=0;const breakdown=[];
+  APP.terms.slice(fi,ti+1).forEach(term=>{
+    const lessons=term.dates.filter(d=>d.type==='lesson').sort((a,b)=>a.date.localeCompare(b.date));
+    let termPay=0,attended=0;const sessions=[];
+    lessons.forEach(d=>{
+      const pc=APP.teachers.filter(t=>!t.archived&&APP.attendance[`${term.id}|${d.id}|${t.id}`]==='present').length;
+      const ip=APP.attendance[`${term.id}|${d.id}|${teacherId}`]==='present';
+      if(ip&&pc>0){const share=APP.settings.lessonValue/pc;termPay+=share;attended++;sessions.push({date:d.date,teacherCount:pc,share});}
+    });
+    breakdown.push({term,sessions,termPay,attended,total:lessons.length});total+=termPay;
+  });
+  return{total,breakdown};
+}
+function previewInvoice(){
+  const tid=document.getElementById('invoiceTeacher')?.value;if(!tid)return;
+  const teacher=APP.teachers.find(t=>t.id===tid);if(!teacher)return;
+  const fromId=document.getElementById('invoiceFromTerm')?.value||APP.terms[0]?.id;
+  const toId=document.getElementById('invoiceToTerm')?.value||APP.terms[APP.terms.length-1]?.id;
+  const calc=calcPay(tid,fromId,toId);if(!calc)return;
+  const issueDate=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const invNum=`${teacher.invoicePrefix||'INV'}-${APP.settings.academicYear}-001`;
+  const rows=calc.breakdown.filter(b=>b.sessions.length>0).map(b=>{
+    const groups={};b.sessions.forEach(s=>{if(!groups[s.teacherCount])groups[s.teacherCount]={count:0,share:s.share};groups[s.teacherCount].count++;});
+    const detail=Object.entries(groups).map(([n,g])=>`${g.count}×£${g.share.toFixed(2)}`).join(', ');
+    return`<tr><td>${b.term.label}</td><td style="text-align:center;">${b.attended} / ${b.total}</td><td style="font-size:11px;color:var(--ink-soft);">${detail}</td><td style="text-align:right;font-weight:600;">£${b.termPay.toFixed(2)}</td></tr>`;
+  }).join('');
+  document.getElementById('invoicePreviewArea').innerHTML=`<div class="invoice-preview fade-in">
+    <div class="invoice-header-bar"><div><div class="invoice-brand">Harrow Chinese School</div><div class="invoice-school-name">${APP.settings.schoolAddress.split('\n')[0]}</div></div><div class="invoice-meta">Invoice: <strong style="color:white;">${invNum}</strong><br>Date: ${issueDate}<br>Year: ${APP.settings.academicYear}</div></div>
+    <div class="invoice-from-to"><div><div class="invoice-section-label">From (Teacher)</div><div class="invoice-address"><strong>${teacher.name}</strong><br>${(teacher.address||'—').replace(/\n/g,'<br>')}</div></div><div><div class="invoice-section-label">To (School)</div><div class="invoice-address"><strong>${APP.settings.schoolName}</strong><br>${APP.settings.schoolAddress.replace(/\n/g,'<br>')}</div></div></div>
+    <table class="invoice-table"><thead><tr><th>Term</th><th style="text-align:center;">Lessons</th><th>Breakdown</th><th style="text-align:right;">Amount</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="invoice-total-row"><td colspan="3" style="text-align:right;padding-right:12px;">Total Due</td><td style="text-align:right;">£${calc.total.toFixed(2)}</td></tr></tfoot></table>
+    ${teacher.accountNo?`<div class="invoice-payment"><div class="invoice-payment-title">Payment Details</div>Bank: ${teacher.bankName||'—'} &nbsp;|&nbsp; Sort Code: ${teacher.sortCode||'—'} &nbsp;|&nbsp; Account: ${teacher.accountNo||'—'}</div>`:''}
+  </div>`;
+}
+function genPDF(teacherId,fromId,toId){
+  const{jsPDF}=window.jspdf;const teacher=APP.teachers.find(t=>t.id===teacherId);if(!teacher)return;
+  const calc=calcPay(teacherId,fromId,toId);if(!calc)return;
+  const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=18;let y=M;
+  doc.setFillColor(26,35,64);doc.rect(0,0,W,34,'F');
+  doc.setFontSize(18);doc.setFont('helvetica','bold');doc.setTextColor(232,160,144);doc.text('Harrow Chinese School',M,13);
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(255,255,255);doc.text(APP.settings.schoolAddress.replace(/\n/g,', '),M,21);
+  const issueDate=new Date().toLocaleDateString('en-GB');
+  const invNum=`${teacher.invoicePrefix||'INV'}-${APP.settings.academicYear}-001`;
+  doc.setFontSize(8);doc.text(`Invoice: ${invNum}`,W-M,13,{align:'right'});doc.text(`Date: ${issueDate}`,W-M,20,{align:'right'});doc.text(`Year: ${APP.settings.academicYear}`,W-M,27,{align:'right'});
+  y=44;const bw=(W-M*2-8)/2;
+  doc.setFillColor(244,240,234);doc.rect(M,y,bw,28,'F');doc.rect(M+bw+8,y,bw,28,'F');
+  doc.setFontSize(7);doc.setTextColor(144,152,168);doc.text('FROM (TEACHER)',M+4,y+5);doc.text('TO (SCHOOL)',M+bw+12,y+5);
+  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(26,35,64);doc.text(teacher.name,M+4,y+12);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(74,74,90);
+  (teacher.address||'').split('\n').slice(0,3).forEach((l,i)=>doc.text(l,M+4,y+18+i*5));
+  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(26,35,64);doc.text(APP.settings.schoolName,M+bw+12,y+12);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(74,74,90);
+  APP.settings.schoolAddress.split('\n').slice(0,3).forEach((l,i)=>doc.text(l,M+bw+12,y+18+i*5));
+  y+=36;
+  const cols=[M,M+52,M+108,M+150];
+  doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,8,'F');doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+  ['Term','Lessons Attended','Breakdown','Amount'].forEach((h,i)=>doc.text(h,cols[i]+2,y+5.5));y+=8;
+  calc.breakdown.filter(b=>b.sessions.length>0).forEach((b,ri)=>{
+    const groups={};b.sessions.forEach(s=>{if(!groups[s.teacherCount])groups[s.teacherCount]={count:0,share:s.share};groups[s.teacherCount].count++;});
+    const detail=Object.entries(groups).map(([n,g])=>`${g.count}x£${g.share.toFixed(2)}`).join(', ');
+    doc.setFillColor(...(ri%2===0?[255,255,255]:[244,240,234]));doc.rect(M,y,W-M*2,8,'F');
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(26,35,64);doc.text(b.term.label,cols[0]+2,y+5.5);
+    doc.text(`${b.attended} / ${b.total}`,cols[1]+2,y+5.5);
+    doc.setFontSize(8);doc.setTextColor(90,96,112);doc.text(detail,cols[2]+2,y+5.5);
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(26,35,64);doc.text(`£${b.termPay.toFixed(2)}`,W-M-2,y+5.5,{align:'right'});
+    doc.setFont('helvetica','normal');y+=8;
+  });
+  doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,10,'F');doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(255,255,255);doc.text('TOTAL DUE',cols[0]+2,y+7);doc.setTextColor(232,160,144);doc.text(`£${calc.total.toFixed(2)}`,W-M-2,y+7,{align:'right'});y+=16;
+  if(teacher.accountNo){doc.setFillColor(244,240,234);doc.rect(M,y,W-M*2,18,'F');doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(144,152,168);doc.text('PAYMENT DETAILS',M+4,y+5);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(26,35,64);doc.text(`Bank: ${teacher.bankName||'—'}   Sort Code: ${teacher.sortCode||'—'}   Account: ${teacher.accountNo||'—'}`,M+4,y+12);}
+  doc.setFillColor(26,35,64);doc.rect(0,284,W,13,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(200,200,200);doc.text(`${APP.settings.schoolName} · ${APP.settings.academicYear} · ${issueDate}`,W/2,292,{align:'center'});
+  doc.save(`${teacher.name.replace(/ /g,'_')}_Invoice_${APP.settings.academicYear}.pdf`);
+}
+function downloadSingleInvoice(){const tid=document.getElementById('invoiceTeacher')?.value;const fid=document.getElementById('invoiceFromTerm')?.value||APP.terms[0]?.id;const eid=document.getElementById('invoiceToTerm')?.value||APP.terms[APP.terms.length-1]?.id;if(!tid){showToast('Select a teacher');return;}genPDF(tid,fid,eid);showToast('Downloading…');}
+function downloadAllInvoices(){const fid=document.getElementById('invoiceFromTerm')?.value||APP.terms[0]?.id;const eid=document.getElementById('invoiceToTerm')?.value||APP.terms[APP.terms.length-1]?.id;const t=APP.teachers.filter(x=>!x.archived);if(!t.length){showToast('No teachers');return;}t.forEach((x,i)=>setTimeout(()=>genPDF(x.id,fid,eid),i*700));showToast(`Generating ${t.length} invoices…`);}
+
+// SETTINGS
+function loadSettingsPage(){
+  document.getElementById('settSchoolName').value=APP.settings.schoolName;
+  document.getElementById('settSchoolAddress').value=APP.settings.schoolAddress;
+  document.getElementById('settLessonValue').value=APP.settings.lessonValue;
+  document.getElementById('settAcYear').value=APP.settings.academicYear;
+  document.getElementById('settClientId').value=APP.settings.clientId;
+  document.getElementById('settSheetId').value=APP.settings.sheetId;
+  document.getElementById('termManageList').innerHTML=APP.terms.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:600;font-size:14px;">${t.label}</div><div style="font-size:12px;color:var(--ink-muted);">${t.dates.filter(d=>d.type==='lesson').length} lessons · ${t.dates.filter(d=>d.type==='performance').length} performances</div></div><button class="btn btn-sm btn-ghost" onclick="showEditTermModal('${t.id}')">Edit</button></div>`).join('');
+  const teachers=APP.teachers.filter(t=>!t.archived);
+  document.getElementById('teacherSettingsBody').innerHTML=teachers.map(t=>`<div style="padding:14px 16px;border-bottom:1px solid var(--border);"><div style="font-weight:700;font-size:14px;margin-bottom:10px;">${t.name}</div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="ts_addr_${t.id}" rows="3">${t.address||''}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="ts_bank_${t.id}" value="${t.bankName||''}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="ts_sort_${t.id}" value="${t.sortCode||''}"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="ts_acc_${t.id}" value="${t.accountNo||''}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="ts_pfx_${t.id}" value="${t.invoicePrefix||''}"></div></div><button class="btn btn-sm btn-ghost" onclick="saveTeacherDetails('${t.id}')">Save ${t.name.split(' ')[0]}'s Details</button></div>`).join('');
+}
+function saveSettings(){APP.settings.schoolName=document.getElementById('settSchoolName').value;APP.settings.schoolAddress=document.getElementById('settSchoolAddress').value;APP.settings.lessonValue=parseFloat(document.getElementById('settLessonValue').value)||70;APP.settings.academicYear=document.getElementById('settAcYear').value;saveLocal();showToast('Settings saved ✓');}
+function saveGoogleSettings(){APP.settings.clientId=document.getElementById('settClientId').value.trim();APP.settings.sheetId=document.getElementById('settSheetId').value.trim();saveLocal();showToast('Saved ✓');}
+function reconnectGoogle(){showToast('Add Client ID first, then reconnect');}
+function syncNow(){if(APP.demoMode){showToast('Demo mode — no sync');return;}saveLocal();showToast('Saved locally ✓');updateSyncStatus('ok','Saved');}
+function updateSyncStatus(t,txt){const el=document.getElementById('syncStatus');el.className='sync-status sync-'+t;el.textContent=txt;}
+function saveTeacherDetails(id){const t=APP.teachers.find(x=>x.id===id);if(!t)return;t.address=document.getElementById(`ts_addr_${id}`)?.value||'';t.bankName=document.getElementById(`ts_bank_${id}`)?.value||'';t.sortCode=document.getElementById(`ts_sort_${id}`)?.value||'';t.accountNo=document.getElementById(`ts_acc_${id}`)?.value||'';t.invoicePrefix=document.getElementById(`ts_pfx_${id}`)?.value||'';saveLocal();showToast(`${t.name.split(' ')[0]}'s details saved ✓`);}
+function showEditTermModal(termId){const term=APP.terms.find(t=>t.id===termId);if(!term)return;openModal(`<div class="modal-title">Edit Term</div><div class="form-group"><label class="form-label">Label</label><input type="text" class="form-input" id="etLabel" value="${term.label}"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveTermEdit('${termId}')">Save</button></div>`);}
+function saveTermEdit(id){const term=APP.terms.find(t=>t.id===id);if(!term)return;term.label=document.getElementById('etLabel').value;saveLocal();closeModal();loadSettingsPage();showToast('Saved ✓');}
+function showAddTermModal(){openModal(`<div class="modal-title">Add Term</div><div class="form-group"><label class="form-label">Label</label><input type="text" class="form-input" id="newTermLabel" placeholder="e.g. Summer 2027"></div><div class="form-row"><div class="form-group"><label class="form-label">Start</label><input type="date" class="form-input" id="newTermStart"></div><div class="form-group"><label class="form-label">End</label><input type="date" class="form-input" id="newTermEnd"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveNewTerm()">Create</button></div>`);}
+function saveNewTerm(){const label=document.getElementById('newTermLabel').value.trim();const s=document.getElementById('newTermStart').value;const e=document.getElementById('newTermEnd').value;if(!label){showToast('Enter a label');return;}const id='TERM'+Date.now();APP.terms.push({id,name:label,label,dates:s&&e?generateSaturdays(s,e):[]});saveLocal();closeModal();loadSettingsPage();populateTermSelectors();showToast('Term created ✓');}
+
+// MODAL
+function openModal(html){document.getElementById('modalBody').innerHTML=html;document.getElementById('modalOverlay').classList.add('open');}
+function closeModal(e){if(e&&e.target!==document.getElementById('modalOverlay'))return;document.getElementById('modalOverlay').classList.remove('open');}
+
+// TOAST
+let tt;function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),2500);}
+
+function ini(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);}
+
+function initApp(){
+  populateTermSelectors();loadRegister();loadSettingsPage();
+  const s=APP.settings;updateSyncStatus(APP.demoMode?'warn':(s.clientId?'ok':'none'),APP.demoMode?'Demo':(s.clientId?'Connected':'Offline'));
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  initSetupDots();const has=loadLocal();
+  if(has&&APP.setupDone){document.getElementById('setupOverlay').style.display='none';initApp();}
+});
+</script>
+</body>
+</html>
