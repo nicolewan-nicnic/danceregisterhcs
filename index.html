@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>HCS Dance Group</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
@@ -246,7 +247,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
     <div class="section-header"><div><div class="section-title">Term Dates</div><div class="section-sub">Tap any date to change its type</div></div><button class="btn btn-sm btn-primary" onclick="showAddDateModal()">+ Date</button></div>
     <div class="register-controls">
       <select class="term-select" id="termSelectorDates" onchange="loadDatesPage()"></select>
-      <button class="btn btn-sm btn-ghost" onclick="showGenerateModal()">⟳ Generate</button>
+      <button class="btn btn-sm btn-ghost" onclick="showNewTermModal()">+ New Term</button>
     </div>
     <!-- INVOICE TRACKER -->
     <div class="inv-tracker fade-in">
@@ -259,7 +260,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
       <div class="leg-item"><div class="leg-dot" style="background:var(--salmon);"></div><span>Performance</span></div>
       <div class="leg-item"><div class="leg-dot" style="background:var(--salmon-light);color:var(--ink-soft);font-size:9px;font-weight:700;">6</div><span>Junior cancelled</span></div>
     </div>
-    <div class="cal-wrapper" id="calWrapper"><div class="empty-state"><h3>No dates yet</h3><p>Use Generate to create term dates</p></div></div>
+    <div class="cal-wrapper" id="calWrapper"><div class="empty-state"><h3>No dates yet</h3><p>Tap + New Term to add a term</p></div></div>
   </div>
   <div class="page" id="pagePeople">
     <div class="section-header"><div><div class="section-title">People</div><div class="section-sub">Teachers & students</div></div></div>
@@ -305,9 +306,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
       <button class="btn btn-primary" onclick="saveSettings()">Save</button>
     </div></div>
     <div class="card fade-in"><div class="card-header"><span class="card-title">Google Sheets</span></div><div class="card-body">
-      <div class="form-group"><label class="form-label">OAuth Client ID</label><input type="text" class="form-input" id="settClientId"></div>
-      <div class="form-group"><label class="form-label">Sheet ID</label><input type="text" class="form-input" id="settSheetId"></div>
-      <div style="display:flex;gap:8px;"><button class="btn btn-navy" onclick="reconnectGoogle()">Reconnect</button><button class="btn btn-ghost" onclick="saveGoogleSettings()">Save</button></div>
+      <div class="form-group"><label class="form-label">OAuth Client ID</label><input type="text" class="form-input" id="settClientId" placeholder="pre-filled"></div>
+      <div class="form-group"><label class="form-label">Sheet ID <span style="font-weight:400;color:var(--ink-muted);">(auto-created if blank)</span></label><input type="text" class="form-input" id="settSheetId" placeholder="Leave blank to create new"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-navy" style="flex:1;" onclick="reconnectGoogle()">🔗 Sign in with Google</button>
+        <button class="btn btn-ghost" onclick="saveGoogleSettings()">Save</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-teal" style="flex:1;" onclick="syncToSheet()">⬆ Push to Sheet</button>
+        <button class="btn btn-ghost" style="flex:1;" onclick="loadFromSheet()">⬇ Pull from Sheet</button>
+      </div>
+      <div style="font-size:11px;color:var(--ink-muted);margin-top:8px;">Hosted at: nicolewan-nicnic.github.io</div>
     </div></div>
     <div class="card fade-in"><div class="card-header"><span class="card-title">Term Management</span></div><div class="card-body"><div id="termManageList"></div><button class="btn btn-ghost btn-full" style="margin-top:8px;" onclick="showAddTermModal()">+ Add Term</button></div></div>
     <div class="card fade-in" id="teacherSettingsCard"><div class="card-header"><span class="card-title">Teacher Invoice Details</span></div><div id="teacherSettingsBody"></div></div>
@@ -601,7 +610,7 @@ function saveInvTracker(){
 let activeCellPopup=null;
 function loadDatesPage(){
   const term=getActiveTerm('termSelectorDates');const wrapper=document.getElementById('calWrapper');
-  if(!term||!term.dates.length){wrapper.innerHTML=`<div class="empty-state"><h3>No dates</h3><p>Use Generate to create Saturdays</p></div>`;return;}
+  if(!term||!term.dates.length){wrapper.innerHTML=`<div class="empty-state"><h3>No dates</h3><p>Tap + New Term to add a term</p></div>`;return;}
   const sorted=[...term.dates].sort((a,b)=>a.date.localeCompare(b.date));
   const byMonth={};
   sorted.forEach(d=>{
@@ -682,19 +691,60 @@ function saveNewDate(){
   const id='D'+date.replace(/-/g,'');if(term.dates.find(x=>x.id===id)){showToast('Date already exists');return;}
   term.dates.push({id,date,type,label});saveLocal();closeModal();loadDatesPage();showToast('Date added ✓');
 }
-function showGenerateModal(){
-  const term=getActiveTerm('termSelectorDates');
-  openModal(`<div class="modal-title">Generate Saturdays</div>
-    <p style="font-size:13px;color:var(--ink-soft);margin-bottom:16px;">Adds all Saturdays for <strong>${term?.label||''}</strong>. Existing dates preserved.</p>
-    <div class="form-row"><div class="form-group"><label class="form-label">Start</label><input type="date" class="form-input" id="genStart"></div><div class="form-group"><label class="form-label">End</label><input type="date" class="form-input" id="genEnd"></div></div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="doGenerate()">Generate</button></div>`);
+function showNewTermModal(){
+  const yr=APP.settings.academicYear||'2025-26';
+  // Work out next academic year suffix for autumn
+  const parts=yr.split('-');
+  const y1=parseInt(parts[0])||2025;
+  const y2=parseInt(parts[1])||26;
+  openModal(`<div class="modal-title">New Term</div>
+    <div class="form-group"><label class="form-label">Term Type</label>
+      <div class="pill-row">
+        <div class="pill active" id="ntAutumn" onclick="selNewTerm('autumn')">Autumn</div>
+        <div class="pill" id="ntSpring" onclick="selNewTerm('spring')">Spring</div>
+        <div class="pill" id="ntSummer" onclick="selNewTerm('summer')">Summer</div>
+      </div>
+      <input type="hidden" id="ntType" value="autumn">
+    </div>
+    <div class="form-group"><label class="form-label">Academic Year (e.g. 2026-27)</label>
+      <input type="text" class="form-input" id="ntYear" value="${yr}" placeholder="e.g. 2025-26">
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Start Date</label><input type="date" class="form-input" id="ntStart"></div>
+      <div class="form-group"><label class="form-label">End Date</label><input type="date" class="form-input" id="ntEnd"></div>
+    </div>
+    <div style="font-size:12px;color:var(--ink-muted);margin-bottom:12px;">All Saturdays between these dates will be generated as lessons. You can then tap any date to change it to Closed, Performance, etc.</div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="doNewTerm()">Create Term</button></div>`);
 }
-function doGenerate(){
-  const term=getActiveTerm('termSelectorDates');if(!term)return;
-  const s=document.getElementById('genStart').value,e=document.getElementById('genEnd').value;
-  if(!s||!e){showToast('Enter both dates');return;}
-  let added=0;genSaturdays(s,e).forEach(d=>{if(!term.dates.find(x=>x.id===d.id)){term.dates.push(d);added++;}});
-  saveLocal();closeModal();loadDatesPage();showToast(`Added ${added} Saturday${added!==1?'s':''}`);
+function selNewTerm(t){
+  document.getElementById('ntType').value=t;
+  ['Autumn','Spring','Summer'].forEach(x=>{const el=document.getElementById('nt'+x);if(el)el.classList.toggle('active',x.toLowerCase()===t);});
+}
+function doNewTerm(){
+  const type=document.getElementById('ntType').value;
+  const yr=document.getElementById('ntYear').value.trim()||APP.settings.academicYear;
+  const s=document.getElementById('ntStart').value;
+  const e=document.getElementById('ntEnd').value;
+  if(!s||!e){showToast('Enter start and end dates');return;}
+  const nameMap={autumn:'Autumn',spring:'Spring',summer:'Summer'};
+  const labelMap={autumn:`Autumn ${yr}`,spring:`Spring ${yr}`,summer:`Summer ${yr}`};
+  const yrKey=yr.replace('-','_');
+  const idMap={autumn:`${yrKey}_T1`,spring:`${yrKey}_T2`,summer:`${yrKey}_T3`};
+  const id=idMap[type]+'_'+Date.now().toString(36);
+  // Check for duplicate label and warn
+  const existing=APP.terms.find(t=>t.label===labelMap[type]);
+  if(existing){if(!confirm(`A term called "${labelMap[type]}" already exists. Create another?`))return;}
+  const dates=genSaturdays(s,e);
+  const term={id,name:nameMap[type],label:labelMap[type],dates};
+  APP.terms.push(term);
+  // Sort terms chronologically by first date
+  APP.terms.sort((a,b)=>{
+    const ad=a.dates[0]?.date||'9999';const bd=b.dates[0]?.date||'9999';return ad.localeCompare(bd);
+  });
+  saveLocal();populateTermSelectors();
+  // Select the new term
+  const dsel=document.getElementById('termSelectorDates');if(dsel)dsel.value=id;
+  closeModal();loadDatesPage();showToast(`${labelMap[type]} created — ${dates.length} Saturdays added`);
 }
 
 // ── REGISTER ──
@@ -928,17 +978,151 @@ function loadSettingsPage(){
   document.getElementById('settSchoolAddress').value=APP.settings.schoolAddress;
   document.getElementById('settLessonValue').value=APP.settings.lessonValue;
   document.getElementById('settAcYear').value=APP.settings.academicYear;
-  document.getElementById('settClientId').value=APP.settings.clientId;
+  document.getElementById('settClientId').value=APP.settings.clientId||GIS_CLIENT_ID;
   document.getElementById('settSheetId').value=APP.settings.sheetId;
   document.getElementById('termManageList').innerHTML=APP.terms.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:600;font-size:14px;">${t.label}</div><div style="font-size:12px;color:var(--ink-muted);">${t.dates.filter(d=>d.type==='lesson').length} lessons · ${t.dates.filter(d=>d.type==='performance').length} performances</div></div><button class="btn btn-sm btn-ghost" onclick="showEditTermModal('${t.id}')">Edit</button></div>`).join('');
   const teachers=APP.teachers.filter(t=>!t.archived);
   document.getElementById('teacherSettingsBody').innerHTML=teachers.length?teachers.map(t=>`<div style="padding:14px 16px;border-bottom:1px solid var(--border);"><div style="font-weight:700;font-size:14px;margin-bottom:10px;">${t.name}</div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="ts_addr_${t.id}" rows="3">${t.address||''}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="ts_bank_${t.id}" value="${t.bankName||''}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="ts_sort_${t.id}" value="${t.sortCode||''}"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="ts_acc_${t.id}" value="${t.accountNo||''}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="ts_pfx_${t.id}" value="${t.invoicePrefix||''}"></div></div><button class="btn btn-sm btn-ghost" onclick="saveTeacherDetails('${t.id}')">Save ${t.name.split(' ')[0]}'s Details</button></div>`).join(''):`<div style="padding:14px 16px;color:var(--ink-muted);font-size:13px;">No teachers added yet.</div>`;
 }
 function saveSettings(){APP.settings.schoolName=document.getElementById('settSchoolName').value;APP.settings.schoolAddress=document.getElementById('settSchoolAddress').value;APP.settings.lessonValue=parseFloat(document.getElementById('settLessonValue').value)||70;APP.settings.academicYear=document.getElementById('settAcYear').value;saveLocal();showToast('Saved ✓');}
-function saveGoogleSettings(){APP.settings.clientId=document.getElementById('settClientId').value.trim();APP.settings.sheetId=document.getElementById('settSheetId').value.trim();saveLocal();showToast('Saved ✓');}
-function reconnectGoogle(){showToast('Add Client ID first, then reconnect');}
-function syncNow(){if(APP.demoMode){showToast('Demo mode — no sync');return;}saveLocal();showToast('Saved locally ✓');updateSyncStatus('ok','Saved');}
-function updateSyncStatus(t,txt){const el=document.getElementById('syncStatus');el.className='sync-status sync-'+t;el.textContent=txt;}
+function saveGoogleSettings(){
+  APP.settings.clientId=document.getElementById('settClientId').value.trim();
+  APP.settings.sheetId=document.getElementById('settSheetId').value.trim();
+  saveLocal();showToast('Saved ✓');
+}
+function updateSyncStatus(t,txt){
+  const el=document.getElementById('syncStatus');
+  el.className='sync-status sync-'+t;el.textContent=txt;
+}
+
+// ── GOOGLE SHEETS OAUTH (GIS + REST API) ──
+const GIS_CLIENT_ID='269838044303-gspceiijbm5v2hj07gaf3nv905oi7422.apps.googleusercontent.com';
+const SHEETS_SCOPE='https://www.googleapis.com/auth/spreadsheets';
+let gisClient=null,gAccessToken=null,gTokenExpiry=0;
+
+function gisReady(){
+  // Called once GIS library has loaded
+  if(!window.google||!google.accounts)return;
+  gisClient=google.accounts.oauth2.initTokenClient({
+    client_id:APP.settings.clientId||GIS_CLIENT_ID,
+    scope:SHEETS_SCOPE,
+    callback:(resp)=>{
+      if(resp.error){updateSyncStatus('err','Error');showToast('Google sign-in failed: '+resp.error);return;}
+      gAccessToken=resp.access_token;
+      gTokenExpiry=Date.now()+(resp.expires_in-60)*1000;
+      updateSyncStatus('ok','Connected');
+      APP.demoMode=false;
+      showToast('Google connected ✓');
+      // After connecting, try to find or create the sheet
+      ensureSheet();
+    }
+  });
+}
+
+function reconnectGoogle(){
+  if(!window.google||!google.accounts){showToast('Google library loading…');return;}
+  // Re-init with latest client ID in case it was updated
+  const cid=APP.settings.clientId||GIS_CLIENT_ID;
+  gisClient=google.accounts.oauth2.initTokenClient({
+    client_id:cid,scope:SHEETS_SCOPE,
+    callback:(resp)=>{
+      if(resp.error){updateSyncStatus('err','Error');showToast('Sign-in failed: '+resp.error);return;}
+      gAccessToken=resp.access_token;gTokenExpiry=Date.now()+(resp.expires_in-60)*1000;
+      updateSyncStatus('ok','Connected');APP.demoMode=false;showToast('Connected ✓');ensureSheet();
+    }
+  });
+  gisClient.requestAccessToken({prompt:'consent'});
+}
+
+function silentSignIn(){
+  if(!window.google||!google.accounts)return;
+  const cid=APP.settings.clientId||GIS_CLIENT_ID;
+  gisClient=google.accounts.oauth2.initTokenClient({
+    client_id:cid,scope:SHEETS_SCOPE,
+    callback:(resp)=>{
+      if(resp.error)return; // silent — don't show error
+      gAccessToken=resp.access_token;gTokenExpiry=Date.now()+(resp.expires_in-60)*1000;
+      updateSyncStatus('ok','Connected');APP.demoMode=false;ensureSheet();
+    }
+  });
+  gisClient.requestAccessToken({prompt:''}); // empty prompt = silent if already consented
+}
+
+async function ensureToken(){
+  if(gAccessToken&&Date.now()<gTokenExpiry)return true;
+  if(!gisClient){showToast('Not signed in — tap the status button');return false;}
+  return new Promise(res=>{
+    const orig=gisClient.callback;
+    gisClient.callback=(r)=>{
+      if(r.error){res(false);return;}
+      gAccessToken=r.access_token;gTokenExpiry=Date.now()+(r.expires_in-60)*1000;res(true);
+    };
+    gisClient.requestAccessToken({prompt:''});
+  });
+}
+
+async function ensureSheet(){
+  if(!APP.settings.sheetId){
+    // Create a new sheet
+    const ok=await ensureToken();if(!ok)return;
+    const resp=await fetch('https://sheets.googleapis.com/v4/spreadsheets',{
+      method:'POST',headers:{Authorization:'Bearer '+gAccessToken,'Content-Type':'application/json'},
+      body:JSON.stringify({properties:{title:'HCS Dance Group Register'},sheets:[{properties:{title:'Data'}}]})
+    });
+    if(resp.ok){
+      const data=await resp.json();
+      APP.settings.sheetId=data.spreadsheetId;
+      saveLocal();
+      // Update settings field if visible
+      const el=document.getElementById('settSheetId');if(el)el.value=APP.settings.sheetId;
+      showToast('New sheet created ✓');
+      syncToSheet();
+    }else{showToast('Could not create sheet');}
+  }else{
+    syncToSheet();
+  }
+}
+
+async function syncToSheet(){
+  const ok=await ensureToken();if(!ok){showToast('Not signed in');return;}
+  updateSyncStatus('warn','Syncing…');
+  const payload=JSON.stringify(APP);
+  // Store entire APP JSON in cell A1 of Data sheet
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${APP.settings.sheetId}/values/Data!A1?valueInputOption=RAW`;
+  const resp=await fetch(url,{
+    method:'PUT',headers:{Authorization:'Bearer '+gAccessToken,'Content-Type':'application/json'},
+    body:JSON.stringify({range:'Data!A1',majorDimension:'ROWS',values:[[payload]]})
+  });
+  if(resp.ok){
+    updateSyncStatus('ok','Synced');saveLocal();showToast('Synced to Google Sheets ✓');
+  }else{
+    updateSyncStatus('err','Sync failed');showToast('Sync failed — check sheet permissions');
+  }
+}
+
+async function loadFromSheet(){
+  const ok=await ensureToken();if(!ok)return;
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${APP.settings.sheetId}/values/Data!A1`;
+  const resp=await fetch(url,{headers:{Authorization:'Bearer '+gAccessToken}});
+  if(!resp.ok){showToast('Could not read sheet');return;}
+  const data=await resp.json();
+  const raw=data.values?.[0]?.[0];
+  if(!raw){showToast('Sheet is empty — saving current data');syncToSheet();return;}
+  try{
+    const parsed=JSON.parse(raw);
+    Object.assign(APP,parsed);
+    saveLocal();populateTermSelectors();loadRegister();loadSettingsPage();
+    showToast('Loaded from Google Sheets ✓');updateSyncStatus('ok','Synced');
+  }catch(e){showToast('Could not parse sheet data');}
+}
+
+function syncNow(){
+  if(!gAccessToken){
+    if(gisClient){gisClient.requestAccessToken({prompt:''});}
+    else{showToast('Tap Settings → Reconnect to sign in');} return;
+  }
+  syncToSheet();
+}
 function saveTeacherDetails(id){const t=APP.teachers.find(x=>x.id===id);if(!t)return;t.address=document.getElementById(`ts_addr_${id}`)?.value||'';t.bankName=document.getElementById(`ts_bank_${id}`)?.value||'';t.sortCode=document.getElementById(`ts_sort_${id}`)?.value||'';t.accountNo=document.getElementById(`ts_acc_${id}`)?.value||'';t.invoicePrefix=document.getElementById(`ts_pfx_${id}`)?.value||'';saveLocal();showToast(`${t.name.split(' ')[0]}'s details saved ✓`);}
 function showEditTermModal(termId){const term=APP.terms.find(t=>t.id===termId);if(!term)return;openModal(`<div class="modal-title">Edit Term</div><div class="form-group"><label class="form-label">Label</label><input type="text" class="form-input" id="etLabel" value="${term.label}"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveTermEdit('${termId}')">Save</button></div>`);}
 function saveTermEdit(id){const term=APP.terms.find(t=>t.id===id);if(!term)return;term.label=document.getElementById('etLabel').value;saveLocal();closeModal();loadSettingsPage();showToast('Saved ✓');}
@@ -954,8 +1138,16 @@ let tt;function showToast(msg){const el=document.getElementById('toast');el.text
 function ini(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);}
 
 function initApp(){
+  // Always ensure the correct client ID is set
+  if(!APP.settings.clientId)APP.settings.clientId=GIS_CLIENT_ID;
   populateTermSelectors();loadRegister();loadSettingsPage();
-  const s=APP.settings;updateSyncStatus(APP.demoMode?'warn':(s.clientId?'ok':'none'),APP.demoMode?'Demo':(s.clientId?'Connected':'Offline'));
+  updateSyncStatus('none','Connecting…');
+  // Try silent sign-in once GIS is ready (may take a moment to load)
+  const trySignIn=()=>{
+    if(window.google&&google.accounts){gisReady();silentSignIn();}
+    else{setTimeout(trySignIn,500);}
+  };
+  trySignIn();
 }
 
 window.addEventListener('DOMContentLoaded',()=>{
