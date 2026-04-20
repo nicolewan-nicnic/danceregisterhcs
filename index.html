@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>HCS Register</title>
+<title>HCS Dance Group</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
-:root {
+:root{
   --navy:#1a2340;--navy-mid:#243060;--crimson:#8b1a2e;--crimson-light:#a82038;
   --teal:#1d5c4a;--salmon:#e8a090;--salmon-light:#f5d5cc;
   --paper:#faf9f7;--paper-warm:#f4f0ea;--border:#ddd8d0;
-  --ink:#1a2340;--ink-soft:#5a6070;--ink-muted:#9098a8;--white:#ffffff;
+  --ink:#1a2340;--ink-soft:#5a6070;--ink-muted:#9098a8;
   --shadow:0 2px 16px rgba(26,35,64,.10);--radius:10px;--radius-sm:6px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -42,7 +42,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .form-group{margin-bottom:14px}
 .form-label{display:block;font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
 .form-input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);background:white;transition:border-color .15s;-webkit-appearance:none}
-.form-input:focus{outline:none;border-color:var(--navy)}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.form-hint{font-size:11px;color:var(--ink-muted);margin-top:4px}
+.form-input:focus{outline:none;border-color:var(--navy)}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* INVOICE TRACKER */
+.inv-tracker{margin:0 16px 12px;background:white;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.inv-tracker-header{background:var(--navy);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.inv-tracker-title{color:white;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.inv-tracker-table{width:100%;border-collapse:collapse;font-size:13px}
+.inv-tracker-table th{background:var(--paper-warm);padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);border-bottom:1px solid var(--border)}
+.inv-tracker-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.inv-tracker-table tr:last-child td{border-bottom:none}
+.inv-status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.inv-status-paid{background:#d4edd9;color:var(--teal)}
+.inv-status-sent{background:#fef3c7;color:#92400e}
+.inv-status-none{background:var(--paper-warm);color:var(--ink-muted)}
+.inv-status-overdue{background:var(--salmon-light);color:var(--crimson)}
 /* CALENDAR */
 .cal-wrapper{overflow-x:auto;padding:0 16px 16px}
 .cal-table{width:100%;border-collapse:collapse;min-width:520px;background:white;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
@@ -51,12 +64,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .cal-table tr:last-child td{border-bottom:none}
 .cal-month{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;min-width:68px;border-right:1px solid var(--border);background:var(--paper-warm);padding:8px 10px}
 .cal-date-cell{min-width:40px;text-align:center;padding:4px 2px;border-right:1px solid #ece8e0}
-.date-num{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;margin:0 auto;font-size:13px;transition:all .15s;cursor:pointer;user-select:none;font-family:'Cormorant Garamond',serif;font-weight:600}
+.date-num{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;margin:0 auto;font-size:17px;transition:all .15s;cursor:pointer;user-select:none;font-family:'Cormorant Garamond',serif;font-weight:600}
 .date-num.lesson{color:var(--ink)}.date-num.lesson:hover{background:var(--paper-warm)}
 .date-num.closed{background:var(--teal)!important;color:white!important}
 .date-num.performance{background:var(--salmon)!important;color:white!important}
 .date-num.junior-cancelled{background:var(--salmon-light);color:var(--ink-soft)}
-.date-num.empty{cursor:default}
 .cal-row-special td{background:#fdf5f3!important}
 .cal-notes{font-family:'DM Sans',sans-serif;font-size:11px;color:var(--ink-soft);padding:6px 10px;min-width:160px;line-height:1.5}
 .note-red{color:var(--crimson)}.note-perf{color:var(--crimson);font-style:italic}
@@ -99,11 +111,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .person-actions{margin-left:auto;display:flex;gap:6px}
 .class-badge{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:2px 8px;border-radius:20px}
 .badge-junior{background:#f5d5cc;color:var(--crimson)}.badge-senior{background:#d0d8f0;color:var(--navy)}.badge-both{background:#d4edd9;color:var(--teal)}
-/* INVOICE */
+/* INVOICE PREVIEW */
 .invoice-preview{background:white;border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin:0 16px 12px;font-size:13px;line-height:1.6}
 .invoice-header-bar{background:var(--navy);margin:-24px -24px 20px;padding:18px 24px;display:flex;justify-content:space-between;align-items:flex-start}
 .invoice-brand{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--salmon);font-weight:600}
-.invoice-school-name{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px}
 .invoice-meta{text-align:right;color:rgba(255,255,255,.65);font-size:11px;line-height:1.8}
 .invoice-from-to{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
 .invoice-section-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-muted);font-weight:600;margin-bottom:4px}
@@ -113,8 +124,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .invoice-table td{padding:8px 12px;border-bottom:1px solid var(--border)}
 .invoice-table tr:nth-child(even) td{background:var(--paper-warm)}
 .invoice-total-row td{border-top:2px solid var(--navy)!important;font-weight:700;font-size:14px}
-.invoice-grand{text-align:right;margin-top:10px;font-size:18px;font-weight:700;font-family:'Cormorant Garamond',serif}
-.invoice-grand span{color:var(--crimson)}
 .invoice-payment{background:var(--paper-warm);border-radius:var(--radius-sm);padding:12px 14px;margin-top:14px;font-size:12px}
 .invoice-payment-title{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:5px}
 /* SETUP */
@@ -152,6 +161,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .instruction-step{counter-increment:step;display:flex;gap:10px;margin-bottom:10px;font-size:13px;line-height:1.5}
 .instruction-step::before{content:counter(step);background:var(--crimson);color:white;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px}
 @media(min-width:640px){.main{max-width:640px;margin:0 auto}.bottom-nav{max-width:640px;left:50%;transform:translateX(-50%)}}
+/* CSV import */
+.csv-drop{border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;color:var(--ink-muted);font-size:13px;cursor:pointer;transition:all .2s;margin-bottom:12px}
+.csv-drop:hover{border-color:var(--crimson);color:var(--crimson);background:var(--salmon-light)}
+.csv-preview-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px}
+.csv-preview-row:last-child{border-bottom:none}
 </style>
 </head>
 <body>
@@ -166,33 +180,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 </div>
 <div class="setup-overlay" id="setupOverlay">
   <div class="setup-card">
-    <div class="setup-brand">Harrow <span>Chinese</span> School</div>
+    <div class="setup-brand">Harrow <span>Chinese School</span> Dance Group</div>
     <div class="setup-tagline">Register & Invoice System</div>
     <div class="step-dots" id="setupDots"></div>
     <div class="setup-step active" id="step0">
-      <div class="setup-step-title">Connect Google Sheets</div>
-      <div class="setup-step-sub">All data lives in a Google Sheet you own. One-time setup (~20 min).</div>
-      <div class="instruction-steps">
-        <div class="instruction-step">Go to <a href="https://console.cloud.google.com" target="_blank" class="gsheet-link">console.cloud.google.com</a> and create a new project.</div>
-        <div class="instruction-step">Enable <strong>Google Sheets API</strong> and <strong>Google Drive API</strong>.</div>
-        <div class="instruction-step">Credentials → Create OAuth 2.0 Client ID → Web Application. Add your app URL to Authorised JavaScript Origins.</div>
-        <div class="instruction-step">Copy your <strong>Client ID</strong> and paste below.</div>
+      <div class="setup-step-title">Welcome</div>
+      <div class="setup-step-sub">Choose how to get started.</div>
+      <div style="margin-bottom:12px;padding:14px;background:var(--paper-warm);border-radius:8px;text-align:center;">
+        <strong style="color:var(--navy);display:block;margin-bottom:5px;">Load 2024–25 & 2025–26 dates</strong>
+        <span style="font-size:12px;color:var(--ink-soft);">Pre-loaded with all confirmed term dates and students from CSV.</span>
+        <button class="btn btn-teal btn-full" style="margin-top:10px;" onclick="quickStart()">Quick Start →</button>
       </div>
-      <div class="form-group" style="margin-top:14px;">
-        <label class="form-label">Google OAuth Client ID</label>
-        <input type="text" class="form-input" id="setupClientId" placeholder="xxxx.apps.googleusercontent.com">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Sheet ID (blank = create new)</label>
-        <input type="text" class="form-input" id="setupSheetId" placeholder="/d/THIS_PART/edit">
-      </div>
-      <div id="quickStartBox" style="margin-top:12px;padding:14px;background:var(--paper-warm);border-radius:8px;text-align:center;">
-        <strong style="color:var(--navy);display:block;margin-bottom:5px;">Skip setup — load 2025–26 dates</strong>
-        <span style="font-size:12px;color:var(--ink-soft);">Start immediately with pre-loaded term dates.</span>
-        <button class="btn btn-teal btn-full" style="margin-top:10px;" onclick="quickStart()">Load 2025–26 & Start →</button>
-      </div>
-      <div style="display:flex;gap:10px;margin-top:10px;">
-        <button class="btn btn-ghost btn-sm" onclick="skipSetup()">Skip (demo mode)</button>
+      <div style="text-align:center;font-size:12px;color:var(--ink-muted);margin-bottom:12px;">— or set up manually —</div>
+      <div class="form-group"><label class="form-label">Google OAuth Client ID (optional)</label><input type="text" class="form-input" id="setupClientId" placeholder="xxxx.apps.googleusercontent.com"></div>
+      <div class="form-group"><label class="form-label">Sheet ID (optional)</label><input type="text" class="form-input" id="setupSheetId" placeholder="From sheet URL"></div>
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="skipSetup()">Skip (demo)</button>
         <button class="btn btn-primary" style="flex:1;" onclick="connectGoogle()">Continue →</button>
       </div>
     </div>
@@ -205,29 +208,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
         <div class="form-group"><label class="form-label">Lesson Value (£)</label><input type="number" class="form-input" id="setupLessonValue" value="70" step="0.01"></div>
         <div class="form-group"><label class="form-label">Academic Year</label><input type="text" class="form-input" id="setupAcYear" value="2025-26"></div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="goSetupStep(0)">← Back</button>
-        <button class="btn btn-primary" style="flex:1;" onclick="goSetupStep(2)">Next →</button>
-      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="goSetupStep(0)">← Back</button><button class="btn btn-primary" style="flex:1;" onclick="goSetupStep(2)">Next →</button></div>
     </div>
     <div class="setup-step" id="step2">
       <div class="setup-step-title">Teachers</div>
-      <div class="setup-step-sub">Add up to 4 teachers. Invoice details added in Settings.</div>
+      <div class="setup-step-sub">Add up to 4 teachers.</div>
       <div id="setupTeacherList"></div>
       <button class="btn btn-ghost" style="width:100%;justify-content:center;" onclick="addSetupTeacher()" id="addTeacherBtn">+ Add Teacher</button>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="goSetupStep(1)">← Back</button>
-        <button class="btn btn-primary" style="flex:1;" onclick="goSetupStep(3)">Next →</button>
-      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="goSetupStep(1)">← Back</button><button class="btn btn-primary" style="flex:1;" onclick="goSetupStep(3)">Next →</button></div>
     </div>
     <div class="setup-step" id="step3">
-      <div class="setup-step-title">Generate Term Dates</div>
-      <div class="setup-step-sub">All Saturdays generated — edit afterwards.</div>
+      <div class="setup-step-title">Term Dates</div>
+      <div class="setup-step-sub">Generate Saturdays per term.</div>
       <div id="setupTermsList"></div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="goSetupStep(2)">← Back</button>
-        <button class="btn btn-primary" style="flex:1;" onclick="finishSetup()">Finish Setup ✓</button>
-      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="goSetupStep(2)">← Back</button><button class="btn btn-primary" style="flex:1;" onclick="finishSetup()">Finish ✓</button></div>
     </div>
   </div>
 </div>
@@ -235,34 +229,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
   <div class="modal"><div class="modal-handle"></div><div id="modalBody"></div></div>
 </div>
 <header class="app-header">
-  <div class="app-title-block">
-    <div class="app-title">Harrow Chinese School</div>
-    <div class="app-subtitle">Register & Invoice System</div>
-  </div>
+  <div class="app-title-block"><div class="app-title">Harrow Chinese School Dance Group</div><div class="app-subtitle">Register & Invoice System</div></div>
   <div class="sync-status sync-none" id="syncStatus" onclick="syncNow()">Offline</div>
 </header>
 <main class="main">
   <div class="page active" id="pageRegister">
-    <div class="section-header">
-      <div><div class="section-title">Register</div><div class="section-sub" id="registerSub">Weekly attendance</div></div>
-    </div>
+    <div class="section-header"><div><div class="section-title">Register</div><div class="section-sub" id="registerSub">Weekly attendance</div></div></div>
     <div class="register-controls">
       <select class="term-select" id="termSelector" onchange="loadRegister()"></select>
       <button class="btn btn-sm btn-ghost" onclick="jumpToToday()">Today</button>
     </div>
     <div class="scroll-hint">← scroll dates →</div>
-    <div class="register-wrapper" id="registerWrapper">
-      <div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No register yet</h3><p>Set up terms and dates to begin</p></div>
-    </div>
+    <div class="register-wrapper" id="registerWrapper"><div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No register yet</h3><p>Set up terms and dates to begin</p></div></div>
   </div>
   <div class="page" id="pageDates">
-    <div class="section-header">
-      <div><div class="section-title">Term Dates</div><div class="section-sub">Tap any date to change its type</div></div>
-      <button class="btn btn-sm btn-primary" onclick="showAddDateModal()">+ Date</button>
-    </div>
+    <div class="section-header"><div><div class="section-title">Term Dates</div><div class="section-sub">Tap any date to change its type</div></div><button class="btn btn-sm btn-primary" onclick="showAddDateModal()">+ Date</button></div>
     <div class="register-controls">
       <select class="term-select" id="termSelectorDates" onchange="loadDatesPage()"></select>
       <button class="btn btn-sm btn-ghost" onclick="showGenerateModal()">⟳ Generate</button>
+    </div>
+    <!-- INVOICE TRACKER -->
+    <div class="inv-tracker fade-in">
+      <div class="inv-tracker-header"><span class="inv-tracker-title">Invoice Tracker</span><button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:white;font-size:11px;" onclick="showInvTrackerEdit()">Edit</button></div>
+      <table class="inv-tracker-table"><thead><tr><th>Teacher</th><th>Invoiced to</th><th>Status</th><th>Date sent</th></tr></thead><tbody id="invTrackerBody"></tbody></table>
     </div>
     <div class="cal-legend">
       <div class="leg-item"><div class="leg-dot" style="border:1.5px solid #ccc;background:white;color:var(--ink);font-size:9px;font-weight:700;">6</div><span>Lesson</span></div>
@@ -279,7 +268,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
       <div id="teacherList"></div>
     </div>
     <div class="card fade-in">
-      <div class="card-header"><span class="card-title">Students</span><button class="btn btn-sm btn-ghost" onclick="showAddPersonModal('student')">+ Add</button></div>
+      <div class="card-header"><span class="card-title">Students</span><div style="display:flex;gap:6px;"><button class="btn btn-sm btn-ghost" onclick="showImportCSVModal()">↑ Import CSV</button><button class="btn btn-sm btn-ghost" onclick="showAddPersonModal('student')">+ Add</button></div></div>
       <div id="studentList"></div>
     </div>
   </div>
@@ -306,113 +295,169 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
   </div>
   <div class="page" id="pageSettings">
     <div class="section-header"><div><div class="section-title">Settings</div></div></div>
-    <div class="card fade-in">
-      <div class="card-header"><span class="card-title">School Details</span></div>
-      <div class="card-body">
-        <div class="form-group"><label class="form-label">School Name</label><input type="text" class="form-input" id="settSchoolName"></div>
-        <div class="form-group"><label class="form-label">School Address</label><textarea class="form-input" id="settSchoolAddress" rows="3"></textarea></div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Lesson Value (£)</label><input type="number" class="form-input" id="settLessonValue" step="0.01"></div>
-          <div class="form-group"><label class="form-label">Academic Year</label><input type="text" class="form-input" id="settAcYear"></div>
-        </div>
-        <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+    <div class="card fade-in"><div class="card-header"><span class="card-title">School Details</span></div><div class="card-body">
+      <div class="form-group"><label class="form-label">School Name</label><input type="text" class="form-input" id="settSchoolName"></div>
+      <div class="form-group"><label class="form-label">School Address</label><textarea class="form-input" id="settSchoolAddress" rows="3"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Lesson Value (£)</label><input type="number" class="form-input" id="settLessonValue" step="0.01"></div>
+        <div class="form-group"><label class="form-label">Academic Year</label><input type="text" class="form-input" id="settAcYear"></div>
       </div>
-    </div>
-    <div class="card fade-in">
-      <div class="card-header"><span class="card-title">Google Sheets</span></div>
-      <div class="card-body">
-        <div class="form-group"><label class="form-label">OAuth Client ID</label><input type="text" class="form-input" id="settClientId"></div>
-        <div class="form-group"><label class="form-label">Sheet ID</label><input type="text" class="form-input" id="settSheetId"></div>
-        <div style="display:flex;gap:8px;"><button class="btn btn-navy" onclick="reconnectGoogle()">Reconnect</button><button class="btn btn-ghost" onclick="saveGoogleSettings()">Save</button></div>
-      </div>
-    </div>
-    <div class="card fade-in">
-      <div class="card-header"><span class="card-title">Term Management</span></div>
-      <div class="card-body"><div id="termManageList"></div><button class="btn btn-ghost btn-full" style="margin-top:8px;" onclick="showAddTermModal()">+ Add Term</button></div>
-    </div>
-    <div class="card fade-in" id="teacherSettingsCard">
-      <div class="card-header"><span class="card-title">Teacher Invoice Details</span></div>
-      <div id="teacherSettingsBody"></div>
-    </div>
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+    </div></div>
+    <div class="card fade-in"><div class="card-header"><span class="card-title">Google Sheets</span></div><div class="card-body">
+      <div class="form-group"><label class="form-label">OAuth Client ID</label><input type="text" class="form-input" id="settClientId"></div>
+      <div class="form-group"><label class="form-label">Sheet ID</label><input type="text" class="form-input" id="settSheetId"></div>
+      <div style="display:flex;gap:8px;"><button class="btn btn-navy" onclick="reconnectGoogle()">Reconnect</button><button class="btn btn-ghost" onclick="saveGoogleSettings()">Save</button></div>
+    </div></div>
+    <div class="card fade-in"><div class="card-header"><span class="card-title">Term Management</span></div><div class="card-body"><div id="termManageList"></div><button class="btn btn-ghost btn-full" style="margin-top:8px;" onclick="showAddTermModal()">+ Add Term</button></div></div>
+    <div class="card fade-in" id="teacherSettingsCard"><div class="card-header"><span class="card-title">Teacher Invoice Details</span></div><div id="teacherSettingsBody"></div></div>
     <div style="height:24px;"></div>
   </div>
 </main>
 <nav class="bottom-nav">
-  <button class="nav-btn active" id="navRegister" onclick="showPage('Register')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg>Register
-  </button>
-  <button class="nav-btn" id="navDates" onclick="showPage('Dates')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="3"/></svg>Dates
-  </button>
-  <button class="nav-btn" id="navPeople" onclick="showPage('People')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 2.7-6 6-6s6 2 6 6"/><circle cx="17" cy="10" r="2.5"/><path d="M21 20c0-3-1.5-4.5-4-4.5"/></svg>People
-  </button>
-  <button class="nav-btn" id="navInvoices" onclick="showPage('Invoices')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg>Invoices
-  </button>
-  <button class="nav-btn" id="navSettings" onclick="showPage('Settings')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings
-  </button>
+  <button class="nav-btn active" id="navRegister" onclick="showPage('Register')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg>Register</button>
+  <button class="nav-btn" id="navDates" onclick="showPage('Dates')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="3"/></svg>Dates</button>
+  <button class="nav-btn" id="navPeople" onclick="showPage('People')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 2.7-6 6-6s6 2 6 6"/><circle cx="17" cy="10" r="2.5"/><path d="M21 20c0-3-1.5-4.5-4-4.5"/></svg>People</button>
+  <button class="nav-btn" id="navInvoices" onclick="showPage('Invoices')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg>Invoices</button>
+  <button class="nav-btn" id="navSettings" onclick="showPage('Settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</button>
 </nav>
 <script>
-const PRELOADED={terms:[
-  {id:'2025_26_T1',name:'Autumn',label:'Autumn 2025',dates:[
-    {id:'D20250906',date:'2025-09-06',type:'junior-cancelled',label:'Senior only'},
-    {id:'D20250913',date:'2025-09-13',type:'lesson',label:''},
-    {id:'D20250920',date:'2025-09-20',type:'lesson',label:''},
-    {id:'D20250927',date:'2025-09-27',type:'lesson',label:''},
-    {id:'D20251004',date:'2025-10-04',type:'lesson',label:''},
-    {id:'D20251011',date:'2025-10-11',type:'lesson',label:''},
-    {id:'D20251018',date:'2025-10-18',type:'lesson',label:''},
-    {id:'D20251025',date:'2025-10-25',type:'lesson',label:''},
-    {id:'D20251101',date:'2025-11-01',type:'closed',label:'Half Term'},
-    {id:'D20251108',date:'2025-11-08',type:'lesson',label:''},
-    {id:'D20251115',date:'2025-11-15',type:'lesson',label:''},
-    {id:'D20251122',date:'2025-11-22',type:'lesson',label:''},
-    {id:'D20251129',date:'2025-11-29',type:'lesson',label:''},
-    {id:'D20251206',date:'2025-12-06',type:'lesson',label:''},
-    {id:'D20251213',date:'2025-12-13',type:'lesson',label:''},
-    {id:'D20251220',date:'2025-12-20',type:'closed',label:"X'mas Holiday"},
-    {id:'D20251227',date:'2025-12-27',type:'closed',label:"X'mas Holiday"}
-  ]},
-  {id:'2025_26_T2',name:'Spring',label:'Spring 2026',dates:[
-    {id:'D20260103',date:'2026-01-03',type:'closed',label:'New Year Holiday'},
-    {id:'D20260110',date:'2026-01-10',type:'lesson',label:''},
-    {id:'D20260117',date:'2026-01-17',type:'lesson',label:''},
-    {id:'D20260124',date:'2026-01-24',type:'lesson',label:''},
-    {id:'D20260131',date:'2026-01-31',type:'lesson',label:''},
-    {id:'D20260207',date:'2026-02-07',type:'lesson',label:''},
-    {id:'D20260214',date:'2026-02-14',type:'lesson',label:''},
-    {id:'D20260221',date:'2026-02-21',type:'closed',label:'Half Term'},
-    {id:'D20260228',date:'2026-02-28',type:'performance',label:'CNY Celebration'},
-    {id:'D20260307',date:'2026-03-07',type:'lesson',label:''},
-    {id:'D20260314',date:'2026-03-14',type:'lesson',label:''},
-    {id:'D20260321',date:'2026-03-21',type:'lesson',label:''},
-    {id:'D20260328',date:'2026-03-28',type:'lesson',label:''}
-  ]},
-  {id:'2025_26_T3',name:'Summer',label:'Summer 2026',dates:[
-    {id:'D20260404',date:'2026-04-04',type:'closed',label:'Easter Holiday'},
-    {id:'D20260411',date:'2026-04-11',type:'closed',label:'Easter Holiday'},
-    {id:'D20260418',date:'2026-04-18',type:'closed',label:'Easter Holiday'},
-    {id:'D20260425',date:'2026-04-25',type:'lesson',label:''},
-    {id:'D20260502',date:'2026-05-02',type:'lesson',label:''},
-    {id:'D20260509',date:'2026-05-09',type:'lesson',label:''},
-    {id:'D20260516',date:'2026-05-16',type:'lesson',label:''},
-    {id:'D20260523',date:'2026-05-23',type:'lesson',label:''},
-    {id:'D20260530',date:'2026-05-30',type:'closed',label:'Half Term'},
-    {id:'D20260606',date:'2026-06-06',type:'lesson',label:''},
-    {id:'D20260613',date:'2026-06-13',type:'lesson',label:''},
-    {id:'D20260620',date:'2026-06-20',type:'lesson',label:''},
-    {id:'D20260627',date:'2026-06-27',type:'lesson',label:''},
-    {id:'D20260704',date:'2026-07-04',type:'lesson',label:''},
-    {id:'D20260711',date:'2026-07-11',type:'performance',label:'End of Year Ceremony (散學禮)'}
-  ]}
-]};
+// ── PRE-LOADED DATA ──
+const PRELOADED={
+  settings:{schoolName:'Harrow Chinese School',schoolAddress:'Pinner High School\nBeaulieu Dr, Pinner\nHA5 1NB',lessonValue:70,academicYear:'2025-26'},
+  terms:[
+    // 2024-25
+    {id:'2024_25_T1',name:'Autumn',label:'Autumn 2024',dates:[
+      {id:'D20240907',date:'2024-09-07',type:'lesson',label:''},
+      {id:'D20240914',date:'2024-09-14',type:'lesson',label:''},
+      {id:'D20240921',date:'2024-09-21',type:'lesson',label:''},
+      {id:'D20240928',date:'2024-09-28',type:'lesson',label:''},
+      {id:'D20241005',date:'2024-10-05',type:'lesson',label:''},
+      {id:'D20241012',date:'2024-10-12',type:'lesson',label:''},
+      {id:'D20241019',date:'2024-10-19',type:'lesson',label:''},
+      {id:'D20241026',date:'2024-10-26',type:'lesson',label:''},
+      {id:'D20241102',date:'2024-11-02',type:'closed',label:'Half Term'},
+      {id:'D20241109',date:'2024-11-09',type:'lesson',label:''},
+      {id:'D20241116',date:'2024-11-16',type:'lesson',label:''},
+      {id:'D20241123',date:'2024-11-23',type:'lesson',label:''},
+      {id:'D20241130',date:'2024-11-30',type:'lesson',label:''},
+      {id:'D20241207',date:'2024-12-07',type:'lesson',label:''},
+      {id:'D20241214',date:'2024-12-14',type:'lesson',label:''},
+      {id:'D20241221',date:'2024-12-21',type:'closed',label:"X'mas Holiday"},
+      {id:'D20241228',date:'2024-12-28',type:'closed',label:"X'mas Holiday"}
+    ]},
+    {id:'2024_25_T2',name:'Spring',label:'Spring 2025',dates:[
+      {id:'D20250104',date:'2025-01-04',type:'closed',label:'New Year Holiday'},
+      {id:'D20250111',date:'2025-01-11',type:'lesson',label:''},
+      {id:'D20250118',date:'2025-01-18',type:'lesson',label:''},
+      {id:'D20250125',date:'2025-01-25',type:'lesson',label:''},
+      {id:'D20250201',date:'2025-02-01',type:'performance',label:'CNY Celebration (年初四)'},
+      {id:'D20250208',date:'2025-02-08',type:'lesson',label:''},
+      {id:'D20250215',date:'2025-02-15',type:'lesson',label:''},
+      {id:'D20250222',date:'2025-02-22',type:'closed',label:'Half Term'},
+      {id:'D20250301',date:'2025-03-01',type:'lesson',label:''},
+      {id:'D20250308',date:'2025-03-08',type:'lesson',label:''},
+      {id:'D20250315',date:'2025-03-15',type:'lesson',label:''},
+      {id:'D20250322',date:'2025-03-22',type:'lesson',label:''},
+      {id:'D20250329',date:'2025-03-29',type:'lesson',label:''}
+    ]},
+    {id:'2024_25_T3',name:'Summer',label:'Summer 2025',dates:[
+      {id:'D20250405',date:'2025-04-05',type:'closed',label:'Easter Holiday'},
+      {id:'D20250412',date:'2025-04-12',type:'closed',label:'Easter Holiday'},
+      {id:'D20250419',date:'2025-04-19',type:'closed',label:'Easter Holiday'},
+      {id:'D20250426',date:'2025-04-26',type:'lesson',label:''},
+      {id:'D20250503',date:'2025-05-03',type:'lesson',label:''},
+      {id:'D20250510',date:'2025-05-10',type:'lesson',label:''},
+      {id:'D20250517',date:'2025-05-17',type:'lesson',label:''},
+      {id:'D20250524',date:'2025-05-24',type:'lesson',label:''},
+      {id:'D20250531',date:'2025-05-31',type:'closed',label:'Half Term'},
+      {id:'D20250607',date:'2025-06-07',type:'lesson',label:''},
+      {id:'D20250614',date:'2025-06-14',type:'lesson',label:''},
+      {id:'D20250621',date:'2025-06-21',type:'lesson',label:''},
+      {id:'D20250628',date:'2025-06-28',type:'lesson',label:''},
+      {id:'D20250705',date:'2025-07-05',type:'lesson',label:''},
+      {id:'D20250712',date:'2025-07-12',type:'performance',label:'End of Year Ceremony (散學禮)'}
+    ]},
+    // 2025-26
+    {id:'2025_26_T1',name:'Autumn',label:'Autumn 2025',dates:[
+      {id:'D20250906',date:'2025-09-06',type:'junior-cancelled',label:'Senior only'},
+      {id:'D20250913',date:'2025-09-13',type:'lesson',label:''},
+      {id:'D20250920',date:'2025-09-20',type:'lesson',label:''},
+      {id:'D20250927',date:'2025-09-27',type:'lesson',label:''},
+      {id:'D20251004',date:'2025-10-04',type:'lesson',label:''},
+      {id:'D20251011',date:'2025-10-11',type:'lesson',label:''},
+      {id:'D20251018',date:'2025-10-18',type:'lesson',label:''},
+      {id:'D20251025',date:'2025-10-25',type:'lesson',label:''},
+      {id:'D20251101',date:'2025-11-01',type:'closed',label:'Half Term'},
+      {id:'D20251108',date:'2025-11-08',type:'lesson',label:''},
+      {id:'D20251115',date:'2025-11-15',type:'lesson',label:''},
+      {id:'D20251122',date:'2025-11-22',type:'lesson',label:''},
+      {id:'D20251129',date:'2025-11-29',type:'lesson',label:''},
+      {id:'D20251206',date:'2025-12-06',type:'lesson',label:''},
+      {id:'D20251213',date:'2025-12-13',type:'lesson',label:''},
+      {id:'D20251220',date:'2025-12-20',type:'closed',label:"X'mas Holiday"},
+      {id:'D20251227',date:'2025-12-27',type:'closed',label:"X'mas Holiday"}
+    ]},
+    {id:'2025_26_T2',name:'Spring',label:'Spring 2026',dates:[
+      {id:'D20260103',date:'2026-01-03',type:'closed',label:'New Year Holiday'},
+      {id:'D20260110',date:'2026-01-10',type:'lesson',label:''},
+      {id:'D20260117',date:'2026-01-17',type:'lesson',label:''},
+      {id:'D20260124',date:'2026-01-24',type:'lesson',label:''},
+      {id:'D20260131',date:'2026-01-31',type:'lesson',label:''},
+      {id:'D20260207',date:'2026-02-07',type:'lesson',label:''},
+      {id:'D20260214',date:'2026-02-14',type:'lesson',label:''},
+      {id:'D20260221',date:'2026-02-21',type:'closed',label:'Half Term'},
+      {id:'D20260228',date:'2026-02-28',type:'performance',label:'CNY Celebration'},
+      {id:'D20260307',date:'2026-03-07',type:'lesson',label:''},
+      {id:'D20260314',date:'2026-03-14',type:'lesson',label:''},
+      {id:'D20260321',date:'2026-03-21',type:'lesson',label:''},
+      {id:'D20260328',date:'2026-03-28',type:'lesson',label:''}
+    ]},
+    {id:'2025_26_T3',name:'Summer',label:'Summer 2026',dates:[
+      {id:'D20260404',date:'2026-04-04',type:'closed',label:'Easter Holiday'},
+      {id:'D20260411',date:'2026-04-11',type:'closed',label:'Easter Holiday'},
+      {id:'D20260418',date:'2026-04-18',type:'closed',label:'Easter Holiday'},
+      {id:'D20260425',date:'2026-04-25',type:'lesson',label:''},
+      {id:'D20260502',date:'2026-05-02',type:'lesson',label:''},
+      {id:'D20260509',date:'2026-05-09',type:'lesson',label:''},
+      {id:'D20260516',date:'2026-05-16',type:'lesson',label:''},
+      {id:'D20260523',date:'2026-05-23',type:'lesson',label:''},
+      {id:'D20260530',date:'2026-05-30',type:'closed',label:'Half Term'},
+      {id:'D20260606',date:'2026-06-06',type:'lesson',label:''},
+      {id:'D20260613',date:'2026-06-13',type:'lesson',label:''},
+      {id:'D20260620',date:'2026-06-20',type:'lesson',label:''},
+      {id:'D20260627',date:'2026-06-27',type:'lesson',label:''},
+      {id:'D20260704',date:'2026-07-04',type:'lesson',label:''},
+      {id:'D20260711',date:'2026-07-11',type:'performance',label:'End of Year Ceremony (散學禮)'}
+    ]}
+  ],
+  students:[
+    {id:'CSV_S1',name:'Emily Garner',chineseName:'簡美琳',dob:'03/10/2015',classStatus:'junior',hcsStudent:true,archived:false},
+    {id:'CSV_S2',name:'Zi Ting Chan',chineseName:'陳紫晴',dob:'23/09/2009',classStatus:'senior',hcsStudent:false,archived:false},
+    {id:'CSV_S3',name:'Jasmin Lai Amin',chineseName:'',dob:'',classStatus:'senior',hcsStudent:false,archived:false},
+    {id:'CSV_S4',name:'Sophie Kong',chineseName:'江一琛',dob:'04/10/2011',classStatus:'senior',hcsStudent:true,archived:false},
+    {id:'CSV_S5',name:'Jessie Chan',chineseName:'Chan Bui Ka',dob:'02/08/2016',classStatus:'junior',hcsStudent:true,archived:false},
+    {id:'CSV_S6',name:'Abigail Sum Yu Cheung',chineseName:'Cheung Sum Yu',dob:'02/08/2011',classStatus:'senior',hcsStudent:true,archived:false},
+    {id:'CSV_S7',name:'Annabelle Tze Yu Cheung',chineseName:'Cheung Tze Yu',dob:'02/08/2011',classStatus:'senior',hcsStudent:true,archived:false},
+    {id:'CSV_S8',name:'Hayley Wan',chineseName:'尹馨慧',dob:'11/07/2012',classStatus:'senior',hcsStudent:true,archived:false},
+    {id:'CSV_S9',name:'Kira Pau',chineseName:'',dob:'07/08/2013',classStatus:'senior',hcsStudent:false,archived:false},
+    {id:'CSV_S10',name:'Hazel Lam',chineseName:'林莊飛',dob:'27/05/2015',classStatus:'senior',hcsStudent:false,archived:false},
+    {id:'CSV_S11',name:'Aryana Tang',chineseName:'Hoi Suen',dob:'26/12/2016',classStatus:'junior',hcsStudent:true,archived:false},
+    {id:'CSV_S12',name:'Harriet Brady',chineseName:'潘樂恩',dob:'19/02/2019',classStatus:'junior',hcsStudent:true,archived:false},
+    {id:'CSV_S13',name:'Eris Hok Yee Wai Turner',chineseName:'韋斈宜',dob:'25/06/2020',classStatus:'junior',hcsStudent:true,archived:false}
+  ]
+};
 
-let APP={settings:{schoolName:'Harrow Chinese School',schoolAddress:'Pinner High School\nBeaulieu Dr, Pinner\nHA5 1NB',lessonValue:70,academicYear:'2025-26',clientId:'',sheetId:''},teachers:[],students:[],terms:[],attendance:{},demoMode:false,setupDone:false};
+let APP={
+  settings:{schoolName:'Harrow Chinese School',schoolAddress:'Pinner High School\nBeaulieu Dr, Pinner\nHA5 1NB',lessonValue:70,academicYear:'2025-26',clientId:'',sheetId:''},
+  teachers:[],students:[],terms:[],attendance:{},
+  // invoiceTracker: {teacherId: {invoicedToTermId, status:'none'|'sent'|'paid'|'overdue', dateSent}}
+  invoiceTracker:{},
+  demoMode:false,setupDone:false
+};
 
-function saveLocal(){try{localStorage.setItem('hcs_v3',JSON.stringify(APP));}catch(e){}}
-function loadLocal(){try{const d=localStorage.getItem('hcs_v3');if(d){Object.assign(APP,JSON.parse(d));return true;}}catch(e){}return false;}
+function saveLocal(){try{localStorage.setItem('hcs_v4',JSON.stringify(APP));}catch(e){}}
+function loadLocal(){try{const d=localStorage.getItem('hcs_v4');if(d){Object.assign(APP,JSON.parse(d));return true;}}catch(e){}return false;}
 
 function showPage(n){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -421,31 +466,29 @@ function showPage(n){
   document.getElementById('nav'+n).classList.add('active');
   closeCellPopup();
   if(n==='Register')loadRegister();
-  if(n==='Dates')loadDatesPage();
+  if(n==='Dates'){loadDatesPage();renderInvTracker();}
   if(n==='People')loadPeoplePage();
   if(n==='Invoices')loadInvoicesPage();
   if(n==='Settings')loadSettingsPage();
 }
 
-let curStep=0,setupTCount=0;
+// ── SETUP ──
+let curStep=0,setupTC=0;
 function initSetupDots(){
   const d=document.getElementById('setupDots');d.innerHTML='';
   for(let i=0;i<4;i++){const dot=document.createElement('div');dot.className='step-dot'+(i===0?' active':'');dot.id='dot'+i;d.appendChild(dot);}
   const tl=document.getElementById('setupTermsList');
-  tl.innerHTML=['Autumn','Spring','Summer'].map((n,i)=>`<div class="card" style="margin:0 0 10px;padding:14px;"><div style="font-weight:700;font-size:13px;margin-bottom:10px;">${n} Term</div><div class="form-row"><div class="form-group" style="margin:0;"><label class="form-label">Start</label><input type="date" class="form-input" id="t${i+1}start"></div><div class="form-group" style="margin:0;"><label class="form-label">End</label><input type="date" class="form-input" id="t${i+1}end"></div></div></div>`).join('');
+  tl.innerHTML=['Autumn','Spring','Summer'].map((n,i)=>`<div style="margin-bottom:10px;padding:14px;background:var(--paper-warm);border-radius:8px;"><div style="font-weight:700;font-size:13px;margin-bottom:10px;">${n} Term</div><div class="form-row"><div class="form-group" style="margin:0;"><label class="form-label">Start</label><input type="date" class="form-input" id="t${i+1}start"></div><div class="form-group" style="margin:0;"><label class="form-label">End</label><input type="date" class="form-input" id="t${i+1}end"></div></div></div>`).join('');
 }
-function goSetupStep(n){
-  document.getElementById('step'+curStep).classList.remove('active');document.getElementById('dot'+curStep).classList.remove('active');
-  curStep=n;document.getElementById('step'+n).classList.add('active');document.getElementById('dot'+n).classList.add('active');
-}
+function goSetupStep(n){document.getElementById('step'+curStep).classList.remove('active');document.getElementById('dot'+curStep).classList.remove('active');curStep=n;document.getElementById('step'+n).classList.add('active');document.getElementById('dot'+n).classList.add('active');}
 function connectGoogle(){APP.settings.clientId=document.getElementById('setupClientId').value.trim();APP.settings.sheetId=document.getElementById('setupSheetId').value.trim();goSetupStep(1);}
 function skipSetup(){APP.demoMode=true;goSetupStep(1);}
 function addSetupTeacher(){
-  if(setupTCount>=4)return;setupTCount++;
+  if(setupTC>=4)return;setupTC++;
   const l=document.getElementById('setupTeacherList');const d=document.createElement('div');
   d.style.cssText='display:flex;gap:8px;margin-bottom:8px;';
-  d.innerHTML=`<input type="text" class="form-input setup-teacher-name" placeholder="Teacher ${setupTCount} full name">`;
-  l.appendChild(d);if(setupTCount>=4)document.getElementById('addTeacherBtn').style.display='none';
+  d.innerHTML=`<input type="text" class="form-input setup-teacher-name" placeholder="Teacher ${setupTC} full name">`;
+  l.appendChild(d);if(setupTC>=4)document.getElementById('addTeacherBtn').style.display='none';
 }
 function finishSetup(){
   APP.settings.schoolName=document.getElementById('setupSchoolName').value||'Harrow Chinese School';
@@ -460,16 +503,19 @@ function finishSetup(){
   for(let t=1;t<=3;t++){
     const s=document.getElementById('t'+t+'start').value,e=document.getElementById('t'+t+'end').value;
     const id=APP.settings.academicYear.replace('-','_')+'_T'+t;
-    APP.terms.push({id,name:tnames[t-1],label:`${tnames[t-1]} ${APP.settings.academicYear}`,dates:s&&e?generateSaturdays(s,e):[]});
+    APP.terms.push({id,name:tnames[t-1],label:`${tnames[t-1]} ${APP.settings.academicYear}`,dates:s&&e?genSaturdays(s,e):[]});
   }
   APP.setupDone=true;saveLocal();document.getElementById('setupOverlay').style.display='none';initApp();
 }
 function quickStart(){
   APP.terms=JSON.parse(JSON.stringify(PRELOADED.terms));
-  APP.settings.academicYear='2025-26';APP.setupDone=true;APP.demoMode=true;
-  saveLocal();document.getElementById('setupOverlay').style.display='none';initApp();showToast('2025–26 dates loaded ✓');
+  APP.students=JSON.parse(JSON.stringify(PRELOADED.students));
+  Object.assign(APP.settings,PRELOADED.settings);
+  APP.setupDone=true;APP.demoMode=true;
+  saveLocal();document.getElementById('setupOverlay').style.display='none';initApp();
+  showToast('2024–25 & 2025–26 data loaded ✓');
 }
-function generateSaturdays(s,e){
+function genSaturdays(s,e){
   const dates=[];let d=new Date(s+'T12:00:00');
   while(d.getDay()!==6)d.setDate(d.getDate()+1);
   const end=new Date(e+'T12:00:00');
@@ -477,16 +523,81 @@ function generateSaturdays(s,e){
   return dates;
 }
 
+// ── TERM SELECTORS ──
 function populateTermSelectors(){
   ['termSelector','termSelectorDates','invoiceFromTerm','invoiceToTerm'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     el.innerHTML=APP.terms.map(t=>`<option value="${t.id}">${t.label}</option>`).join('');
   });
+  // Default invoiceTo to last term
   const to=document.getElementById('invoiceToTerm');if(to&&APP.terms.length)to.value=APP.terms[APP.terms.length-1].id;
+  // Default dates selector to current/most recent active term
+  const dsel=document.getElementById('termSelectorDates');
+  if(dsel){
+    const today=new Date().toISOString().slice(0,10);
+    const cur=APP.terms.find(t=>t.dates.some(d=>d.date>=today));
+    if(cur)dsel.value=cur.id;
+  }
 }
 function getActiveTerm(sid='termSelector'){const sel=document.getElementById(sid);const id=sel?.value||APP.terms[0]?.id;return APP.terms.find(t=>t.id===id)||APP.terms[0];}
 
-// CALENDAR VIEW
+// ── INVOICE TRACKER ──
+function renderInvTracker(){
+  const tbody=document.getElementById('invTrackerBody');
+  const teachers=APP.teachers.filter(t=>!t.archived);
+  if(!teachers.length){tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--ink-muted);padding:16px;font-size:13px;">No teachers added yet</td></tr>`;return;}
+  tbody.innerHTML=teachers.map(t=>{
+    const rec=APP.invoiceTracker[t.id]||{};
+    const toTerm=rec.invoicedToTermId?APP.terms.find(x=>x.id===rec.invoicedToTermId):null;
+    const status=rec.status||'none';
+    const statusLabels={none:'Not invoiced',sent:'Invoice sent',paid:'Paid',overdue:'Overdue'};
+    const statusCls={none:'inv-status-none',sent:'inv-status-sent',paid:'inv-status-paid',overdue:'inv-status-overdue'};
+    return`<tr>
+      <td><strong>${t.name}</strong></td>
+      <td style="color:var(--ink-soft);font-size:12px;">${toTerm?toTerm.label:'—'}</td>
+      <td><span class="inv-status-badge ${statusCls[status]}">${statusLabels[status]}</span></td>
+      <td style="color:var(--ink-soft);font-size:12px;">${rec.dateSent||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function showInvTrackerEdit(){
+  const teachers=APP.teachers.filter(t=>!t.archived);
+  if(!teachers.length){showToast('No teachers yet');return;}
+  openModal(`<div class="modal-title">Update Invoice Status</div>
+    ${teachers.map(t=>{
+      const rec=APP.invoiceTracker[t.id]||{};
+      return`<div style="padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="font-weight:700;font-size:14px;margin-bottom:8px;">${t.name}</div>
+        <div class="form-row" style="margin-bottom:8px;">
+          <div class="form-group" style="margin:0;"><label class="form-label">Invoiced to term</label><select class="form-input" id="itrk_term_${t.id}">
+            <option value="">— not invoiced —</option>
+            ${APP.terms.map(x=>`<option value="${x.id}" ${rec.invoicedToTermId===x.id?'selected':''}>${x.label}</option>`).join('')}
+          </select></div>
+          <div class="form-group" style="margin:0;"><label class="form-label">Status</label><select class="form-input" id="itrk_status_${t.id}">
+            <option value="none" ${(rec.status||'none')==='none'?'selected':''}>Not invoiced</option>
+            <option value="sent" ${rec.status==='sent'?'selected':''}>Invoice sent</option>
+            <option value="paid" ${rec.status==='paid'?'selected':''}>Paid</option>
+            <option value="overdue" ${rec.status==='overdue'?'selected':''}>Overdue</option>
+          </select></div>
+        </div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Date sent</label><input type="date" class="form-input" id="itrk_date_${t.id}" value="${rec.dateSent||''}"></div>
+      </div>`;
+    }).join('')}
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveInvTracker()">Save</button></div>`);
+}
+
+function saveInvTracker(){
+  APP.teachers.filter(t=>!t.archived).forEach(t=>{
+    const termId=document.getElementById('itrk_term_'+t.id)?.value||'';
+    const status=document.getElementById('itrk_status_'+t.id)?.value||'none';
+    const dateSent=document.getElementById('itrk_date_'+t.id)?.value||'';
+    APP.invoiceTracker[t.id]={invoicedToTermId:termId||null,status,dateSent};
+  });
+  saveLocal();closeModal();renderInvTracker();showToast('Invoice tracker updated ✓');
+}
+
+// ── CALENDAR ──
 let activeCellPopup=null;
 function loadDatesPage(){
   const term=getActiveTerm('termSelectorDates');const wrapper=document.getElementById('calWrapper');
@@ -499,49 +610,47 @@ function loadDatesPage(){
     if(!byMonth[key])byMonth[key]={month:dt.toLocaleString('en-GB',{month:'long'}),dates:[]};
     byMonth[key].dates.push(d);
   });
-  let rows='';
+  let rows='';let rowIdx=0;
   Object.values(byMonth).forEach(({month,dates})=>{
     const notes=[];
     dates.forEach(d=>{
-      const dt=new Date(d.date+'T12:00:00');const day=dt.getDate();
-      const mon=dt.toLocaleString('en-GB',{month:'short'});
+      const dt=new Date(d.date+'T12:00:00');const day=dt.getDate();const mon=dt.toLocaleString('en-GB',{month:'short'});
       if(d.type==='closed')notes.push({txt:`${ordinal(day)} ${mon} – ${d.label||'Closed'}`,perf:false});
       if(d.type==='performance')notes.push({txt:`${ordinal(day)} ${mon} – ${d.label||'Performance'}`,perf:true});
       if(d.type==='junior-cancelled')notes.push({txt:`${ordinal(day)} ${mon}* – Senior class only`,perf:false});
     });
-    const hasSpecial=dates.some(d=>d.type==='closed'||d.type==='performance');
-    const rowCls=hasSpecial?'cal-row-special':'';
+    const isAlt=rowIdx%2===1;
+    const altBg=isAlt?'background:#fdf5f3;':'';
     const cells=[];
     for(let i=0;i<5;i++){
       const d=dates[i];
-      if(!d){cells.push(`<td class="cal-date-cell"></td>`);continue;}
+      if(!d){cells.push(`<td class="cal-date-cell" style="${altBg}"></td>`);continue;}
       const dt=new Date(d.date+'T12:00:00');const day=dt.getDate();
       const star=d.type==='junior-cancelled'||d.type==='performance'?'*':'';
-      cells.push(`<td class="cal-date-cell"><div class="date-num ${d.type}" onclick="openCellPopup(event,'${term.id}','${d.id}')">${day}${star}</div></td>`);
+      cells.push(`<td class="cal-date-cell" style="${altBg}"><div class="date-num ${d.type}" onclick="openCellPopup(event,'${term.id}','${d.id}')">${day}${star}</div></td>`);
     }
     const notesHtml=notes.map(n=>`<span class="${n.perf?'note-perf':'note-red'}">${n.txt}</span>`).join('<br>')||'';
-    rows+=`<tr class="${rowCls}"><td class="cal-month">${month}</td>${cells.join('')}<td class="cal-notes">${notesHtml}</td></tr>`;
+    rows+=`<tr><td class="cal-month" style="${altBg}">${month}</td>${cells.join('')}<td class="cal-notes" style="${altBg}">${notesHtml}</td></tr>`;
+    rowIdx++;
   });
-  wrapper.innerHTML=`<table class="cal-table"><thead><tr><th>Month</th><th style="text-align:center;min-width:40px;">1st</th><th style="text-align:center;min-width:40px;">2nd</th><th style="text-align:center;min-width:40px;">3rd</th><th style="text-align:center;min-width:40px;">4th</th><th style="text-align:center;min-width:40px;">5th</th><th>School closed / Special dates</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrapper.innerHTML=`<table class="cal-table"><thead><tr><th>Month</th><th style="min-width:44px;"></th><th style="min-width:44px;"></th><th style="min-width:44px;"></th><th style="min-width:44px;"></th><th style="min-width:44px;"></th><th>School closed / Special dates</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function ordinal(n){const s=['th','st','nd','rd'],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);}
 
 function openCellPopup(e,termId,dateId){
   e.stopPropagation();activeCellPopup={termId,dateId};
   const popup=document.getElementById('cellPopup');popup.style.display='block';
-  const rect=e.target.getBoundingClientRect();
-  let top=rect.bottom+4,left=rect.left;
+  const rect=e.target.getBoundingClientRect();let top=rect.bottom+4,left=rect.left;
   if(left+195>window.innerWidth)left=window.innerWidth-200;
   if(top+200>window.innerHeight)top=rect.top-200;
   popup.style.top=top+'px';popup.style.left=left+'px';
 }
 function setCellState(nt){
   if(!activeCellPopup)return;
-  const {termId,dateId}=activeCellPopup;
-  const term=APP.terms.find(t=>t.id===termId);if(!term)return;
+  const {termId,dateId}=activeCellPopup;const term=APP.terms.find(t=>t.id===termId);if(!term)return;
   if(nt==='remove'){
     const hasAtt=Object.keys(APP.attendance).some(k=>k.includes('|'+dateId+'|'));
-    if(hasAtt&&!confirm('This date has attendance data. Remove anyway?')){closeCellPopup();return;}
+    if(hasAtt&&!confirm('Attendance data exists. Remove anyway?')){closeCellPopup();return;}
     if(hasAtt)Object.keys(APP.attendance).forEach(k=>{if(k.includes('|'+dateId+'|'))delete APP.attendance[k];});
     term.dates=term.dates.filter(d=>d.id!==dateId);
   }else{const d=term.dates.find(x=>x.id===dateId);if(d)d.type=nt;}
@@ -584,11 +693,11 @@ function doGenerate(){
   const term=getActiveTerm('termSelectorDates');if(!term)return;
   const s=document.getElementById('genStart').value,e=document.getElementById('genEnd').value;
   if(!s||!e){showToast('Enter both dates');return;}
-  let added=0;generateSaturdays(s,e).forEach(d=>{if(!term.dates.find(x=>x.id===d.id)){term.dates.push(d);added++;}});
+  let added=0;genSaturdays(s,e).forEach(d=>{if(!term.dates.find(x=>x.id===d.id)){term.dates.push(d);added++;}});
   saveLocal();closeModal();loadDatesPage();showToast(`Added ${added} Saturday${added!==1?'s':''}`);
 }
 
-// REGISTER
+// ── REGISTER ──
 const CYCLES={present:'absent',absent:'na',na:'empty',empty:'present'};
 const SYMS={present:'✓',absent:'✗',na:'N/A',empty:''};
 const today=new Date().toISOString().slice(0,10);
@@ -609,15 +718,15 @@ function loadRegister(){
     html+=`<th class="${cls}"><div>${dt.getDate()}</div><div style="font-weight:300;opacity:.7;font-size:9px;">${dt.toLocaleString('en-GB',{month:'short'})}</div><div style="font-size:8px;opacity:.5;">${isPerf?'P':'L'}</div></th>`;
   });
   html+=`</tr></thead><tbody>`;
-  html+=secRow('Teachers',vis.length);teachers.forEach(p=>{html+=pRow(p,'teacher',term,vis);});
-  html+=secRow('Senior (高班)',vis.length);senior.forEach(p=>{html+=pRow(p,'student',term,vis);});
-  if(trans.length){html+=secRow('Transitioning',vis.length);trans.forEach(p=>{html+=pRow(p,'student',term,vis);});}
-  html+=secRow('Junior (初班)',vis.length);junior.forEach(p=>{html+=pRow(p,'student',term,vis);});
+  html+=sR('Teachers',vis.length);teachers.forEach(p=>{html+=pR(p,'teacher',term,vis);});
+  html+=sR('Senior (高班)',vis.length);senior.forEach(p=>{html+=pR(p,'student',term,vis);});
+  if(trans.length){html+=sR('Transitioning',vis.length);trans.forEach(p=>{html+=pR(p,'student',term,vis);});}
+  html+=sR('Junior (初班)',vis.length);junior.forEach(p=>{html+=pR(p,'student',term,vis);});
   html+=`</tbody></table>`;
   document.getElementById('registerWrapper').innerHTML=html;
 }
-function secRow(l,c){return `<tr class="section-row"><td class="sticky-name">${l}</td>${'<td></td>'.repeat(c)}</tr>`;}
-function pRow(p,type,term,dates){
+function sR(l,c){return`<tr class="section-row"><td class="sticky-name">${l}</td>${'<td></td>'.repeat(c)}</tr>`;}
+function pR(p,type,term,dates){
   let r=`<tr><td class="name-col">${p.name}${p.classStatus==='both'?' <span class="class-badge badge-both" style="font-size:9px;">T</span>':''}</td>`;
   dates.forEach(d=>{
     const key=`${term.id}|${d.id}|${p.id}`;const att=APP.attendance[key]||'empty';
@@ -636,24 +745,82 @@ function toggleAtt(key){
 function jumpToToday(){
   const w=document.getElementById('registerWrapper'),term=getActiveTerm();if(!term)return;
   const dates=[...term.dates].filter(d=>d.type!=='closed').sort((a,b)=>a.date.localeCompare(b.date));
-  const idx=dates.findIndex(d=>d.date>=today);if(idx>=0)w.scrollLeft=Math.max(0,128+idx*43-60);
+  const idx=dates.findIndex(d=>d.date>=today);
+  if(idx<0)return;
+  // Measure actual column width from the rendered table
+  const table=w.querySelector('.register-table');
+  if(!table){return;}
+  const headers=table.querySelectorAll('th');
+  // headers[0] is the sticky name col, headers[1+] are date cols
+  const nameWidth=headers[0]?headers[0].offsetWidth:128;
+  const colWidth=headers[1]?headers[1].offsetWidth:43;
+  w.scrollLeft=Math.max(0,nameWidth+idx*colWidth-w.clientWidth/2);
 }
 
-// PEOPLE
+// ── PEOPLE ──
 function loadPeoplePage(){
   const teachers=APP.teachers.filter(t=>!t.archived);
   document.getElementById('teacherList').innerHTML=teachers.length?teachers.map(t=>`<div class="person-item"><div class="person-avatar" style="background:var(--crimson);">${ini(t.name)}</div><div><div class="person-name">${t.name}</div><div class="person-meta">${t.accountNo?'Invoice details saved':'No invoice details yet'}</div></div><div class="person-actions"><button class="btn btn-sm btn-ghost" onclick="showEditPersonModal('teacher','${t.id}')">Edit</button><button class="btn btn-sm btn-ghost" onclick="archivePerson('teacher','${t.id}')">Archive</button></div></div>`).join(''):`<div class="card-body" style="color:var(--ink-muted);font-size:13px;">No teachers yet.</div>`;
   const students=APP.students.filter(s=>!s.archived);
-  document.getElementById('studentList').innerHTML=students.length?students.map(s=>{const b=s.classStatus==='junior'?'badge-junior':s.classStatus==='senior'?'badge-senior':'badge-both';const l=s.classStatus==='junior'?'Junior (初班)':s.classStatus==='senior'?'Senior (高班)':'Both';return`<div class="person-item"><div class="person-avatar" style="background:var(--navy);">${ini(s.name)}</div><div><div class="person-name">${s.name}</div><div class="person-meta"><span class="class-badge ${b}">${l}</span></div></div><div class="person-actions"><button class="btn btn-sm btn-ghost" onclick="showEditPersonModal('student','${s.id}')">Edit</button><button class="btn btn-sm btn-ghost" onclick="archivePerson('student','${s.id}')">Archive</button></div></div>`;}).join(''):`<div class="card-body" style="color:var(--ink-muted);font-size:13px;">No students yet.</div>`;
+  document.getElementById('studentList').innerHTML=students.length?students.map(s=>{
+    const b=s.classStatus==='junior'?'badge-junior':s.classStatus==='senior'?'badge-senior':'badge-both';
+    const l=s.classStatus==='junior'?'Junior (初班)':s.classStatus==='senior'?'Senior (高班)':'Both';
+    const hcs=s.hcsStudent?`<span style="font-size:10px;background:#d0d8f0;color:var(--navy);padding:2px 7px;border-radius:20px;font-weight:600;margin-left:4px;">HCS</span>`:'';
+    return`<div class="person-item"><div class="person-avatar" style="background:var(--navy);">${ini(s.name)}</div><div><div class="person-name">${s.name}${hcs}</div><div class="person-meta"><span class="class-badge ${b}">${l}</span>${s.chineseName?` · ${s.chineseName}`:''}</div></div><div class="person-actions"><button class="btn btn-sm btn-ghost" onclick="showEditPersonModal('student','${s.id}')">Edit</button><button class="btn btn-sm btn-ghost" onclick="archivePerson('student','${s.id}')">Archive</button></div></div>`;
+  }).join(''):`<div class="card-body" style="color:var(--ink-muted);font-size:13px;">No students yet. Use Import CSV or Add.</div>`;
 }
+
+function showImportCSVModal(){
+  openModal(`<div class="modal-title">Import Students from CSV</div>
+    <p style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;">CSV should have columns: <code style="background:var(--paper-warm);padding:2px 6px;border-radius:4px;font-size:11px;">Student Full Name, Student Chinese Name, Student DOB, Dance Group, HCS student?</code></p>
+    <p style="font-size:12px;color:var(--ink-muted);margin-bottom:12px;">JD = Junior Dance, SD = Senior Dance. Transitioning students can be updated manually after import.</p>
+    <div class="csv-drop" id="csvDropZone" onclick="document.getElementById('csvFileInput').click()">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 8px;display:block;opacity:.4;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Tap to select CSV file
+    </div>
+    <input type="file" id="csvFileInput" accept=".csv" style="display:none;" onchange="handleCSVFile(event)">
+    <div id="csvPreview"></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;display:none;" id="csvImportBtn" onclick="doImportCSV()">Import Students</button></div>`);
+}
+
+let csvParsedStudents=[];
+function handleCSVFile(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const lines=ev.target.result.split('\n').filter(l=>l.trim());
+    const header=lines[0].split(',').map(h=>h.trim().toLowerCase());
+    csvParsedStudents=lines.slice(1).map(line=>{
+      const cols=line.split(',').map(c=>c.trim().replace(/^"|"$/g,''));
+      const group=(cols[3]||'').toUpperCase();
+      const hcs=(cols[4]||'').toUpperCase()==='TRUE';
+      return{name:cols[0]||'',chineseName:cols[1]||'',dob:cols[2]||'',classStatus:group==='JD'?'junior':'senior',hcsStudent:hcs};
+    }).filter(s=>s.name);
+    document.getElementById('csvPreview').innerHTML=`<div style="font-weight:600;font-size:13px;margin-bottom:8px;">${csvParsedStudents.length} students found:</div>`+csvParsedStudents.map(s=>`<div class="csv-preview-row"><div class="person-avatar" style="background:var(--navy);width:28px;height:28px;font-size:11px;flex-shrink:0;">${ini(s.name)}</div><div><div style="font-weight:600;font-size:13px;">${s.name}</div><div style="font-size:11px;color:var(--ink-soft);"><span class="class-badge ${s.classStatus==='junior'?'badge-junior':'badge-senior'}">${s.classStatus==='junior'?'Junior':'Senior'}</span> ${s.chineseName?'· '+s.chineseName:''} ${s.hcsStudent?'· HCS':''}</div></div></div>`).join('');
+    document.getElementById('csvImportBtn').style.display='flex';
+  };
+  reader.readAsText(file);
+}
+function doImportCSV(){
+  let added=0,skipped=0;
+  csvParsedStudents.forEach(s=>{
+    const exists=APP.students.find(x=>x.name.toLowerCase()===s.name.toLowerCase());
+    if(exists){skipped++;return;}
+    APP.students.push({id:'S'+Date.now()+'_'+Math.random().toString(36).slice(2,6),name:s.name,chineseName:s.chineseName||'',dob:s.dob||'',classStatus:s.classStatus,hcsStudent:s.hcsStudent,archived:false});
+    added++;
+  });
+  saveLocal();closeModal();loadPeoplePage();
+  showToast(`Imported ${added} student${added!==1?'s':''} (${skipped} already existed)`);
+}
+
 function showAddPersonModal(type){
   if(type==='teacher'){openModal(`<div class="modal-title">Add Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" placeholder="Full name"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher',null)">Add</button></div>`);}
-  else{openModal(`<div class="modal-title">Add Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" placeholder="Full name"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill active" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill" id="pBoth" onclick="selClass('both')">Both</div></div><input type="hidden" id="mpClass" value="junior"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student',null)">Add</button></div>`);}
+  else{openModal(`<div class="modal-title">Add Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" placeholder="Full name"></div><div class="form-group"><label class="form-label">Chinese Name (optional)</label><input type="text" class="form-input" id="mpChinese" placeholder="中文名"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill active" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="junior"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" style="width:16px;height:16px;"> Also an HCS student</label></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student',null)">Add</button></div>`);}
 }
 function selClass(c){document.getElementById('mpClass').value=c;['Junior','Senior','Both'].forEach(x=>{const el=document.getElementById('p'+x);if(el)el.classList.toggle('active',x.toLowerCase()===c||(x==='Both'&&c==='both'));});}
 function showEditPersonModal(type,id){
   if(type==='teacher'){const t=APP.teachers.find(x=>x.id===id);if(!t)return;openModal(`<div class="modal-title">Edit Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${t.name}"></div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="mpAddress" rows="3">${t.address||''}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="mpBank" value="${t.bankName||''}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="mpSort" value="${t.sortCode||''}" placeholder="00-00-00"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="mpAcc" value="${t.accountNo||''}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="mpPrefix" value="${t.invoicePrefix||''}"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher','${id}')">Save</button></div>`);}
-  else{const s=APP.students.find(x=>x.id===id);if(!s)return;openModal(`<div class="modal-title">Edit Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${s.name}"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill ${s.classStatus==='junior'?'active':''}" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill ${s.classStatus==='senior'?'active':''}" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill ${s.classStatus==='both'?'active':''}" id="pBoth" onclick="selClass('both')">Both</div></div><input type="hidden" id="mpClass" value="${s.classStatus}"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student','${id}')">Save</button></div>`);}
+  else{const s=APP.students.find(x=>x.id===id);if(!s)return;openModal(`<div class="modal-title">Edit Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${s.name}"></div><div class="form-group"><label class="form-label">Chinese Name</label><input type="text" class="form-input" id="mpChinese" value="${s.chineseName||''}"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill ${s.classStatus==='junior'?'active':''}" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill ${s.classStatus==='senior'?'active':''}" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill ${s.classStatus==='both'?'active':''}" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="${s.classStatus}"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" ${s.hcsStudent?'checked':''} style="width:16px;height:16px;"> Also an HCS student</label></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student','${id}')">Save</button></div>`);}
 }
 function savePerson(type,id){
   const name=document.getElementById('mpName')?.value.trim();if(!name){showToast('Enter a name');return;}
@@ -662,15 +829,17 @@ function savePerson(type,id){
     else{if(APP.teachers.filter(t=>!t.archived).length>=4){showToast('Max 4 teachers');return;}APP.teachers.push({id:'T'+Date.now(),name,address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:name.split(' ').map(w=>w[0]).join('').toUpperCase(),archived:false});}
   }else{
     const cls=document.getElementById('mpClass')?.value||'junior';
-    if(id){const s=APP.students.find(x=>x.id===id);s.name=name;s.classStatus=cls;}
-    else APP.students.push({id:'S'+Date.now(),name,classStatus:cls,archived:false});
+    const chinese=document.getElementById('mpChinese')?.value||'';
+    const hcs=document.getElementById('mpHCS')?.checked||false;
+    if(id){const s=APP.students.find(x=>x.id===id);s.name=name;s.classStatus=cls;s.chineseName=chinese;s.hcsStudent=hcs;}
+    else APP.students.push({id:'S'+Date.now(),name,chineseName:chinese,classStatus:cls,hcsStudent:hcs,archived:false});
   }
   saveLocal();closeModal();loadPeoplePage();showToast('Saved ✓');
 }
 function archivePerson(type,id){openModal(`<div class="modal-title">Archive?</div><p style="color:var(--ink-soft);font-size:14px;margin-bottom:16px;">Hidden from register. Historical data preserved.</p><div class="modal-footer"><button class="btn btn-ghost" style="flex:1;" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="doArchive('${type}','${id}')">Archive</button></div>`);}
 function doArchive(type,id){const l=type==='teacher'?APP.teachers:APP.students;const p=l.find(x=>x.id===id);if(p)p.archived=true;saveLocal();closeModal();loadPeoplePage();showToast('Archived');}
 
-// INVOICES
+// ── INVOICES ──
 function loadInvoicesPage(){
   populateTermSelectors();
   document.getElementById('invoiceTeacher').innerHTML=APP.teachers.filter(t=>!t.archived).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
@@ -706,7 +875,7 @@ function previewInvoice(){
     return`<tr><td>${b.term.label}</td><td style="text-align:center;">${b.attended} / ${b.total}</td><td style="font-size:11px;color:var(--ink-soft);">${detail}</td><td style="text-align:right;font-weight:600;">£${b.termPay.toFixed(2)}</td></tr>`;
   }).join('');
   document.getElementById('invoicePreviewArea').innerHTML=`<div class="invoice-preview fade-in">
-    <div class="invoice-header-bar"><div><div class="invoice-brand">Harrow Chinese School</div><div class="invoice-school-name">${APP.settings.schoolAddress.split('\n')[0]}</div></div><div class="invoice-meta">Invoice: <strong style="color:white;">${invNum}</strong><br>Date: ${issueDate}<br>Year: ${APP.settings.academicYear}</div></div>
+    <div class="invoice-header-bar"><div><div class="invoice-brand">Harrow Chinese School</div><div style="color:rgba(255,255,255,.6);font-size:11px;">${APP.settings.schoolAddress.split('\n')[0]}</div></div><div class="invoice-meta">Invoice: <strong style="color:white;">${invNum}</strong><br>Date: ${issueDate}<br>Year: ${APP.settings.academicYear}</div></div>
     <div class="invoice-from-to"><div><div class="invoice-section-label">From (Teacher)</div><div class="invoice-address"><strong>${teacher.name}</strong><br>${(teacher.address||'—').replace(/\n/g,'<br>')}</div></div><div><div class="invoice-section-label">To (School)</div><div class="invoice-address"><strong>${APP.settings.schoolName}</strong><br>${APP.settings.schoolAddress.replace(/\n/g,'<br>')}</div></div></div>
     <table class="invoice-table"><thead><tr><th>Term</th><th style="text-align:center;">Lessons</th><th>Breakdown</th><th style="text-align:right;">Amount</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="invoice-total-row"><td colspan="3" style="text-align:right;padding-right:12px;">Total Due</td><td style="text-align:right;">£${calc.total.toFixed(2)}</td></tr></tfoot></table>
     ${teacher.accountNo?`<div class="invoice-payment"><div class="invoice-payment-title">Payment Details</div>Bank: ${teacher.bankName||'—'} &nbsp;|&nbsp; Sort Code: ${teacher.sortCode||'—'} &nbsp;|&nbsp; Account: ${teacher.accountNo||'—'}</div>`:''}
@@ -753,7 +922,7 @@ function genPDF(teacherId,fromId,toId){
 function downloadSingleInvoice(){const tid=document.getElementById('invoiceTeacher')?.value;const fid=document.getElementById('invoiceFromTerm')?.value||APP.terms[0]?.id;const eid=document.getElementById('invoiceToTerm')?.value||APP.terms[APP.terms.length-1]?.id;if(!tid){showToast('Select a teacher');return;}genPDF(tid,fid,eid);showToast('Downloading…');}
 function downloadAllInvoices(){const fid=document.getElementById('invoiceFromTerm')?.value||APP.terms[0]?.id;const eid=document.getElementById('invoiceToTerm')?.value||APP.terms[APP.terms.length-1]?.id;const t=APP.teachers.filter(x=>!x.archived);if(!t.length){showToast('No teachers');return;}t.forEach((x,i)=>setTimeout(()=>genPDF(x.id,fid,eid),i*700));showToast(`Generating ${t.length} invoices…`);}
 
-// SETTINGS
+// ── SETTINGS ──
 function loadSettingsPage(){
   document.getElementById('settSchoolName').value=APP.settings.schoolName;
   document.getElementById('settSchoolAddress').value=APP.settings.schoolAddress;
@@ -763,9 +932,9 @@ function loadSettingsPage(){
   document.getElementById('settSheetId').value=APP.settings.sheetId;
   document.getElementById('termManageList').innerHTML=APP.terms.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:600;font-size:14px;">${t.label}</div><div style="font-size:12px;color:var(--ink-muted);">${t.dates.filter(d=>d.type==='lesson').length} lessons · ${t.dates.filter(d=>d.type==='performance').length} performances</div></div><button class="btn btn-sm btn-ghost" onclick="showEditTermModal('${t.id}')">Edit</button></div>`).join('');
   const teachers=APP.teachers.filter(t=>!t.archived);
-  document.getElementById('teacherSettingsBody').innerHTML=teachers.map(t=>`<div style="padding:14px 16px;border-bottom:1px solid var(--border);"><div style="font-weight:700;font-size:14px;margin-bottom:10px;">${t.name}</div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="ts_addr_${t.id}" rows="3">${t.address||''}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="ts_bank_${t.id}" value="${t.bankName||''}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="ts_sort_${t.id}" value="${t.sortCode||''}"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="ts_acc_${t.id}" value="${t.accountNo||''}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="ts_pfx_${t.id}" value="${t.invoicePrefix||''}"></div></div><button class="btn btn-sm btn-ghost" onclick="saveTeacherDetails('${t.id}')">Save ${t.name.split(' ')[0]}'s Details</button></div>`).join('');
+  document.getElementById('teacherSettingsBody').innerHTML=teachers.length?teachers.map(t=>`<div style="padding:14px 16px;border-bottom:1px solid var(--border);"><div style="font-weight:700;font-size:14px;margin-bottom:10px;">${t.name}</div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="ts_addr_${t.id}" rows="3">${t.address||''}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="ts_bank_${t.id}" value="${t.bankName||''}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="ts_sort_${t.id}" value="${t.sortCode||''}"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="ts_acc_${t.id}" value="${t.accountNo||''}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="ts_pfx_${t.id}" value="${t.invoicePrefix||''}"></div></div><button class="btn btn-sm btn-ghost" onclick="saveTeacherDetails('${t.id}')">Save ${t.name.split(' ')[0]}'s Details</button></div>`).join(''):`<div style="padding:14px 16px;color:var(--ink-muted);font-size:13px;">No teachers added yet.</div>`;
 }
-function saveSettings(){APP.settings.schoolName=document.getElementById('settSchoolName').value;APP.settings.schoolAddress=document.getElementById('settSchoolAddress').value;APP.settings.lessonValue=parseFloat(document.getElementById('settLessonValue').value)||70;APP.settings.academicYear=document.getElementById('settAcYear').value;saveLocal();showToast('Settings saved ✓');}
+function saveSettings(){APP.settings.schoolName=document.getElementById('settSchoolName').value;APP.settings.schoolAddress=document.getElementById('settSchoolAddress').value;APP.settings.lessonValue=parseFloat(document.getElementById('settLessonValue').value)||70;APP.settings.academicYear=document.getElementById('settAcYear').value;saveLocal();showToast('Saved ✓');}
 function saveGoogleSettings(){APP.settings.clientId=document.getElementById('settClientId').value.trim();APP.settings.sheetId=document.getElementById('settSheetId').value.trim();saveLocal();showToast('Saved ✓');}
 function reconnectGoogle(){showToast('Add Client ID first, then reconnect');}
 function syncNow(){if(APP.demoMode){showToast('Demo mode — no sync');return;}saveLocal();showToast('Saved locally ✓');updateSyncStatus('ok','Saved');}
@@ -774,15 +943,14 @@ function saveTeacherDetails(id){const t=APP.teachers.find(x=>x.id===id);if(!t)re
 function showEditTermModal(termId){const term=APP.terms.find(t=>t.id===termId);if(!term)return;openModal(`<div class="modal-title">Edit Term</div><div class="form-group"><label class="form-label">Label</label><input type="text" class="form-input" id="etLabel" value="${term.label}"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveTermEdit('${termId}')">Save</button></div>`);}
 function saveTermEdit(id){const term=APP.terms.find(t=>t.id===id);if(!term)return;term.label=document.getElementById('etLabel').value;saveLocal();closeModal();loadSettingsPage();showToast('Saved ✓');}
 function showAddTermModal(){openModal(`<div class="modal-title">Add Term</div><div class="form-group"><label class="form-label">Label</label><input type="text" class="form-input" id="newTermLabel" placeholder="e.g. Summer 2027"></div><div class="form-row"><div class="form-group"><label class="form-label">Start</label><input type="date" class="form-input" id="newTermStart"></div><div class="form-group"><label class="form-label">End</label><input type="date" class="form-input" id="newTermEnd"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveNewTerm()">Create</button></div>`);}
-function saveNewTerm(){const label=document.getElementById('newTermLabel').value.trim();const s=document.getElementById('newTermStart').value;const e=document.getElementById('newTermEnd').value;if(!label){showToast('Enter a label');return;}const id='TERM'+Date.now();APP.terms.push({id,name:label,label,dates:s&&e?generateSaturdays(s,e):[]});saveLocal();closeModal();loadSettingsPage();populateTermSelectors();showToast('Term created ✓');}
+function saveNewTerm(){const label=document.getElementById('newTermLabel').value.trim();const s=document.getElementById('newTermStart').value;const e=document.getElementById('newTermEnd').value;if(!label){showToast('Enter a label');return;}APP.terms.push({id:'TERM'+Date.now(),name:label,label,dates:s&&e?genSaturdays(s,e):[]});saveLocal();closeModal();loadSettingsPage();populateTermSelectors();showToast('Term created ✓');}
 
-// MODAL
+// ── MODAL ──
 function openModal(html){document.getElementById('modalBody').innerHTML=html;document.getElementById('modalOverlay').classList.add('open');}
 function closeModal(e){if(e&&e.target!==document.getElementById('modalOverlay'))return;document.getElementById('modalOverlay').classList.remove('open');}
 
-// TOAST
+// ── TOAST ──
 let tt;function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),2500);}
-
 function ini(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);}
 
 function initApp(){
@@ -792,7 +960,12 @@ function initApp(){
 
 window.addEventListener('DOMContentLoaded',()=>{
   initSetupDots();const has=loadLocal();
-  if(has&&APP.setupDone){document.getElementById('setupOverlay').style.display='none';initApp();}
+  if(has&&APP.setupDone){
+    document.getElementById('setupOverlay').style.display='none';initApp();
+  } else if(!has){
+    // First ever load — auto-start with preloaded data, no setup needed
+    quickStart();
+  }
 });
 </script>
 </body>
