@@ -1061,65 +1061,184 @@ async function ensureToken(){
   });
 }
 
+// ── SHEET STRUCTURE ──
+// Tab 1: "Students"    — one row per student
+// Tab 2: "Teachers"   — one row per teacher
+// Tab 3: "Dates"      — one row per date across all terms
+// Tab 4: "Attendance" — one row per attendance record
+// Tab 5: "Invoices"   — invoice tracker status per teacher
+// Tab 6: "_Backup"    — full JSON backup (hidden/raw, for app reload)
+
+const SHEET_TABS=['Students','Teachers','Dates','Attendance','Invoices','_Backup'];
+
+async function sheetsRequest(method,path,body){
+  const ok=await ensureToken();if(!ok)return null;
+  const resp=await fetch('https://sheets.googleapis.com/v4/spreadsheets'+path,{
+    method,headers:{Authorization:'Bearer '+gAccessToken,'Content-Type':'application/json'},
+    body:body?JSON.stringify(body):undefined
+  });
+  if(!resp.ok){const err=await resp.text();console.error('Sheets error',resp.status,err);return null;}
+  return resp.json();
+}
+
 async function ensureSheet(){
+  const ok=await ensureToken();if(!ok)return;
   if(!APP.settings.sheetId){
-    // Create a new sheet
-    const ok=await ensureToken();if(!ok)return;
-    const resp=await fetch('https://sheets.googleapis.com/v4/spreadsheets',{
-      method:'POST',headers:{Authorization:'Bearer '+gAccessToken,'Content-Type':'application/json'},
-      body:JSON.stringify({properties:{title:'HCS Dance Group Register'},sheets:[{properties:{title:'Data'}}]})
+    // Create new spreadsheet with all tabs
+    const result=await sheetsRequest('POST','',{
+      properties:{title:'HCS Dance Group Register'},
+      sheets:SHEET_TABS.map(t=>({properties:{title:t}}))
     });
-    if(resp.ok){
-      const data=await resp.json();
-      APP.settings.sheetId=data.spreadsheetId;
-      saveLocal();
-      // Update settings field if visible
-      const el=document.getElementById('settSheetId');if(el)el.value=APP.settings.sheetId;
-      showToast('New sheet created ✓');
-      syncToSheet();
-    }else{showToast('Could not create sheet');}
+    if(!result){showToast('Could not create sheet');return;}
+    APP.settings.sheetId=result.spreadsheetId;
+    saveLocal();
+    const el=document.getElementById('settSheetId');if(el)el.value=APP.settings.sheetId;
+    showToast('Google Sheet created ✓');
+    await syncToSheet();
   }else{
-    syncToSheet();
+    // Ensure all tabs exist
+    const meta=await sheetsRequest('GET',`/${APP.settings.sheetId}?fields=sheets.properties.title`);
+    if(!meta)return;
+    const existing=(meta.sheets||[]).map(s=>s.properties.title);
+    const missing=SHEET_TABS.filter(t=>!existing.includes(t));
+    if(missing.length){
+      await sheetsRequest('POST',`/${APP.settings.sheetId}:batchUpdate`,{
+        requests:missing.map(t=>({addSheet:{properties:{title:t}}}))
+      });
+    }
+    await syncToSheet();
   }
+}
+
+async function clearAndWrite(tabName,rows){
+  const sid=APP.settings.sheetId;
+  // Clear tab first
+  await sheetsRequest('POST',`/${sid}/values/${encodeURIComponent(tabName)}:clear`,{});
+  if(!rows.length)return;
+  await sheetsRequest('PUT',`/${sid}/values/${encodeURIComponent(tabName)}!A1?valueInputOption=RAW`,{
+    range:`${tabName}!A1`,majorDimension:'ROWS',values:rows
+  });
 }
 
 async function syncToSheet(){
   const ok=await ensureToken();if(!ok){showToast('Not signed in');return;}
+  if(!APP.settings.sheetId){await ensureSheet();return;}
   updateSyncStatus('warn','Syncing…');
-  const payload=JSON.stringify(APP);
-  // Store entire APP JSON in cell A1 of Data sheet
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${APP.settings.sheetId}/values/Data!A1?valueInputOption=RAW`;
-  const resp=await fetch(url,{
-    method:'PUT',headers:{Authorization:'Bearer '+gAccessToken,'Content-Type':'application/json'},
-    body:JSON.stringify({range:'Data!A1',majorDimension:'ROWS',values:[[payload]]})
-  });
-  if(resp.ok){
-    updateSyncStatus('ok','Synced');saveLocal();showToast('Synced to Google Sheets ✓');
-  }else{
-    updateSyncStatus('err','Sync failed');showToast('Sync failed — check sheet permissions');
+
+  try{
+    // ── TAB 1: Students ──
+    const studentRows=[
+      ['ID','Name','Chinese Name','DOB','Class','HCS Student','Archived']
+    ];
+    APP.students.forEach(s=>studentRows.push([
+      s.id, s.name, s.chineseName||'', s.dob||'',
+      s.classStatus==='junior'?'Junior (初班)':s.classStatus==='senior'?'Senior (高班)':'Both (Transitioning)',
+      s.hcsStudent?'Yes':'No', s.archived?'Yes':'No'
+    ]));
+
+    // ── TAB 2: Teachers ──
+    const teacherRows=[
+      ['ID','Name','Address','Bank','Sort Code','Account No','Invoice Prefix','Archived']
+    ];
+    APP.teachers.forEach(t=>teacherRows.push([
+      t.id, t.name, t.address||'', t.bankName||'', t.sortCode||'', t.accountNo||'', t.invoicePrefix||'', t.archived?'Yes':'No'
+    ]));
+
+    // ── TAB 3: Dates ──
+    const dateRows=[
+      ['Term ID','Term Label','Date','Day','Type','Label/Note']
+    ];
+    APP.terms.forEach(term=>{
+      const sorted=[...term.dates].sort((a,b)=>a.date.localeCompare(b.date));
+      sorted.forEach(d=>{
+        const dt=new Date(d.date+'T12:00:00');
+        const dayName=dt.toLocaleDateString('en-GB',{weekday:'long'});
+        const typeLabel={lesson:'Lesson',performance:'Performance',closed:'Closed / Holiday','junior-cancelled':'Junior Cancelled'}[d.type]||d.type;
+        dateRows.push([term.id, term.label, d.date, dayName, typeLabel, d.label||'']);
+      });
+    });
+
+    // ── TAB 4: Attendance — one row per person per date ──
+    const attRows=[
+      ['Term','Date','Person ID','Person Name','Role','Status']
+    ];
+    // Build lookup maps
+    const personMap={};
+    [...APP.teachers,...APP.students].forEach(p=>{personMap[p.id]={name:p.name,role:APP.teachers.find(t=>t.id===p.id)?'Teacher':'Student'};});
+    const termMap={};APP.terms.forEach(t=>{termMap[t.id]=t.label;});
+    const dateMap={};APP.terms.forEach(term=>{term.dates.forEach(d=>{dateMap[term.id+'|'+d.id]={termLabel:term.label,date:d.date};});});
+
+    Object.entries(APP.attendance).forEach(([key,val])=>{
+      const [termId,dateId,personId]=key.split('|');
+      const termLabel=termMap[termId]||termId;
+      const dateInfo=dateMap[termId+'|'+dateId];
+      const date=dateInfo?dateInfo.date:dateId;
+      const person=personMap[personId];
+      if(!person)return;
+      const statusLabel={present:'Present',absent:'Absent',na:'N/A'}[val]||val;
+      attRows.push([termLabel, date, personId, person.name, person.role, statusLabel]);
+    });
+    // Sort by date then name
+    const attHeader=attRows.shift();
+    attRows.sort((a,b)=>a[1].localeCompare(b[1])||a[3].localeCompare(b[3]));
+    attRows.unshift(attHeader);
+
+    // ── TAB 5: Invoices tracker ──
+    const invRows=[
+      ['Teacher ID','Teacher Name','Invoiced To Term','Status','Date Sent']
+    ];
+    APP.teachers.filter(t=>!t.archived).forEach(t=>{
+      const rec=APP.invoiceTracker[t.id]||{};
+      const toTerm=rec.invoicedToTermId?APP.terms.find(x=>x.id===rec.invoicedToTermId):null;
+      invRows.push([t.id, t.name, toTerm?toTerm.label:'', rec.status||'none', rec.dateSent||'']);
+    });
+
+    // ── TAB 6: _Backup (full JSON, for app restore) ──
+    const backupRows=[['last_updated','json_backup'],[ new Date().toISOString(), JSON.stringify(APP)]];
+
+    // Write all tabs in parallel
+    await Promise.all([
+      clearAndWrite('Students',studentRows),
+      clearAndWrite('Teachers',teacherRows),
+      clearAndWrite('Dates',dateRows),
+      clearAndWrite('Attendance',attRows),
+      clearAndWrite('Invoices',invRows),
+      clearAndWrite('_Backup',backupRows),
+    ]);
+
+    updateSyncStatus('ok','Synced');
+    saveLocal();
+    showToast('Synced to Google Sheets ✓');
+  }catch(e){
+    console.error(e);
+    updateSyncStatus('err','Sync failed');
+    showToast('Sync failed — see console');
   }
 }
 
 async function loadFromSheet(){
   const ok=await ensureToken();if(!ok)return;
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${APP.settings.sheetId}/values/Data!A1`;
-  const resp=await fetch(url,{headers:{Authorization:'Bearer '+gAccessToken}});
-  if(!resp.ok){showToast('Could not read sheet');return;}
-  const data=await resp.json();
-  const raw=data.values?.[0]?.[0];
-  if(!raw){showToast('Sheet is empty — saving current data');syncToSheet();return;}
+  if(!APP.settings.sheetId){showToast('No sheet ID — connect first');return;}
+  updateSyncStatus('warn','Loading…');
+  // Load from _Backup tab (full JSON)
+  const result=await sheetsRequest('GET',`/${APP.settings.sheetId}/values/_Backup!B2`);
+  if(!result){showToast('Could not read sheet');updateSyncStatus('err','Error');return;}
+  const raw=result.values?.[0]?.[0];
+  if(!raw){showToast('Sheet backup is empty — pushing current data');syncToSheet();return;}
   try{
     const parsed=JSON.parse(raw);
     Object.assign(APP,parsed);
     saveLocal();populateTermSelectors();loadRegister();loadSettingsPage();
-    showToast('Loaded from Google Sheets ✓');updateSyncStatus('ok','Synced');
-  }catch(e){showToast('Could not parse sheet data');}
+    updateSyncStatus('ok','Synced');
+    showToast('Loaded from Google Sheets ✓');
+  }catch(e){showToast('Could not parse backup — try Push first');}
 }
 
 function syncNow(){
   if(!gAccessToken){
     if(gisClient){gisClient.requestAccessToken({prompt:''});}
-    else{showToast('Tap Settings → Reconnect to sign in');} return;
+    else{showToast('Tap Settings → Sign in with Google');}
+    return;
   }
   syncToSheet();
 }
