@@ -194,7 +194,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
       </div>
       <div style="text-align:center;font-size:12px;color:var(--ink-muted);margin-bottom:12px;">— or set up manually —</div>
       <div class="form-group"><label class="form-label">Google OAuth Client ID (optional)</label><input type="text" class="form-input" id="setupClientId" placeholder="xxxx.apps.googleusercontent.com"></div>
-      <div class="form-group"><label class="form-label">Sheet ID (optional)</label><input type="text" class="form-input" id="setupSheetId" placeholder="From sheet URL"></div>
+      <div class="form-group"><label class="form-label">Sheet ID (optional)</label><input type="text" class="form-input" id="setupSheetId" placeholder="From sheet URL" value="1vYcWxWHVhMXrCKpT7QHqPy-ZVULymyaNGWo-SRBiWs4"></div>
       <div style="display:flex;gap:10px;margin-top:8px;">
         <button class="btn btn-ghost btn-sm" onclick="skipSetup()">Skip (demo)</button>
         <button class="btn btn-primary" style="flex:1;" onclick="connectGoogle()">Continue →</button>
@@ -207,7 +207,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
       <div class="form-group"><label class="form-label">School Address</label><textarea class="form-input" id="setupSchoolAddress" rows="3">Pinner High School&#10;Beaulieu Dr, Pinner&#10;HA5 1NB</textarea></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Lesson Value (£)</label><input type="number" class="form-input" id="setupLessonValue" value="70" step="0.01"></div>
-        <div class="form-group"><label class="form-label">Academic Year</label><input type="text" class="form-input" id="setupAcYear" value="2025-26"></div>
+        <div class="form-group"><label class="form-label">Academic Year</label><input type="text" class="form-input" id="setupAcYear" value="2025-26" oninput="renderSetupTermCalendars()"></div>
       </div>
       <div class="modal-footer"><button class="btn btn-ghost" onclick="goSetupStep(0)">← Back</button><button class="btn btn-primary" style="flex:1;" onclick="goSetupStep(2)">Next →</button></div>
     </div>
@@ -220,7 +220,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
     </div>
     <div class="setup-step" id="step3">
       <div class="setup-step-title">Term Dates</div>
-      <div class="setup-step-sub">Generate Saturdays per term.</div>
+      <div class="setup-step-sub">Select closed Saturdays per term.</div>
       <div id="setupTermsList"></div>
       <div class="modal-footer"><button class="btn btn-ghost" onclick="goSetupStep(2)">← Back</button><button class="btn btn-primary" style="flex:1;" onclick="finishSetup()">Finish ✓</button></div>
     </div>
@@ -307,7 +307,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
     </div></div>
     <div class="card fade-in"><div class="card-header"><span class="card-title">Google Sheets</span></div><div class="card-body">
       <div class="form-group"><label class="form-label">OAuth Client ID</label><input type="text" class="form-input" id="settClientId" placeholder="pre-filled"></div>
-      <div class="form-group"><label class="form-label">Sheet ID <span style="font-weight:400;color:var(--ink-muted);">(auto-created if blank)</span></label><input type="text" class="form-input" id="settSheetId" placeholder="Leave blank to create new"></div>
+      <div class="form-group"><label class="form-label">Sheet ID <span style="font-weight:400;color:var(--ink-muted);">(auto-created if blank)</span></label><input type="text" class="form-input" id="settSheetId" placeholder="Leave blank to create new" value="1vYcWxWHVhMXrCKpT7QHqPy-ZVULymyaNGWo-SRBiWs4"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-navy" style="flex:1;" onclick="reconnectGoogle()">🔗 Sign in with Google</button>
         <button class="btn btn-ghost" onclick="saveGoogleSettings()">Save</button>
@@ -458,15 +458,16 @@ const PRELOADED={
 };
 
 let APP={
-  settings:{schoolName:'Harrow Chinese School',schoolAddress:'Pinner High School\nBeaulieu Dr, Pinner\nHA5 1NB',lessonValue:70,academicYear:'2025-26',clientId:'',sheetId:''},
+  settings:{schoolName:'Harrow Chinese School',schoolAddress:'Pinner High School\nBeaulieu Dr, Pinner\nHA5 1NB',lessonValue:70,academicYear:'2025-26',clientId:'',sheetId:'1vYcWxWHVhMXrCKpT7QHqPy-ZVULymyaNGWo-SRBiWs4'},
   teachers:[],students:[],terms:[],attendance:{},
   // invoiceTracker: {teacherId: {invoicedToTermId, status:'none'|'sent'|'paid'|'overdue', dateSent}}
   invoiceTracker:{},
   demoMode:false,setupDone:false
 };
 
+const FORCED_SHEET_ID='1vYcWxWHVhMXrCKpT7QHqPy-ZVULymyaNGWo-SRBiWs4';
 function saveLocal(){try{localStorage.setItem('hcs_v4',JSON.stringify(APP));}catch(e){}}
-function loadLocal(){try{const d=localStorage.getItem('hcs_v4');if(d){Object.assign(APP,JSON.parse(d));return true;}}catch(e){}return false;}
+function loadLocal(){try{const d=localStorage.getItem('hcs_v4');if(d){Object.assign(APP,JSON.parse(d));APP.settings.sheetId=FORCED_SHEET_ID;return true;}}catch(e){}return false;}
 
 function showPage(n){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -486,8 +487,51 @@ let curStep=0,setupTC=0;
 function initSetupDots(){
   const d=document.getElementById('setupDots');d.innerHTML='';
   for(let i=0;i<4;i++){const dot=document.createElement('div');dot.className='step-dot'+(i===0?' active':'');dot.id='dot'+i;d.appendChild(dot);}
+  renderSetupTermCalendars();
+}
+
+// Per-term closed date sets for setup wizard
+let setupClosedDates={autumn:new Set(),spring:new Set(),summer:new Set()};
+
+function renderSetupTermCalendars(){
+  const yr=document.getElementById('setupAcYear')?.value||APP.settings.academicYear||'2025-26';
   const tl=document.getElementById('setupTermsList');
-  tl.innerHTML=['Autumn','Spring','Summer'].map((n,i)=>`<div style="margin-bottom:10px;padding:14px;background:var(--paper-warm);border-radius:8px;"><div style="font-weight:700;font-size:13px;margin-bottom:10px;">${n} Term</div><div class="form-row"><div class="form-group" style="margin:0;"><label class="form-label">Start</label><input type="date" class="form-input" id="t${i+1}start"></div><div class="form-group" style="margin:0;"><label class="form-label">End</label><input type="date" class="form-input" id="t${i+1}end"></div></div></div>`).join('');
+  if(!tl)return;
+  tl.innerHTML=['autumn','spring','summer'].map((type,i)=>{
+    const name=type.charAt(0).toUpperCase()+type.slice(1);
+    const sats=getAllSaturdaysForTerm(type,yr);
+    const byMonth={};
+    sats.forEach(ds=>{
+      const dt=new Date(ds+'T12:00:00');
+      const mk=dt.toLocaleString('en-GB',{month:'long'});
+      if(!byMonth[mk])byMonth[mk]=[];byMonth[mk].push(ds);
+    });
+    const monthsHtml=Object.entries(byMonth).map(([mon,dates])=>`
+      <div style="margin-bottom:8px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-muted);margin-bottom:5px;">${mon}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;">${dates.map(ds=>{
+          const day=new Date(ds+'T12:00:00').getDate();
+          return`<div id="setupcal_${ds}" onclick="setupToggleDate('${type}','${ds}')" style="cursor:pointer;width:38px;height:38px;border-radius:50%;background:white;color:var(--ink);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;transition:all .15s;user-select:none;">${day}</div>`;
+        }).join('')}</div>
+      </div>`).join('');
+    return`<div style="margin-bottom:14px;padding:14px;background:var(--paper-warm);border-radius:8px;">
+      <div style="font-weight:700;font-size:13px;margin-bottom:4px;">${name} Term</div>
+      <div style="font-size:11px;color:var(--ink-muted);margin-bottom:10px;">Tap any Saturday to mark it <span style="color:var(--teal);font-weight:600;">Closed</span></div>
+      <div id="setupcal_${type}">${monthsHtml||'<span style="font-size:12px;color:var(--ink-muted);">Enter academic year above to generate dates</span>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function setupToggleDate(termType,ds){
+  const set=setupClosedDates[termType];
+  if(set.has(ds))set.delete(ds);else set.add(ds);
+  const el=document.getElementById('setupcal_'+ds);
+  if(el){
+    const isClosed=set.has(ds);
+    el.style.background=isClosed?'var(--teal)':'white';
+    el.style.color=isClosed?'white':'var(--ink)';
+    el.style.border=isClosed?'2px solid var(--teal)':'1.5px solid var(--border)';
+  }
 }
 function goSetupStep(n){document.getElementById('step'+curStep).classList.remove('active');document.getElementById('dot'+curStep).classList.remove('active');curStep=n;document.getElementById('step'+n).classList.add('active');document.getElementById('dot'+n).classList.add('active');}
 function connectGoogle(){APP.settings.clientId=document.getElementById('setupClientId').value.trim();APP.settings.sheetId=document.getElementById('setupSheetId').value.trim();goSetupStep(1);}
@@ -508,12 +552,17 @@ function finishSetup(){
   document.querySelectorAll('.setup-teacher-name').forEach((el,i)=>{
     if(el.value.trim())APP.teachers.push({id:'T'+(i+1),name:el.value.trim(),address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:el.value.trim().split(' ').map(w=>w[0]).join('').toUpperCase(),archived:false});
   });
-  APP.terms=[];const tnames=['Autumn','Spring','Summer'];
-  for(let t=1;t<=3;t++){
-    const s=document.getElementById('t'+t+'start').value,e=document.getElementById('t'+t+'end').value;
-    const id=APP.settings.academicYear.replace('-','_')+'_T'+t;
-    APP.terms.push({id,name:tnames[t-1],label:`${tnames[t-1]} ${APP.settings.academicYear}`,dates:s&&e?genSaturdays(s,e):[]});
-  }
+  APP.terms=[];const tnames=['Autumn','Spring','Summer'];const tkeys=['autumn','spring','summer'];
+  const yr=APP.settings.academicYear;
+  tkeys.forEach((type,i)=>{
+    const sats=getAllSaturdaysForTerm(type,yr);
+    if(!sats.length)return;
+    const yrKey=yr.replace('-','_');
+    const idSuffix=`${yrKey}_T${i+1}`;
+    const closedSet=setupClosedDates[type]||new Set();
+    const dates=sats.map(ds=>({id:'D'+ds.replace(/-/g,''),date:ds,type:closedSet.has(ds)?'closed':'lesson',label:closedSet.has(ds)?'Closed':''}));
+    APP.terms.push({id:idSuffix,name:tnames[i],label:`${tnames[i]} ${yr}`,dates});
+  });
   APP.setupDone=true;saveLocal();document.getElementById('setupOverlay').style.display='none';initApp();
 }
 function quickStart(){
@@ -691,60 +740,175 @@ function saveNewDate(){
   const id='D'+date.replace(/-/g,'');if(term.dates.find(x=>x.id===id)){showToast('Date already exists');return;}
   term.dates.push({id,date,type,label});saveLocal();closeModal();loadDatesPage();showToast('Date added ✓');
 }
+// ── NEW TERM: Calendar-based UX ──
+// State for the new-term modal calendar
+let ntCalState={year:null,closedDates:new Set(),termType:'autumn'};
+
+// Term date ranges: [startMMDD, endMMDD] (within the academic year Sep–Jul)
+// Autumn: Sep–Dec, Spring: Jan–Mar, Summer: Apr–Jul
+const TERM_RANGES={
+  autumn:{startMonth:9,startDay:1,endMonth:12,endDay:31},
+  spring:{startMonth:1,startDay:1,endMonth:3,endDay:31},
+  summer:{startMonth:4,startDay:1,endMonth:7,endDay:31}
+};
+
+function getAllSaturdaysForTerm(termType,acYear){
+  // acYear like "2026-27"
+  const [y1str,y2str]=acYear.split('-');
+  const y1=parseInt(y1str)||2026;
+  // Autumn uses y1 (Sep-Dec y1), Spring/Summer use y1+1 (Jan-Jul y2)
+  const range=TERM_RANGES[termType];
+  const calYear=(termType==='autumn')?y1:y1+1;
+  const start=new Date(calYear,range.startMonth-1,1,12,0,0);
+  // find first Saturday
+  while(start.getDay()!==6)start.setDate(start.getDate()+1);
+  const end=new Date(calYear,range.endMonth-1,range.endDay,12,0,0);
+  const sats=[];
+  const cur=new Date(start);
+  while(cur<=end){
+    sats.push(cur.toISOString().slice(0,10));
+    cur.setDate(cur.getDate()+7);
+  }
+  return sats;
+}
+
+function renderNtCalendar(){
+  const {year,closedDates,termType,performanceDate}=ntCalState;
+  const sats=getAllSaturdaysForTerm(termType,year);
+  if(!sats.length){document.getElementById('ntCalBody').innerHTML='<div style="color:var(--ink-muted);font-size:13px;text-align:center;padding:12px;">No Saturdays found for this range.</div>';return;}
+  // Group by month
+  const byMonth={};
+  sats.forEach(ds=>{
+    const dt=new Date(ds+'T12:00:00');
+    const mk=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+    if(!byMonth[mk])byMonth[mk]={label:dt.toLocaleString('en-GB',{month:'long',year:'numeric'}),dates:[]};
+    byMonth[mk].dates.push(ds);
+  });
+  const totalSats=sats.length;
+  const closedCount=sats.filter(d=>closedDates.has(d)).length;
+  const lessonCount=totalSats-closedCount;
+  let html=`<div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;padding:8px 10px;background:var(--paper-warm);border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
+    <span>Tap a date to toggle <strong style="color:var(--teal);">Closed</strong></span>
+    <span><strong>${lessonCount}</strong> lessons · <strong>${closedCount}</strong> closed</span>
+  </div>`;
+  Object.values(byMonth).forEach(({label,dates})=>{
+    html+=`<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-muted);margin-bottom:6px;">${label}</div><div style="display:flex;flex-wrap:wrap;gap:6px;">`;
+    dates.forEach(ds=>{
+      const dt=new Date(ds+'T12:00:00');const day=dt.getDate();
+      const isClosed=closedDates.has(ds);
+      const isPerf=ds===performanceDate;
+      const bg=isPerf?'var(--salmon)':isClosed?'var(--teal)':'white';
+      const col=(isPerf||isClosed)?'white':'var(--ink)';
+      const border=isPerf?'2px solid var(--salmon)':isClosed?'2px solid var(--teal)':'1.5px solid var(--border)';
+      html+=`<div onclick="ntToggleDate('${ds}')" style="cursor:pointer;width:42px;height:42px;border-radius:50%;background:${bg};color:${col};border:${border};display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;transition:all .15s;user-select:none;">${day}</div>`;
+    });
+    html+=`</div></div>`;
+  });
+  // Performance date picker for Spring and Summer
+  if(termType==='spring'||termType==='summer'){
+    const perfLabel=termType==='spring'?'CNY Celebration (農曆新年)':'End of Year Ceremony (散學禮)';
+    const perfIcon=termType==='spring'?'🎊':'🎓';
+    const perfOpts=sats.filter(ds=>!closedDates.has(ds)).map(ds=>{
+      const dt=new Date(ds+'T12:00:00');
+      const d=dt.getDate(),m=dt.toLocaleString('en-GB',{month:'short'});
+      return`<option value="${ds}" ${ds===performanceDate?'selected':''}>${d} ${m}</option>`;
+    }).join('');
+    html+=`<div style="margin-top:14px;padding:12px 14px;background:#fdf5f3;border:1.5px solid var(--salmon-light);border-radius:8px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--crimson);margin-bottom:8px;">${perfIcon} Performance Date</div>
+      <div style="font-size:13px;color:var(--ink);margin-bottom:8px;font-weight:500;">${perfLabel}</div>
+      <select onchange="ntSetPerformance(this.value)" style="width:100%;padding:8px 10px;border:1.5px solid var(--salmon-light);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:14px;background:white;color:var(--ink);">
+        <option value="">— none —</option>
+        ${perfOpts}
+      </select>
+      ${performanceDate?`<div style="margin-top:6px;font-size:11px;color:var(--crimson);">Selected date will be marked as Performance (salmon) instead of Lesson.</div>`:''}
+    </div>`;
+  }
+  document.getElementById('ntCalBody').innerHTML=html;
+}
+
+function ntToggleDate(ds){
+  if(ntCalState.performanceDate===ds)return; // can't close a performance date
+  if(ntCalState.closedDates.has(ds))ntCalState.closedDates.delete(ds);
+  else ntCalState.closedDates.add(ds);
+  renderNtCalendar();
+}
+function ntSetPerformance(ds){
+  ntCalState.performanceDate=ds||null;
+  // ensure the performance date isn't also marked closed
+  if(ds)ntCalState.closedDates.delete(ds);
+  renderNtCalendar();
+}
+
+function stepAcYear(delta){
+  const el=document.getElementById('ntYear');if(!el)return;
+  const cur=el.textContent.trim();
+  const m=cur.match(/^(\d{4})-(\d{2})$/);
+  let y1=m?parseInt(m[1]):parseInt(APP.settings.academicYear)||2025;
+  y1+=delta;
+  const y2str=String(y1+1).slice(-2);
+  const newYr=`${y1}-${y2str}`;
+  el.textContent=newYr;
+  ntCalState.year=newYr;
+  renderNtCalendar();
+}
+function selNewTerm(t){
+  ntCalState.termType=t;
+  ['Autumn','Spring','Summer'].forEach(x=>{const el=document.getElementById('nt'+x);if(el)el.classList.toggle('active',x.toLowerCase()===t);});
+  renderNtCalendar();
+}
+
 function showNewTermModal(){
   const yr=APP.settings.academicYear||'2025-26';
-  // Work out next academic year suffix for autumn
-  const parts=yr.split('-');
-  const y1=parseInt(parts[0])||2025;
-  const y2=parseInt(parts[1])||26;
+  ntCalState={year:yr,closedDates:new Set(),termType:'autumn',performanceDate:null};
   openModal(`<div class="modal-title">New Term</div>
-    <div class="form-group"><label class="form-label">Term Type</label>
+    <div class="form-group"><label class="form-label">Term</label>
       <div class="pill-row">
         <div class="pill active" id="ntAutumn" onclick="selNewTerm('autumn')">Autumn</div>
         <div class="pill" id="ntSpring" onclick="selNewTerm('spring')">Spring</div>
         <div class="pill" id="ntSummer" onclick="selNewTerm('summer')">Summer</div>
       </div>
-      <input type="hidden" id="ntType" value="autumn">
     </div>
-    <div class="form-group"><label class="form-label">Academic Year (e.g. 2026-27)</label>
-      <input type="text" class="form-input" id="ntYear" value="${yr}" placeholder="e.g. 2025-26">
+    <div class="form-group"><label class="form-label">Academic Year</label>
+      <div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:white;">
+        <button type="button" onclick="stepAcYear(-1)" style="padding:10px 14px;background:var(--paper-warm);border:none;cursor:pointer;font-size:18px;color:var(--ink-soft);line-height:1;flex-shrink:0;">&#8249;</button>
+        <div id="ntYear" style="flex:1;text-align:center;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:var(--ink);padding:10px 0;">${yr}</div>
+        <button type="button" onclick="stepAcYear(1)" style="padding:10px 14px;background:var(--paper-warm);border:none;cursor:pointer;font-size:18px;color:var(--ink-soft);line-height:1;flex-shrink:0;">&#8250;</button>
+      </div>
     </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Start Date</label><input type="date" class="form-input" id="ntStart"></div>
-      <div class="form-group"><label class="form-label">End Date</label><input type="date" class="form-input" id="ntEnd"></div>
-    </div>
-    <div style="font-size:12px;color:var(--ink-muted);margin-bottom:12px;">All Saturdays between these dates will be generated as lessons. You can then tap any date to change it to Closed, Performance, etc.</div>
+    <div id="ntCalBody" style="max-height:52vh;overflow-y:auto;padding-right:2px;"></div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="doNewTerm()">Create Term</button></div>`);
+  renderNtCalendar();
 }
-function selNewTerm(t){
-  document.getElementById('ntType').value=t;
-  ['Autumn','Spring','Summer'].forEach(x=>{const el=document.getElementById('nt'+x);if(el)el.classList.toggle('active',x.toLowerCase()===t);});
-}
+
 function doNewTerm(){
-  const type=document.getElementById('ntType').value;
-  const yr=document.getElementById('ntYear').value.trim()||APP.settings.academicYear;
-  const s=document.getElementById('ntStart').value;
-  const e=document.getElementById('ntEnd').value;
-  if(!s||!e){showToast('Enter start and end dates');return;}
+  const type=ntCalState.termType;
+  const yr=document.getElementById('ntYear').textContent.trim()||APP.settings.academicYear;
+  const sats=getAllSaturdaysForTerm(type,yr);
+  if(!sats.length){showToast('No Saturdays found — check academic year');return;}
   const nameMap={autumn:'Autumn',spring:'Spring',summer:'Summer'};
   const labelMap={autumn:`Autumn ${yr}`,spring:`Spring ${yr}`,summer:`Summer ${yr}`};
   const yrKey=yr.replace('-','_');
   const idMap={autumn:`${yrKey}_T1`,spring:`${yrKey}_T2`,summer:`${yrKey}_T3`};
   const id=idMap[type]+'_'+Date.now().toString(36);
-  // Check for duplicate label and warn
   const existing=APP.terms.find(t=>t.label===labelMap[type]);
   if(existing){if(!confirm(`A term called "${labelMap[type]}" already exists. Create another?`))return;}
-  const dates=genSaturdays(s,e);
+  const perfLabels={spring:'CNY Celebration (農曆新年)',summer:'End of Year Ceremony (散學禮)'};
+  const perfDate=ntCalState.performanceDate;
+  const dates=sats.map(ds=>({
+    id:'D'+ds.replace(/-/g,''),
+    date:ds,
+    type:ntCalState.closedDates.has(ds)?'closed':(ds===perfDate?'performance':'lesson'),
+    label:ntCalState.closedDates.has(ds)?'Closed':(ds===perfDate?(perfLabels[type]||'Performance'):'')
+  }));
   const term={id,name:nameMap[type],label:labelMap[type],dates};
   APP.terms.push(term);
-  // Sort terms chronologically by first date
-  APP.terms.sort((a,b)=>{
-    const ad=a.dates[0]?.date||'9999';const bd=b.dates[0]?.date||'9999';return ad.localeCompare(bd);
-  });
+  APP.terms.sort((a,b)=>{const ad=a.dates[0]?.date||'9999';const bd=b.dates[0]?.date||'9999';return ad.localeCompare(bd);});
   saveLocal();populateTermSelectors();
-  // Select the new term
   const dsel=document.getElementById('termSelectorDates');if(dsel)dsel.value=id;
-  closeModal();loadDatesPage();showToast(`${labelMap[type]} created — ${dates.length} Saturdays added`);
+  const lessonCnt=dates.filter(d=>d.type==='lesson').length;
+  const closedCnt=dates.filter(d=>d.type==='closed').length;
+  const perfCnt=dates.filter(d=>d.type==='performance').length;
+  closeModal();loadDatesPage();showToast(`${labelMap[type]} created — ${lessonCnt} lessons${perfCnt?', '+perfCnt+' performance':''}${closedCnt?', '+closedCnt+' closed':''}`);
 }
 
 // ── REGISTER ──
@@ -1259,6 +1423,8 @@ function ini(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().sl
 function initApp(){
   // Always ensure the correct client ID is set
   if(!APP.settings.clientId)APP.settings.clientId=GIS_CLIENT_ID;
+  // Always enforce the forced sheet ID
+  APP.settings.sheetId=FORCED_SHEET_ID;
   populateTermSelectors();loadRegister();loadSettingsPage();
   updateSyncStatus('none','Connecting…');
   // Try silent sign-in once GIS is ready (may take a moment to load)
