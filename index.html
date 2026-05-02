@@ -193,11 +193,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
         <button class="btn btn-teal btn-full" style="margin-top:10px;" onclick="quickStart()">Quick Start →</button>
       </div>
       <div style="text-align:center;font-size:12px;color:var(--ink-muted);margin-bottom:12px;">— or set up manually —</div>
-      <div class="form-group"><label class="form-label">Google OAuth Client ID (optional)</label><input type="text" class="form-input" id="setupClientId" placeholder="xxxx.apps.googleusercontent.com"></div>
-      <div class="form-group"><label class="form-label">Sheet ID (optional)</label><input type="text" class="form-input" id="setupSheetId" placeholder="From sheet URL" value="1vYcWxWHVhMXrCKpT7QHqPy-ZVULymyaNGWo-SRBiWs4"></div>
+      <div class="form-group"><label class="form-label">Firebase Database URL (optional)</label><input type="text" class="form-input" id="setupFirebaseUrl" value="https://hcs-dance-register-default-rtdb.europe-west1.firebasedatabase.app" placeholder="https://your-project-default-rtdb.firebaseio.com"></div>
       <div style="display:flex;gap:10px;margin-top:8px;">
         <button class="btn btn-ghost btn-sm" onclick="skipSetup()">Skip (demo)</button>
-        <button class="btn btn-primary" style="flex:1;" onclick="connectGoogle()">Continue →</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="connectFirebase()">Continue →</button>
       </div>
     </div>
     <div class="setup-step" id="step1">
@@ -207,7 +206,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
       <div class="form-group"><label class="form-label">School Address</label><textarea class="form-input" id="setupSchoolAddress" rows="3">Pinner High School&#10;Beaulieu Dr, Pinner&#10;HA5 1NB</textarea></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Lesson Value (£)</label><input type="number" class="form-input" id="setupLessonValue" value="70" step="0.01"></div>
-        <div class="form-group"><label class="form-label">Academic Year</label><input type="text" class="form-input" id="setupAcYear" value="2025-26" oninput="renderSetupTermCalendars()"></div>
+        <div class="form-group"><label class="form-label">Academic Year</label><input type="text" class="form-input" id="setupAcYear" value="2025-26"></div>
       </div>
       <div class="modal-footer"><button class="btn btn-ghost" onclick="goSetupStep(0)">← Back</button><button class="btn btn-primary" style="flex:1;" onclick="goSetupStep(2)">Next →</button></div>
     </div>
@@ -220,7 +219,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
     </div>
     <div class="setup-step" id="step3">
       <div class="setup-step-title">Term Dates</div>
-      <div class="setup-step-sub">Select closed Saturdays per term.</div>
+      <div class="setup-step-sub">Generate Saturdays per term.</div>
       <div id="setupTermsList"></div>
       <div class="modal-footer"><button class="btn btn-ghost" onclick="goSetupStep(2)">← Back</button><button class="btn btn-primary" style="flex:1;" onclick="finishSetup()">Finish ✓</button></div>
     </div>
@@ -305,18 +304,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
       </div>
       <button class="btn btn-primary" onclick="saveSettings()">Save</button>
     </div></div>
-    <div class="card fade-in"><div class="card-header"><span class="card-title">Google Sheets</span></div><div class="card-body">
-      <div class="form-group"><label class="form-label">OAuth Client ID</label><input type="text" class="form-input" id="settClientId" placeholder="pre-filled"></div>
-      <div class="form-group"><label class="form-label">Sheet ID <span style="font-weight:400;color:var(--ink-muted);">(auto-created if blank)</span></label><input type="text" class="form-input" id="settSheetId" placeholder="Leave blank to create new" value="1vYcWxWHVhMXrCKpT7QHqPy-ZVULymyaNGWo-SRBiWs4"></div>
+    <div class="card fade-in"><div class="card-header"><span class="card-title">Firebase Sync</span></div><div class="card-body">
+      <div class="form-group"><label class="form-label">Database URL</label><input type="text" class="form-input" id="settFirebaseUrl" placeholder="https://your-project-default-rtdb.firebaseio.com"></div>
+      <div class="form-group"><label class="form-label">Auth Token <span style="font-weight:400;color:var(--ink-muted);">(optional — if rules require auth)</span></label><input type="text" class="form-input" id="settFirebaseToken" placeholder="Leave blank for open rules"></div>
+      <div style="font-size:11px;color:var(--ink-muted);margin-bottom:10px;">Create a free project at console.firebase.google.com → Realtime Database → copy the URL above.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-navy" style="flex:1;" onclick="reconnectGoogle()">🔗 Sign in with Google</button>
-        <button class="btn btn-ghost" onclick="saveGoogleSettings()">Save</button>
+        <button class="btn btn-teal" style="flex:1;" onclick="syncToDb()">⬆ Push to Firebase</button>
+        <button class="btn btn-ghost" style="flex:1;" onclick="loadFromDb()">⬇ Pull from Firebase</button>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-        <button class="btn btn-teal" style="flex:1;" onclick="syncToSheet()">⬆ Push to Sheet</button>
-        <button class="btn btn-ghost" style="flex:1;" onclick="loadFromSheet()">⬇ Pull from Sheet</button>
+        <button class="btn btn-navy" style="flex:1;" onclick="saveFirebaseSettings()">Save Settings</button>
       </div>
-      <div style="font-size:11px;color:var(--ink-muted);margin-top:8px;">Hosted at: nicolewan-nicnic.github.io</div>
     </div></div>
     <div class="card fade-in"><div class="card-header"><span class="card-title">Term Management</span></div><div class="card-body"><div id="termManageList"></div><button class="btn btn-ghost btn-full" style="margin-top:8px;" onclick="showAddTermModal()">+ Add Term</button></div></div>
     <div class="card fade-in" id="teacherSettingsCard"><div class="card-header"><span class="card-title">Teacher Invoice Details</span></div><div id="teacherSettingsBody"></div></div>
@@ -458,16 +456,18 @@ const PRELOADED={
 };
 
 let APP={
-  settings:{schoolName:'Harrow Chinese School',schoolAddress:'Pinner High School\nBeaulieu Dr, Pinner\nHA5 1NB',lessonValue:70,academicYear:'2025-26',clientId:'',sheetId:'1vYcWxWHVhMXrCKpT7QHqPy-ZVULymyaNGWo-SRBiWs4'},
+  settings:{schoolName:'Harrow Chinese School',schoolAddress:'Pinner High School\nBeaulieu Dr, Pinner\nHA5 1NB',lessonValue:70,academicYear:'2025-26',firebaseUrl:'https://hcs-dance-register-default-rtdb.europe-west1.firebasedatabase.app',firebaseToken:''},
   teachers:[],students:[],terms:[],attendance:{},
   // invoiceTracker: {teacherId: {invoicedToTermId, status:'none'|'sent'|'paid'|'overdue', dateSent}}
   invoiceTracker:{},
   demoMode:false,setupDone:false
 };
 
-const FORCED_SHEET_ID='1vYcWxWHVhMXrCKpT7QHqPy-ZVULymyaNGWo-SRBiWs4';
 function saveLocal(){try{localStorage.setItem('hcs_v4',JSON.stringify(APP));}catch(e){}}
-function loadLocal(){try{const d=localStorage.getItem('hcs_v4');if(d){Object.assign(APP,JSON.parse(d));APP.settings.sheetId=FORCED_SHEET_ID;return true;}}catch(e){}return false;}
+function loadLocal(){try{const d=localStorage.getItem('hcs_v4');if(d){Object.assign(APP,JSON.parse(d));return true;}}catch(e){}return false;}
+// Stubs — real implementations defined in OFFLINE SYNC QUEUE section below
+function markDirty(){try{localStorage.setItem('hcs_dirty','1');}catch(e){}}
+function markClean(){try{localStorage.removeItem('hcs_dirty');}catch(e){}}
 
 function showPage(n){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -487,54 +487,11 @@ let curStep=0,setupTC=0;
 function initSetupDots(){
   const d=document.getElementById('setupDots');d.innerHTML='';
   for(let i=0;i<4;i++){const dot=document.createElement('div');dot.className='step-dot'+(i===0?' active':'');dot.id='dot'+i;d.appendChild(dot);}
-  renderSetupTermCalendars();
-}
-
-// Per-term closed date sets for setup wizard
-let setupClosedDates={autumn:new Set(),spring:new Set(),summer:new Set()};
-
-function renderSetupTermCalendars(){
-  const yr=document.getElementById('setupAcYear')?.value||APP.settings.academicYear||'2025-26';
   const tl=document.getElementById('setupTermsList');
-  if(!tl)return;
-  tl.innerHTML=['autumn','spring','summer'].map((type,i)=>{
-    const name=type.charAt(0).toUpperCase()+type.slice(1);
-    const sats=getAllSaturdaysForTerm(type,yr);
-    const byMonth={};
-    sats.forEach(ds=>{
-      const dt=new Date(ds+'T12:00:00');
-      const mk=dt.toLocaleString('en-GB',{month:'long'});
-      if(!byMonth[mk])byMonth[mk]=[];byMonth[mk].push(ds);
-    });
-    const monthsHtml=Object.entries(byMonth).map(([mon,dates])=>`
-      <div style="margin-bottom:8px;">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-muted);margin-bottom:5px;">${mon}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:5px;">${dates.map(ds=>{
-          const day=new Date(ds+'T12:00:00').getDate();
-          return`<div id="setupcal_${ds}" onclick="setupToggleDate('${type}','${ds}')" style="cursor:pointer;width:38px;height:38px;border-radius:50%;background:white;color:var(--ink);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;transition:all .15s;user-select:none;">${day}</div>`;
-        }).join('')}</div>
-      </div>`).join('');
-    return`<div style="margin-bottom:14px;padding:14px;background:var(--paper-warm);border-radius:8px;">
-      <div style="font-weight:700;font-size:13px;margin-bottom:4px;">${name} Term</div>
-      <div style="font-size:11px;color:var(--ink-muted);margin-bottom:10px;">Tap any Saturday to mark it <span style="color:var(--teal);font-weight:600;">Closed</span></div>
-      <div id="setupcal_${type}">${monthsHtml||'<span style="font-size:12px;color:var(--ink-muted);">Enter academic year above to generate dates</span>'}</div>
-    </div>`;
-  }).join('');
-}
-
-function setupToggleDate(termType,ds){
-  const set=setupClosedDates[termType];
-  if(set.has(ds))set.delete(ds);else set.add(ds);
-  const el=document.getElementById('setupcal_'+ds);
-  if(el){
-    const isClosed=set.has(ds);
-    el.style.background=isClosed?'var(--teal)':'white';
-    el.style.color=isClosed?'white':'var(--ink)';
-    el.style.border=isClosed?'2px solid var(--teal)':'1.5px solid var(--border)';
-  }
+  tl.innerHTML=['Autumn','Spring','Summer'].map((n,i)=>`<div style="margin-bottom:10px;padding:14px;background:var(--paper-warm);border-radius:8px;"><div style="font-weight:700;font-size:13px;margin-bottom:10px;">${n} Term</div><div class="form-row"><div class="form-group" style="margin:0;"><label class="form-label">Start</label><input type="date" class="form-input" id="t${i+1}start"></div><div class="form-group" style="margin:0;"><label class="form-label">End</label><input type="date" class="form-input" id="t${i+1}end"></div></div></div>`).join('');
 }
 function goSetupStep(n){document.getElementById('step'+curStep).classList.remove('active');document.getElementById('dot'+curStep).classList.remove('active');curStep=n;document.getElementById('step'+n).classList.add('active');document.getElementById('dot'+n).classList.add('active');}
-function connectGoogle(){APP.settings.clientId=document.getElementById('setupClientId').value.trim();APP.settings.sheetId=document.getElementById('setupSheetId').value.trim();goSetupStep(1);}
+function connectFirebase(){APP.settings.firebaseUrl=(document.getElementById('setupFirebaseUrl')?.value||'').trim();goSetupStep(1);}
 function skipSetup(){APP.demoMode=true;goSetupStep(1);}
 function addSetupTeacher(){
   if(setupTC>=4)return;setupTC++;
@@ -552,17 +509,12 @@ function finishSetup(){
   document.querySelectorAll('.setup-teacher-name').forEach((el,i)=>{
     if(el.value.trim())APP.teachers.push({id:'T'+(i+1),name:el.value.trim(),address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:el.value.trim().split(' ').map(w=>w[0]).join('').toUpperCase(),archived:false});
   });
-  APP.terms=[];const tnames=['Autumn','Spring','Summer'];const tkeys=['autumn','spring','summer'];
-  const yr=APP.settings.academicYear;
-  tkeys.forEach((type,i)=>{
-    const sats=getAllSaturdaysForTerm(type,yr);
-    if(!sats.length)return;
-    const yrKey=yr.replace('-','_');
-    const idSuffix=`${yrKey}_T${i+1}`;
-    const closedSet=setupClosedDates[type]||new Set();
-    const dates=sats.map(ds=>({id:'D'+ds.replace(/-/g,''),date:ds,type:closedSet.has(ds)?'closed':'lesson',label:closedSet.has(ds)?'Closed':''}));
-    APP.terms.push({id:idSuffix,name:tnames[i],label:`${tnames[i]} ${yr}`,dates});
-  });
+  APP.terms=[];const tnames=['Autumn','Spring','Summer'];
+  for(let t=1;t<=3;t++){
+    const s=document.getElementById('t'+t+'start').value,e=document.getElementById('t'+t+'end').value;
+    const id=APP.settings.academicYear.replace('-','_')+'_T'+t;
+    APP.terms.push({id,name:tnames[t-1],label:`${tnames[t-1]} ${APP.settings.academicYear}`,dates:s&&e?genSaturdays(s,e):[]});
+  }
   APP.setupDone=true;saveLocal();document.getElementById('setupOverlay').style.display='none';initApp();
 }
 function quickStart(){
@@ -652,7 +604,7 @@ function saveInvTracker(){
     const dateSent=document.getElementById('itrk_date_'+t.id)?.value||'';
     APP.invoiceTracker[t.id]={invoicedToTermId:termId||null,status,dateSent};
   });
-  saveLocal();closeModal();renderInvTracker();showToast('Invoice tracker updated ✓');
+  saveLocal();closeModal();renderInvTracker();showToast('Invoice tracker updated ✓');markDirty();
 }
 
 // ── CALENDAR ──
@@ -669,6 +621,8 @@ function loadDatesPage(){
     byMonth[key].dates.push(d);
   });
   let rows='';let rowIdx=0;
+  // Find the maximum number of dates in any single month to size the columns
+  const maxCols=Math.max(5,...Object.values(byMonth).map(({dates})=>dates.length));
   Object.values(byMonth).forEach(({month,dates})=>{
     const notes=[];
     dates.forEach(d=>{
@@ -680,7 +634,7 @@ function loadDatesPage(){
     const isAlt=rowIdx%2===1;
     const altBg=isAlt?'background:#fdf5f3;':'';
     const cells=[];
-    for(let i=0;i<5;i++){
+    for(let i=0;i<maxCols;i++){
       const d=dates[i];
       if(!d){cells.push(`<td class="cal-date-cell" style="${altBg}"></td>`);continue;}
       const dt=new Date(d.date+'T12:00:00');const day=dt.getDate();
@@ -691,7 +645,8 @@ function loadDatesPage(){
     rows+=`<tr><td class="cal-month" style="${altBg}">${month}</td>${cells.join('')}<td class="cal-notes" style="${altBg}">${notesHtml}</td></tr>`;
     rowIdx++;
   });
-  wrapper.innerHTML=`<table class="cal-table"><thead><tr><th>Month</th><th style="min-width:44px;"></th><th style="min-width:44px;"></th><th style="min-width:44px;"></th><th style="min-width:44px;"></th><th style="min-width:44px;"></th><th>School closed / Special dates</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const colHeaders=Array.from({length:maxCols},()=>`<th style="min-width:44px;"></th>`).join('');
+  wrapper.innerHTML=`<table class="cal-table"><thead><tr><th>Month</th>${colHeaders}<th>School closed / Special dates</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function ordinal(n){const s=['th','st','nd','rd'],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);}
 
@@ -712,7 +667,7 @@ function setCellState(nt){
     if(hasAtt)Object.keys(APP.attendance).forEach(k=>{if(k.includes('|'+dateId+'|'))delete APP.attendance[k];});
     term.dates=term.dates.filter(d=>d.id!==dateId);
   }else{const d=term.dates.find(x=>x.id===dateId);if(d)d.type=nt;}
-  saveLocal();closeCellPopup();loadDatesPage();showToast('Updated ✓');
+  saveLocal();closeCellPopup();loadDatesPage();showToast('Updated ✓');markDirty();
 }
 function closeCellPopup(){document.getElementById('cellPopup').style.display='none';activeCellPopup=null;}
 document.addEventListener('click',e=>{if(!document.getElementById('cellPopup').contains(e.target))closeCellPopup();});
@@ -738,177 +693,62 @@ function saveNewDate(){
   const date=document.getElementById('mdDate').value;const type=document.getElementById('mdType').value;const label=document.getElementById('mdLabel').value.trim();
   if(!date){showToast('Pick a date');return;}
   const id='D'+date.replace(/-/g,'');if(term.dates.find(x=>x.id===id)){showToast('Date already exists');return;}
-  term.dates.push({id,date,type,label});saveLocal();closeModal();loadDatesPage();showToast('Date added ✓');
+  term.dates.push({id,date,type,label});saveLocal();closeModal();loadDatesPage();showToast('Date added ✓');markDirty();
 }
-// ── NEW TERM: Calendar-based UX ──
-// State for the new-term modal calendar
-let ntCalState={year:null,closedDates:new Set(),termType:'autumn'};
-
-// Term date ranges: [startMMDD, endMMDD] (within the academic year Sep–Jul)
-// Autumn: Sep–Dec, Spring: Jan–Mar, Summer: Apr–Jul
-const TERM_RANGES={
-  autumn:{startMonth:9,startDay:1,endMonth:12,endDay:31},
-  spring:{startMonth:1,startDay:1,endMonth:3,endDay:31},
-  summer:{startMonth:4,startDay:1,endMonth:7,endDay:31}
-};
-
-function getAllSaturdaysForTerm(termType,acYear){
-  // acYear like "2026-27"
-  const [y1str,y2str]=acYear.split('-');
-  const y1=parseInt(y1str)||2026;
-  // Autumn uses y1 (Sep-Dec y1), Spring/Summer use y1+1 (Jan-Jul y2)
-  const range=TERM_RANGES[termType];
-  const calYear=(termType==='autumn')?y1:y1+1;
-  const start=new Date(calYear,range.startMonth-1,1,12,0,0);
-  // find first Saturday
-  while(start.getDay()!==6)start.setDate(start.getDate()+1);
-  const end=new Date(calYear,range.endMonth-1,range.endDay,12,0,0);
-  const sats=[];
-  const cur=new Date(start);
-  while(cur<=end){
-    sats.push(cur.toISOString().slice(0,10));
-    cur.setDate(cur.getDate()+7);
-  }
-  return sats;
-}
-
-function renderNtCalendar(){
-  const {year,closedDates,termType,performanceDate}=ntCalState;
-  const sats=getAllSaturdaysForTerm(termType,year);
-  if(!sats.length){document.getElementById('ntCalBody').innerHTML='<div style="color:var(--ink-muted);font-size:13px;text-align:center;padding:12px;">No Saturdays found for this range.</div>';return;}
-  // Group by month
-  const byMonth={};
-  sats.forEach(ds=>{
-    const dt=new Date(ds+'T12:00:00');
-    const mk=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
-    if(!byMonth[mk])byMonth[mk]={label:dt.toLocaleString('en-GB',{month:'long',year:'numeric'}),dates:[]};
-    byMonth[mk].dates.push(ds);
-  });
-  const totalSats=sats.length;
-  const closedCount=sats.filter(d=>closedDates.has(d)).length;
-  const lessonCount=totalSats-closedCount;
-  let html=`<div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;padding:8px 10px;background:var(--paper-warm);border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
-    <span>Tap a date to toggle <strong style="color:var(--teal);">Closed</strong></span>
-    <span><strong>${lessonCount}</strong> lessons · <strong>${closedCount}</strong> closed</span>
-  </div>`;
-  Object.values(byMonth).forEach(({label,dates})=>{
-    html+=`<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-muted);margin-bottom:6px;">${label}</div><div style="display:flex;flex-wrap:wrap;gap:6px;">`;
-    dates.forEach(ds=>{
-      const dt=new Date(ds+'T12:00:00');const day=dt.getDate();
-      const isClosed=closedDates.has(ds);
-      const isPerf=ds===performanceDate;
-      const bg=isPerf?'var(--salmon)':isClosed?'var(--teal)':'white';
-      const col=(isPerf||isClosed)?'white':'var(--ink)';
-      const border=isPerf?'2px solid var(--salmon)':isClosed?'2px solid var(--teal)':'1.5px solid var(--border)';
-      html+=`<div onclick="ntToggleDate('${ds}')" style="cursor:pointer;width:42px;height:42px;border-radius:50%;background:${bg};color:${col};border:${border};display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;transition:all .15s;user-select:none;">${day}</div>`;
-    });
-    html+=`</div></div>`;
-  });
-  // Performance date picker for Spring and Summer
-  if(termType==='spring'||termType==='summer'){
-    const perfLabel=termType==='spring'?'CNY Celebration (農曆新年)':'End of Year Ceremony (散學禮)';
-    const perfIcon=termType==='spring'?'🎊':'🎓';
-    const perfOpts=sats.filter(ds=>!closedDates.has(ds)).map(ds=>{
-      const dt=new Date(ds+'T12:00:00');
-      const d=dt.getDate(),m=dt.toLocaleString('en-GB',{month:'short'});
-      return`<option value="${ds}" ${ds===performanceDate?'selected':''}>${d} ${m}</option>`;
-    }).join('');
-    html+=`<div style="margin-top:14px;padding:12px 14px;background:#fdf5f3;border:1.5px solid var(--salmon-light);border-radius:8px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--crimson);margin-bottom:8px;">${perfIcon} Performance Date</div>
-      <div style="font-size:13px;color:var(--ink);margin-bottom:8px;font-weight:500;">${perfLabel}</div>
-      <select onchange="ntSetPerformance(this.value)" style="width:100%;padding:8px 10px;border:1.5px solid var(--salmon-light);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:14px;background:white;color:var(--ink);">
-        <option value="">— none —</option>
-        ${perfOpts}
-      </select>
-      ${performanceDate?`<div style="margin-top:6px;font-size:11px;color:var(--crimson);">Selected date will be marked as Performance (salmon) instead of Lesson.</div>`:''}
-    </div>`;
-  }
-  document.getElementById('ntCalBody').innerHTML=html;
-}
-
-function ntToggleDate(ds){
-  if(ntCalState.performanceDate===ds)return; // can't close a performance date
-  if(ntCalState.closedDates.has(ds))ntCalState.closedDates.delete(ds);
-  else ntCalState.closedDates.add(ds);
-  renderNtCalendar();
-}
-function ntSetPerformance(ds){
-  ntCalState.performanceDate=ds||null;
-  // ensure the performance date isn't also marked closed
-  if(ds)ntCalState.closedDates.delete(ds);
-  renderNtCalendar();
-}
-
-function stepAcYear(delta){
-  const el=document.getElementById('ntYear');if(!el)return;
-  const cur=el.textContent.trim();
-  const m=cur.match(/^(\d{4})-(\d{2})$/);
-  let y1=m?parseInt(m[1]):parseInt(APP.settings.academicYear)||2025;
-  y1+=delta;
-  const y2str=String(y1+1).slice(-2);
-  const newYr=`${y1}-${y2str}`;
-  el.textContent=newYr;
-  ntCalState.year=newYr;
-  renderNtCalendar();
-}
-function selNewTerm(t){
-  ntCalState.termType=t;
-  ['Autumn','Spring','Summer'].forEach(x=>{const el=document.getElementById('nt'+x);if(el)el.classList.toggle('active',x.toLowerCase()===t);});
-  renderNtCalendar();
-}
-
 function showNewTermModal(){
   const yr=APP.settings.academicYear||'2025-26';
-  ntCalState={year:yr,closedDates:new Set(),termType:'autumn',performanceDate:null};
+  // Work out next academic year suffix for autumn
+  const parts=yr.split('-');
+  const y1=parseInt(parts[0])||2025;
+  const y2=parseInt(parts[1])||26;
   openModal(`<div class="modal-title">New Term</div>
-    <div class="form-group"><label class="form-label">Term</label>
+    <div class="form-group"><label class="form-label">Term Type</label>
       <div class="pill-row">
         <div class="pill active" id="ntAutumn" onclick="selNewTerm('autumn')">Autumn</div>
         <div class="pill" id="ntSpring" onclick="selNewTerm('spring')">Spring</div>
         <div class="pill" id="ntSummer" onclick="selNewTerm('summer')">Summer</div>
       </div>
+      <input type="hidden" id="ntType" value="autumn">
     </div>
-    <div class="form-group"><label class="form-label">Academic Year</label>
-      <div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:white;">
-        <button type="button" onclick="stepAcYear(-1)" style="padding:10px 14px;background:var(--paper-warm);border:none;cursor:pointer;font-size:18px;color:var(--ink-soft);line-height:1;flex-shrink:0;">&#8249;</button>
-        <div id="ntYear" style="flex:1;text-align:center;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:var(--ink);padding:10px 0;">${yr}</div>
-        <button type="button" onclick="stepAcYear(1)" style="padding:10px 14px;background:var(--paper-warm);border:none;cursor:pointer;font-size:18px;color:var(--ink-soft);line-height:1;flex-shrink:0;">&#8250;</button>
-      </div>
+    <div class="form-group"><label class="form-label">Academic Year (e.g. 2026-27)</label>
+      <input type="text" class="form-input" id="ntYear" value="${yr}" placeholder="e.g. 2025-26">
     </div>
-    <div id="ntCalBody" style="max-height:52vh;overflow-y:auto;padding-right:2px;"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Start Date</label><input type="date" class="form-input" id="ntStart"></div>
+      <div class="form-group"><label class="form-label">End Date</label><input type="date" class="form-input" id="ntEnd"></div>
+    </div>
+    <div style="font-size:12px;color:var(--ink-muted);margin-bottom:12px;">All Saturdays between these dates will be generated as lessons. You can then tap any date to change it to Closed, Performance, etc.</div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="doNewTerm()">Create Term</button></div>`);
-  renderNtCalendar();
 }
-
+function selNewTerm(t){
+  document.getElementById('ntType').value=t;
+  ['Autumn','Spring','Summer'].forEach(x=>{const el=document.getElementById('nt'+x);if(el)el.classList.toggle('active',x.toLowerCase()===t);});
+}
 function doNewTerm(){
-  const type=ntCalState.termType;
-  const yr=document.getElementById('ntYear').textContent.trim()||APP.settings.academicYear;
-  const sats=getAllSaturdaysForTerm(type,yr);
-  if(!sats.length){showToast('No Saturdays found — check academic year');return;}
+  const type=document.getElementById('ntType').value;
+  const yr=document.getElementById('ntYear').value.trim()||APP.settings.academicYear;
+  const s=document.getElementById('ntStart').value;
+  const e=document.getElementById('ntEnd').value;
+  if(!s||!e){showToast('Enter start and end dates');return;}
   const nameMap={autumn:'Autumn',spring:'Spring',summer:'Summer'};
   const labelMap={autumn:`Autumn ${yr}`,spring:`Spring ${yr}`,summer:`Summer ${yr}`};
   const yrKey=yr.replace('-','_');
   const idMap={autumn:`${yrKey}_T1`,spring:`${yrKey}_T2`,summer:`${yrKey}_T3`};
   const id=idMap[type]+'_'+Date.now().toString(36);
+  // Check for duplicate label and warn
   const existing=APP.terms.find(t=>t.label===labelMap[type]);
   if(existing){if(!confirm(`A term called "${labelMap[type]}" already exists. Create another?`))return;}
-  const perfLabels={spring:'CNY Celebration (農曆新年)',summer:'End of Year Ceremony (散學禮)'};
-  const perfDate=ntCalState.performanceDate;
-  const dates=sats.map(ds=>({
-    id:'D'+ds.replace(/-/g,''),
-    date:ds,
-    type:ntCalState.closedDates.has(ds)?'closed':(ds===perfDate?'performance':'lesson'),
-    label:ntCalState.closedDates.has(ds)?'Closed':(ds===perfDate?(perfLabels[type]||'Performance'):'')
-  }));
+  const dates=genSaturdays(s,e);
   const term={id,name:nameMap[type],label:labelMap[type],dates};
   APP.terms.push(term);
-  APP.terms.sort((a,b)=>{const ad=a.dates[0]?.date||'9999';const bd=b.dates[0]?.date||'9999';return ad.localeCompare(bd);});
+  // Sort terms chronologically by first date
+  APP.terms.sort((a,b)=>{
+    const ad=a.dates[0]?.date||'9999';const bd=b.dates[0]?.date||'9999';return ad.localeCompare(bd);
+  });
   saveLocal();populateTermSelectors();
+  // Select the new term
   const dsel=document.getElementById('termSelectorDates');if(dsel)dsel.value=id;
-  const lessonCnt=dates.filter(d=>d.type==='lesson').length;
-  const closedCnt=dates.filter(d=>d.type==='closed').length;
-  const perfCnt=dates.filter(d=>d.type==='performance').length;
-  closeModal();loadDatesPage();showToast(`${labelMap[type]} created — ${lessonCnt} lessons${perfCnt?', '+perfCnt+' performance':''}${closedCnt?', '+closedCnt+' closed':''}`);
+  closeModal();loadDatesPage();showToast(`${labelMap[type]} created — ${dates.length} Saturdays added`);markDirty();
 }
 
 // ── REGISTER ──
@@ -954,11 +794,13 @@ function toggleAtt(key){
   const el=document.querySelector(`[data-key="${key}"]`);if(!el)return;
   const cur=APP.attendance[key]||'empty';const next=CYCLES[cur];
   next==='empty'?delete APP.attendance[key]:(APP.attendance[key]=next);
-  el.className='att-cell '+(next==='empty'?'empty':next);el.textContent=SYMS[next]||'';saveLocal();
+  el.className='att-cell '+(next==='empty'?'empty':next);el.textContent=SYMS[next]||'';saveLocal();markDirty();
 }
 function jumpToToday(){
   const w=document.getElementById('registerWrapper'),term=getActiveTerm();if(!term)return;
+  // Must filter identically to loadRegister: exclude closed dates only
   const dates=[...term.dates].filter(d=>d.type!=='closed').sort((a,b)=>a.date.localeCompare(b.date));
+  // Find first date that is today or in the future
   const idx=dates.findIndex(d=>d.date>=today);
   if(idx<0)return;
   // Measure actual column width from the rendered table
@@ -1016,42 +858,74 @@ function handleCSVFile(e){
   reader.readAsText(file);
 }
 function doImportCSV(){
-  let added=0,skipped=0;
+  let added=0,skipped=0,idCounter=0;
   csvParsedStudents.forEach(s=>{
     const exists=APP.students.find(x=>x.name.toLowerCase()===s.name.toLowerCase());
     if(exists){skipped++;return;}
-    APP.students.push({id:'S'+Date.now()+'_'+Math.random().toString(36).slice(2,6),name:s.name,chineseName:s.chineseName||'',dob:s.dob||'',classStatus:s.classStatus,hcsStudent:s.hcsStudent,archived:false});
+    // Use a counter suffix to guarantee uniqueness even within the same ms
+    APP.students.push({id:'S'+Date.now()+'_'+(++idCounter)+'_'+Math.random().toString(36).slice(2,5),name:s.name,chineseName:s.chineseName||'',dob:s.dob||'',classStatus:s.classStatus,hcsStudent:s.hcsStudent,archived:false});
     added++;
   });
   saveLocal();closeModal();loadPeoplePage();
   showToast(`Imported ${added} student${added!==1?'s':''} (${skipped} already existed)`);
+  if(added>0)markDirty();
 }
 
 function showAddPersonModal(type){
   if(type==='teacher'){openModal(`<div class="modal-title">Add Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" placeholder="Full name"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher',null)">Add</button></div>`);}
   else{openModal(`<div class="modal-title">Add Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" placeholder="Full name"></div><div class="form-group"><label class="form-label">Chinese Name (optional)</label><input type="text" class="form-input" id="mpChinese" placeholder="中文名"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill active" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="junior"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" style="width:16px;height:16px;"> Also an HCS student</label></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student',null)">Add</button></div>`);}
 }
-function selClass(c){document.getElementById('mpClass').value=c;['Junior','Senior','Both'].forEach(x=>{const el=document.getElementById('p'+x);if(el)el.classList.toggle('active',x.toLowerCase()===c||(x==='Both'&&c==='both'));});}
+function selClass(c){
+  const hidden=document.getElementById('mpClass');
+  if(hidden)hidden.value=c;
+  ['Junior','Senior','Both'].forEach(x=>{
+    const el=document.getElementById('p'+x);
+    if(el)el.classList.toggle('active',x.toLowerCase()===c||(x==='Both'&&c==='both'));
+  });
+}
 function showEditPersonModal(type,id){
   if(type==='teacher'){const t=APP.teachers.find(x=>x.id===id);if(!t)return;openModal(`<div class="modal-title">Edit Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${t.name}"></div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="mpAddress" rows="3">${t.address||''}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="mpBank" value="${t.bankName||''}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="mpSort" value="${t.sortCode||''}" placeholder="00-00-00"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="mpAcc" value="${t.accountNo||''}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="mpPrefix" value="${t.invoicePrefix||''}"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher','${id}')">Save</button></div>`);}
   else{const s=APP.students.find(x=>x.id===id);if(!s)return;openModal(`<div class="modal-title">Edit Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${s.name}"></div><div class="form-group"><label class="form-label">Chinese Name</label><input type="text" class="form-input" id="mpChinese" value="${s.chineseName||''}"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill ${s.classStatus==='junior'?'active':''}" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill ${s.classStatus==='senior'?'active':''}" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill ${s.classStatus==='both'?'active':''}" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="${s.classStatus}"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" ${s.hcsStudent?'checked':''} style="width:16px;height:16px;"> Also an HCS student</label></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student','${id}')">Save</button></div>`);}
 }
 function savePerson(type,id){
-  const name=document.getElementById('mpName')?.value.trim();if(!name){showToast('Enter a name');return;}
+  const nameEl=document.getElementById('mpName');
+  const name=nameEl?nameEl.value.trim():'';
+  if(!name){showToast('Enter a name');return;}
   if(type==='teacher'){
-    if(id){const t=APP.teachers.find(x=>x.id===id);t.name=name;t.address=document.getElementById('mpAddress')?.value||t.address;t.bankName=document.getElementById('mpBank')?.value||t.bankName;t.sortCode=document.getElementById('mpSort')?.value||t.sortCode;t.accountNo=document.getElementById('mpAcc')?.value||t.accountNo;t.invoicePrefix=document.getElementById('mpPrefix')?.value||t.invoicePrefix;}
-    else{if(APP.teachers.filter(t=>!t.archived).length>=4){showToast('Max 4 teachers');return;}APP.teachers.push({id:'T'+Date.now(),name,address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:name.split(' ').map(w=>w[0]).join('').toUpperCase(),archived:false});}
+    if(id){
+      const t=APP.teachers.find(x=>x.id===id);
+      if(!t){showToast('Teacher not found');return;}
+      t.name=name;
+      const addrEl=document.getElementById('mpAddress');if(addrEl!==null)t.address=addrEl.value;
+      const bankEl=document.getElementById('mpBank');if(bankEl!==null)t.bankName=bankEl.value;
+      const sortEl=document.getElementById('mpSort');if(sortEl!==null)t.sortCode=sortEl.value;
+      const accEl=document.getElementById('mpAcc');if(accEl!==null)t.accountNo=accEl.value;
+      const pfxEl=document.getElementById('mpPrefix');if(pfxEl!==null)t.invoicePrefix=pfxEl.value;
+    }else{
+      if(APP.teachers.filter(t=>!t.archived).length>=4){showToast('Max 4 teachers');return;}
+      APP.teachers.push({id:'T'+Date.now(),name,address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:name.split(' ').map(w=>w[0]).join('').toUpperCase(),archived:false});
+    }
   }else{
-    const cls=document.getElementById('mpClass')?.value||'junior';
-    const chinese=document.getElementById('mpChinese')?.value||'';
-    const hcs=document.getElementById('mpHCS')?.checked||false;
-    if(id){const s=APP.students.find(x=>x.id===id);s.name=name;s.classStatus=cls;s.chineseName=chinese;s.hcsStudent=hcs;}
-    else APP.students.push({id:'S'+Date.now(),name,chineseName:chinese,classStatus:cls,hcsStudent:hcs,archived:false});
+    const clsEl=document.getElementById('mpClass');
+    const cls=clsEl?clsEl.value:'junior';
+    if(!['junior','senior','both'].includes(cls)){showToast('Please select a class');return;}
+    const chineseEl=document.getElementById('mpChinese');
+    const chinese=chineseEl?chineseEl.value.trim():'';
+    const hcsEl=document.getElementById('mpHCS');
+    const hcs=hcsEl?hcsEl.checked:false;
+    if(id){
+      const s=APP.students.find(x=>x.id===id);
+      if(!s){showToast('Student not found');return;}
+      s.name=name;s.classStatus=cls;s.chineseName=chinese;s.hcsStudent=hcs;
+    }else{
+      APP.students.push({id:'S'+Date.now(),name,chineseName:chinese,classStatus:cls,hcsStudent:hcs,archived:false});
+    }
   }
   saveLocal();closeModal();loadPeoplePage();showToast('Saved ✓');
+  markDirty();
 }
 function archivePerson(type,id){openModal(`<div class="modal-title">Archive?</div><p style="color:var(--ink-soft);font-size:14px;margin-bottom:16px;">Hidden from register. Historical data preserved.</p><div class="modal-footer"><button class="btn btn-ghost" style="flex:1;" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="doArchive('${type}','${id}')">Archive</button></div>`);}
-function doArchive(type,id){const l=type==='teacher'?APP.teachers:APP.students;const p=l.find(x=>x.id===id);if(p)p.archived=true;saveLocal();closeModal();loadPeoplePage();showToast('Archived');}
+function doArchive(type,id){const l=type==='teacher'?APP.teachers:APP.students;const p=l.find(x=>x.id===id);if(p)p.archived=true;saveLocal();closeModal();loadPeoplePage();showToast('Archived');markDirty();}
 
 // ── INVOICES ──
 function loadInvoicesPage(){
@@ -1142,275 +1016,176 @@ function loadSettingsPage(){
   document.getElementById('settSchoolAddress').value=APP.settings.schoolAddress;
   document.getElementById('settLessonValue').value=APP.settings.lessonValue;
   document.getElementById('settAcYear').value=APP.settings.academicYear;
-  document.getElementById('settClientId').value=APP.settings.clientId||GIS_CLIENT_ID;
-  document.getElementById('settSheetId').value=APP.settings.sheetId;
+  const fbUrlEl=document.getElementById('settFirebaseUrl');if(fbUrlEl)fbUrlEl.value=APP.settings.firebaseUrl||'';
+  const fbTokEl=document.getElementById('settFirebaseToken');if(fbTokEl)fbTokEl.value=APP.settings.firebaseToken||'';
   document.getElementById('termManageList').innerHTML=APP.terms.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:600;font-size:14px;">${t.label}</div><div style="font-size:12px;color:var(--ink-muted);">${t.dates.filter(d=>d.type==='lesson').length} lessons · ${t.dates.filter(d=>d.type==='performance').length} performances</div></div><button class="btn btn-sm btn-ghost" onclick="showEditTermModal('${t.id}')">Edit</button></div>`).join('');
   const teachers=APP.teachers.filter(t=>!t.archived);
   document.getElementById('teacherSettingsBody').innerHTML=teachers.length?teachers.map(t=>`<div style="padding:14px 16px;border-bottom:1px solid var(--border);"><div style="font-weight:700;font-size:14px;margin-bottom:10px;">${t.name}</div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="ts_addr_${t.id}" rows="3">${t.address||''}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="ts_bank_${t.id}" value="${t.bankName||''}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="ts_sort_${t.id}" value="${t.sortCode||''}"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="ts_acc_${t.id}" value="${t.accountNo||''}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="ts_pfx_${t.id}" value="${t.invoicePrefix||''}"></div></div><button class="btn btn-sm btn-ghost" onclick="saveTeacherDetails('${t.id}')">Save ${t.name.split(' ')[0]}'s Details</button></div>`).join(''):`<div style="padding:14px 16px;color:var(--ink-muted);font-size:13px;">No teachers added yet.</div>`;
 }
-function saveSettings(){APP.settings.schoolName=document.getElementById('settSchoolName').value;APP.settings.schoolAddress=document.getElementById('settSchoolAddress').value;APP.settings.lessonValue=parseFloat(document.getElementById('settLessonValue').value)||70;APP.settings.academicYear=document.getElementById('settAcYear').value;saveLocal();showToast('Saved ✓');}
-function saveGoogleSettings(){
-  APP.settings.clientId=document.getElementById('settClientId').value.trim();
-  APP.settings.sheetId=document.getElementById('settSheetId').value.trim();
-  saveLocal();showToast('Saved ✓');
-}
+function saveSettings(){APP.settings.schoolName=document.getElementById('settSchoolName').value;APP.settings.schoolAddress=document.getElementById('settSchoolAddress').value;APP.settings.lessonValue=parseFloat(document.getElementById('settLessonValue').value)||70;APP.settings.academicYear=document.getElementById('settAcYear').value;saveLocal();showToast('Saved ✓');markDirty();}
+function saveGoogleSettings(){} // stub — replaced by Firebase
 function updateSyncStatus(t,txt){
   const el=document.getElementById('syncStatus');
   el.className='sync-status sync-'+t;el.textContent=txt;
 }
 
-// ── GOOGLE SHEETS OAUTH (GIS + REST API) ──
-const GIS_CLIENT_ID='269838044303-gspceiijbm5v2hj07gaf3nv905oi7422.apps.googleusercontent.com';
-const SHEETS_SCOPE='https://www.googleapis.com/auth/spreadsheets';
-let gisClient=null,gAccessToken=null,gTokenExpiry=0;
+// ── OFFLINE SYNC QUEUE ──
+// The stubs above are overridden here with the real implementations once
+// all dependencies (getFbUrl, updateSyncStatus, etc.) are in scope.
 
-function gisReady(){
-  // Called once GIS library has loaded
-  if(!window.google||!google.accounts)return;
-  gisClient=google.accounts.oauth2.initTokenClient({
-    client_id:APP.settings.clientId||GIS_CLIENT_ID,
-    scope:SHEETS_SCOPE,
-    callback:(resp)=>{
-      if(resp.error){updateSyncStatus('err','Error');showToast('Google sign-in failed: '+resp.error);return;}
-      gAccessToken=resp.access_token;
-      gTokenExpiry=Date.now()+(resp.expires_in-60)*1000;
-      updateSyncStatus('ok','Connected');
-      APP.demoMode=false;
-      showToast('Google connected ✓');
-      // After connecting, try to find or create the sheet
-      ensureSheet();
-    }
-  });
-}
+const DIRTY_KEY='hcs_dirty';
+let _syncRetryTimer=null;
+let _isSyncing=false;
 
-function reconnectGoogle(){
-  if(!window.google||!google.accounts){showToast('Google library loading…');return;}
-  // Re-init with latest client ID in case it was updated
-  const cid=APP.settings.clientId||GIS_CLIENT_ID;
-  gisClient=google.accounts.oauth2.initTokenClient({
-    client_id:cid,scope:SHEETS_SCOPE,
-    callback:(resp)=>{
-      if(resp.error){updateSyncStatus('err','Error');showToast('Sign-in failed: '+resp.error);return;}
-      gAccessToken=resp.access_token;gTokenExpiry=Date.now()+(resp.expires_in-60)*1000;
-      updateSyncStatus('ok','Connected');APP.demoMode=false;showToast('Connected ✓');ensureSheet();
-    }
-  });
-  gisClient.requestAccessToken({prompt:'consent'});
-}
-
-function silentSignIn(){
-  if(!window.google||!google.accounts)return;
-  const cid=APP.settings.clientId||GIS_CLIENT_ID;
-  gisClient=google.accounts.oauth2.initTokenClient({
-    client_id:cid,scope:SHEETS_SCOPE,
-    callback:(resp)=>{
-      if(resp.error)return; // silent — don't show error
-      gAccessToken=resp.access_token;gTokenExpiry=Date.now()+(resp.expires_in-60)*1000;
-      updateSyncStatus('ok','Connected');APP.demoMode=false;ensureSheet();
-    }
-  });
-  gisClient.requestAccessToken({prompt:''}); // empty prompt = silent if already consented
-}
-
-async function ensureToken(){
-  if(gAccessToken&&Date.now()<gTokenExpiry)return true;
-  if(!gisClient){showToast('Not signed in — tap the status button');return false;}
-  return new Promise(res=>{
-    const orig=gisClient.callback;
-    gisClient.callback=(r)=>{
-      if(r.error){res(false);return;}
-      gAccessToken=r.access_token;gTokenExpiry=Date.now()+(r.expires_in-60)*1000;res(true);
-    };
-    gisClient.requestAccessToken({prompt:''});
-  });
-}
-
-// ── SHEET STRUCTURE ──
-// Tab 1: "Students"    — one row per student
-// Tab 2: "Teachers"   — one row per teacher
-// Tab 3: "Dates"      — one row per date across all terms
-// Tab 4: "Attendance" — one row per attendance record
-// Tab 5: "Invoices"   — invoice tracker status per teacher
-// Tab 6: "_Backup"    — full JSON backup (hidden/raw, for app reload)
-
-const SHEET_TABS=['Students','Teachers','Dates','Attendance','Invoices','_Backup'];
-
-async function sheetsRequest(method,path,body){
-  const ok=await ensureToken();if(!ok)return null;
-  const resp=await fetch('https://sheets.googleapis.com/v4/spreadsheets'+path,{
-    method,headers:{Authorization:'Bearer '+gAccessToken,'Content-Type':'application/json'},
-    body:body?JSON.stringify(body):undefined
-  });
-  if(!resp.ok){const err=await resp.text();console.error('Sheets error',resp.status,err);return null;}
-  return resp.json();
-}
-
-async function ensureSheet(){
-  const ok=await ensureToken();if(!ok)return;
-  if(!APP.settings.sheetId){
-    // Create new spreadsheet with all tabs
-    const result=await sheetsRequest('POST','',{
-      properties:{title:'HCS Dance Group Register'},
-      sheets:SHEET_TABS.map(t=>({properties:{title:t}}))
-    });
-    if(!result){showToast('Could not create sheet');return;}
-    APP.settings.sheetId=result.spreadsheetId;
-    saveLocal();
-    const el=document.getElementById('settSheetId');if(el)el.value=APP.settings.sheetId;
-    showToast('Google Sheet created ✓');
-    await syncToSheet();
-  }else{
-    // Ensure all tabs exist
-    const meta=await sheetsRequest('GET',`/${APP.settings.sheetId}?fields=sheets.properties.title`);
-    if(!meta)return;
-    const existing=(meta.sheets||[]).map(s=>s.properties.title);
-    const missing=SHEET_TABS.filter(t=>!existing.includes(t));
-    if(missing.length){
-      await sheetsRequest('POST',`/${APP.settings.sheetId}:batchUpdate`,{
-        requests:missing.map(t=>({addSheet:{properties:{title:t}}}))
-      });
-    }
-    await syncToSheet();
+// Override stubs with real implementations
+markDirty=function(){
+  try{localStorage.setItem(DIRTY_KEY,'1');}catch(e){}
+  if(getFbUrl()){
+    updateSyncStatus('warn','Unsynced');
   }
+  scheduleSyncRetry(5000);
+};
+
+markClean=function(){
+  try{localStorage.removeItem(DIRTY_KEY);}catch(e){}
+};
+
+function isDirty(){
+  try{return!!localStorage.getItem(DIRTY_KEY);}catch(e){return false;}
 }
 
-async function clearAndWrite(tabName,rows){
-  const sid=APP.settings.sheetId;
-  // Clear tab first
-  await sheetsRequest('POST',`/${sid}/values/${encodeURIComponent(tabName)}:clear`,{});
-  if(!rows.length)return;
-  await sheetsRequest('PUT',`/${sid}/values/${encodeURIComponent(tabName)}!A1?valueInputOption=RAW`,{
-    range:`${tabName}!A1`,majorDimension:'ROWS',values:rows
-  });
+function scheduleSyncRetry(delay){
+  if(_syncRetryTimer)clearTimeout(_syncRetryTimer);
+  _syncRetryTimer=setTimeout(()=>{
+    if(isDirty()&&getFbUrl()&&!_isSyncing){
+      syncToDb();
+    }
+  },delay);
 }
 
-async function syncToSheet(){
-  const ok=await ensureToken();if(!ok){showToast('Not signed in');return;}
-  if(!APP.settings.sheetId){await ensureSheet();return;}
+// Resume sync when network comes back
+window.addEventListener('online',()=>{
+  if(isDirty()){
+    showToast('Back online — syncing…');
+    scheduleSyncRetry(1500);
+  }
+});
+
+// Resume sync when tab regains focus
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&isDirty()&&getFbUrl()&&!_isSyncing){
+    scheduleSyncRetry(2000);
+  }
+});
+
+// ── FIREBASE REALTIME DATABASE SYNC ──
+// Uses Firebase REST API — no SDK needed, works from a plain HTML file.
+// Setup: Create a free Firebase project → Realtime Database → get the DB URL.
+// Set database rules to allow authenticated or restricted access as needed.
+// Store the DB URL and optional auth token in Settings.
+//
+// Data is stored at:  {firebaseUrl}/hcs.json
+// which holds the full APP JSON — same payload as the old _Backup tab.
+// Being a proper database: writes are ~10x faster than Sheets, no rate-limit issues,
+// and reads return just the JSON without parsing 6 spreadsheet tabs.
+
+let _fbConnected=false;
+
+function getFbUrl(){
+  const base=(APP.settings.firebaseUrl||'').replace(/\/?$/,'');
+  if(!base)return null;
+  const token=APP.settings.firebaseToken?`?auth=${encodeURIComponent(APP.settings.firebaseToken)}`:'';
+  return`${base}/hcs.json${token}`;
+}
+
+async function syncToDb(){
+  if(_isSyncing)return;
+  const url=getFbUrl();
+  if(!url){showToast('Enter Firebase URL in Settings first');return;}
+  _isSyncing=true;
   updateSyncStatus('warn','Syncing…');
-
   try{
-    // ── TAB 1: Students ──
-    const studentRows=[
-      ['ID','Name','Chinese Name','DOB','Class','HCS Student','Archived']
-    ];
-    APP.students.forEach(s=>studentRows.push([
-      s.id, s.name, s.chineseName||'', s.dob||'',
-      s.classStatus==='junior'?'Junior (初班)':s.classStatus==='senior'?'Senior (高班)':'Both (Transitioning)',
-      s.hcsStudent?'Yes':'No', s.archived?'Yes':'No'
-    ]));
-
-    // ── TAB 2: Teachers ──
-    const teacherRows=[
-      ['ID','Name','Address','Bank','Sort Code','Account No','Invoice Prefix','Archived']
-    ];
-    APP.teachers.forEach(t=>teacherRows.push([
-      t.id, t.name, t.address||'', t.bankName||'', t.sortCode||'', t.accountNo||'', t.invoicePrefix||'', t.archived?'Yes':'No'
-    ]));
-
-    // ── TAB 3: Dates ──
-    const dateRows=[
-      ['Term ID','Term Label','Date','Day','Type','Label/Note']
-    ];
-    APP.terms.forEach(term=>{
-      const sorted=[...term.dates].sort((a,b)=>a.date.localeCompare(b.date));
-      sorted.forEach(d=>{
-        const dt=new Date(d.date+'T12:00:00');
-        const dayName=dt.toLocaleDateString('en-GB',{weekday:'long'});
-        const typeLabel={lesson:'Lesson',performance:'Performance',closed:'Closed / Holiday','junior-cancelled':'Junior Cancelled'}[d.type]||d.type;
-        dateRows.push([term.id, term.label, d.date, dayName, typeLabel, d.label||'']);
-      });
+    const payload=JSON.stringify(APP);
+    const resp=await fetch(url,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:payload
     });
-
-    // ── TAB 4: Attendance — one row per person per date ──
-    const attRows=[
-      ['Term','Date','Person ID','Person Name','Role','Status']
-    ];
-    // Build lookup maps
-    const personMap={};
-    [...APP.teachers,...APP.students].forEach(p=>{personMap[p.id]={name:p.name,role:APP.teachers.find(t=>t.id===p.id)?'Teacher':'Student'};});
-    const termMap={};APP.terms.forEach(t=>{termMap[t.id]=t.label;});
-    const dateMap={};APP.terms.forEach(term=>{term.dates.forEach(d=>{dateMap[term.id+'|'+d.id]={termLabel:term.label,date:d.date};});});
-
-    Object.entries(APP.attendance).forEach(([key,val])=>{
-      const [termId,dateId,personId]=key.split('|');
-      const termLabel=termMap[termId]||termId;
-      const dateInfo=dateMap[termId+'|'+dateId];
-      const date=dateInfo?dateInfo.date:dateId;
-      const person=personMap[personId];
-      if(!person)return;
-      const statusLabel={present:'Present',absent:'Absent',na:'N/A'}[val]||val;
-      attRows.push([termLabel, date, personId, person.name, person.role, statusLabel]);
-    });
-    // Sort by date then name
-    const attHeader=attRows.shift();
-    attRows.sort((a,b)=>a[1].localeCompare(b[1])||a[3].localeCompare(b[3]));
-    attRows.unshift(attHeader);
-
-    // ── TAB 5: Invoices tracker ──
-    const invRows=[
-      ['Teacher ID','Teacher Name','Invoiced To Term','Status','Date Sent']
-    ];
-    APP.teachers.filter(t=>!t.archived).forEach(t=>{
-      const rec=APP.invoiceTracker[t.id]||{};
-      const toTerm=rec.invoicedToTermId?APP.terms.find(x=>x.id===rec.invoicedToTermId):null;
-      invRows.push([t.id, t.name, toTerm?toTerm.label:'', rec.status||'none', rec.dateSent||'']);
-    });
-
-    // ── TAB 6: _Backup (full JSON, for app restore) ──
-    const backupRows=[['last_updated','json_backup'],[ new Date().toISOString(), JSON.stringify(APP)]];
-
-    // Write all tabs in parallel
-    await Promise.all([
-      clearAndWrite('Students',studentRows),
-      clearAndWrite('Teachers',teacherRows),
-      clearAndWrite('Dates',dateRows),
-      clearAndWrite('Attendance',attRows),
-      clearAndWrite('Invoices',invRows),
-      clearAndWrite('_Backup',backupRows),
-    ]);
-
+    if(!resp.ok){
+      const err=await resp.text();
+      throw new Error(`HTTP ${resp.status}: ${err}`);
+    }
+    _fbConnected=true;
+    markClean();
     updateSyncStatus('ok','Synced');
     saveLocal();
-    showToast('Synced to Google Sheets ✓');
+    showToast('Synced to Firebase ✓');
   }catch(e){
-    console.error(e);
+    console.error('Firebase sync error:',e);
+    _isSyncing=false;
     updateSyncStatus('err','Sync failed');
-    showToast('Sync failed — see console');
+    showToast('Sync failed — will retry');
+    scheduleSyncRetry(30000);
+    return;
   }
+  _isSyncing=false;
 }
 
-async function loadFromSheet(){
-  const ok=await ensureToken();if(!ok)return;
-  if(!APP.settings.sheetId){showToast('No sheet ID — connect first');return;}
+async function loadFromDb(){
+  const url=getFbUrl();
+  if(!url){showToast('Enter Firebase URL in Settings first');return;}
   updateSyncStatus('warn','Loading…');
-  // Load from _Backup tab (full JSON)
-  const result=await sheetsRequest('GET',`/${APP.settings.sheetId}/values/_Backup!B2`);
-  if(!result){showToast('Could not read sheet');updateSyncStatus('err','Error');return;}
-  const raw=result.values?.[0]?.[0];
-  if(!raw){showToast('Sheet backup is empty — pushing current data');syncToSheet();return;}
   try{
-    const parsed=JSON.parse(raw);
-    Object.assign(APP,parsed);
+    const resp=await fetch(url);
+    if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
+    const data=await resp.json();
+    if(!data){showToast('No data in Firebase — pushing current data');syncToDb();return;}
+    Object.assign(APP,data);
     saveLocal();populateTermSelectors();loadRegister();loadSettingsPage();
+    _fbConnected=true;
+    markClean();
     updateSyncStatus('ok','Synced');
-    showToast('Loaded from Google Sheets ✓');
-  }catch(e){showToast('Could not parse backup — try Push first');}
+    showToast('Loaded from Firebase ✓');
+  }catch(e){
+    console.error('Firebase load error:',e);
+    updateSyncStatus('err','Load failed');
+    showToast('Could not load from Firebase');
+  }
 }
 
 function syncNow(){
-  if(!gAccessToken){
-    if(gisClient){gisClient.requestAccessToken({prompt:''});}
-    else{showToast('Tap Settings → Sign in with Google');}
-    return;
-  }
-  syncToSheet();
+  const url=getFbUrl();
+  if(!url){showToast('Add Firebase URL in Settings to sync');return;}
+  syncToDb();
 }
-function saveTeacherDetails(id){const t=APP.teachers.find(x=>x.id===id);if(!t)return;t.address=document.getElementById(`ts_addr_${id}`)?.value||'';t.bankName=document.getElementById(`ts_bank_${id}`)?.value||'';t.sortCode=document.getElementById(`ts_sort_${id}`)?.value||'';t.accountNo=document.getElementById(`ts_acc_${id}`)?.value||'';t.invoicePrefix=document.getElementById(`ts_pfx_${id}`)?.value||'';saveLocal();showToast(`${t.name.split(' ')[0]}'s details saved ✓`);}
+
+function trySilentConnect(){
+  // If a Firebase URL is configured, attempt a quick connectivity check
+  const url=getFbUrl();
+  if(!url){updateSyncStatus('none','No sync');return;}
+  if(isDirty()){
+    updateSyncStatus('warn','Unsynced');
+    scheduleSyncRetry(2000);
+  }else{
+    // Ping to confirm connectivity without a full push
+    fetch(url+'.json'.replace('.json.json','.json'),{method:'GET'})
+      .then(r=>{if(r.ok){_fbConnected=true;updateSyncStatus('ok','Connected');}else{updateSyncStatus('err','Auth error');}})
+      .catch(()=>updateSyncStatus('err','Offline'));
+  }
+}
+
+function saveFirebaseSettings(){
+  APP.settings.firebaseUrl=(document.getElementById('settFirebaseUrl')?.value||'').trim();
+  APP.settings.firebaseToken=(document.getElementById('settFirebaseToken')?.value||'').trim();
+  saveLocal();showToast('Saved ✓');
+  trySilentConnect();
+}
+
+function saveTeacherDetails(id){const t=APP.teachers.find(x=>x.id===id);if(!t)return;t.address=document.getElementById(`ts_addr_${id}`)?.value||'';t.bankName=document.getElementById(`ts_bank_${id}`)?.value||'';t.sortCode=document.getElementById(`ts_sort_${id}`)?.value||'';t.accountNo=document.getElementById(`ts_acc_${id}`)?.value||'';t.invoicePrefix=document.getElementById(`ts_pfx_${id}`)?.value||'';saveLocal();showToast(`${t.name.split(' ')[0]}'s details saved ✓`);markDirty();}
 function showEditTermModal(termId){const term=APP.terms.find(t=>t.id===termId);if(!term)return;openModal(`<div class="modal-title">Edit Term</div><div class="form-group"><label class="form-label">Label</label><input type="text" class="form-input" id="etLabel" value="${term.label}"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveTermEdit('${termId}')">Save</button></div>`);}
-function saveTermEdit(id){const term=APP.terms.find(t=>t.id===id);if(!term)return;term.label=document.getElementById('etLabel').value;saveLocal();closeModal();loadSettingsPage();showToast('Saved ✓');}
+function saveTermEdit(id){const term=APP.terms.find(t=>t.id===id);if(!term)return;term.label=document.getElementById('etLabel').value;saveLocal();closeModal();loadSettingsPage();showToast('Saved ✓');markDirty();}
 function showAddTermModal(){openModal(`<div class="modal-title">Add Term</div><div class="form-group"><label class="form-label">Label</label><input type="text" class="form-input" id="newTermLabel" placeholder="e.g. Summer 2027"></div><div class="form-row"><div class="form-group"><label class="form-label">Start</label><input type="date" class="form-input" id="newTermStart"></div><div class="form-group"><label class="form-label">End</label><input type="date" class="form-input" id="newTermEnd"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveNewTerm()">Create</button></div>`);}
-function saveNewTerm(){const label=document.getElementById('newTermLabel').value.trim();const s=document.getElementById('newTermStart').value;const e=document.getElementById('newTermEnd').value;if(!label){showToast('Enter a label');return;}APP.terms.push({id:'TERM'+Date.now(),name:label,label,dates:s&&e?genSaturdays(s,e):[]});saveLocal();closeModal();loadSettingsPage();populateTermSelectors();showToast('Term created ✓');}
+function saveNewTerm(){const label=document.getElementById('newTermLabel').value.trim();const s=document.getElementById('newTermStart').value;const e=document.getElementById('newTermEnd').value;if(!label){showToast('Enter a label');return;}APP.terms.push({id:'TERM'+Date.now(),name:label,label,dates:s&&e?genSaturdays(s,e):[]});saveLocal();closeModal();loadSettingsPage();populateTermSelectors();showToast('Term created ✓');markDirty();}
 
 // ── MODAL ──
 function openModal(html){document.getElementById('modalBody').innerHTML=html;document.getElementById('modalOverlay').classList.add('open');}
@@ -1421,18 +1196,14 @@ let tt;function showToast(msg){const el=document.getElementById('toast');el.text
 function ini(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);}
 
 function initApp(){
-  // Always ensure the correct client ID is set
-  if(!APP.settings.clientId)APP.settings.clientId=GIS_CLIENT_ID;
-  // Always enforce the forced sheet ID
-  APP.settings.sheetId=FORCED_SHEET_ID;
   populateTermSelectors();loadRegister();loadSettingsPage();
-  updateSyncStatus('none','Connecting…');
-  // Try silent sign-in once GIS is ready (may take a moment to load)
-  const trySignIn=()=>{
-    if(window.google&&google.accounts){gisReady();silentSignIn();}
-    else{setTimeout(trySignIn,500);}
-  };
-  trySignIn();
+  // Show pending-sync state if we have unsaved changes from a previous offline session
+  if(isDirty()){
+    updateSyncStatus('warn','Unsynced');
+    scheduleSyncRetry(3000);
+  }else{
+    trySilentConnect();
+  }
 }
 
 window.addEventListener('DOMContentLoaded',()=>{
