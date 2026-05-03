@@ -192,7 +192,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
         <button class="btn btn-teal btn-full" style="margin-top:10px;" onclick="quickStart()">Quick Start →</button>
       </div>
       <div style="text-align:center;font-size:12px;color:var(--ink-muted);margin-bottom:12px;">— or set up manually —</div>
-      <div class="form-group"><label class="form-label">Firebase Database URL (optional)</label><input type="text" class="form-input" id="setupFirebaseUrl" value="https://hcs-dance-register-default-rtdb.europe-west1.firebasedatabase.app" placeholder="https://your-project-default-rtdb.firebaseio.com"></div>
+      <div class="form-group"><label class="form-label">Firebase Database URL (optional)</label><input type="text" class="form-input" id="setupFirebaseUrl" value="" placeholder="https://your-project-default-rtdb.firebaseio.com"></div>
       <div style="display:flex;gap:10px;margin-top:8px;">
         <button class="btn btn-ghost btn-sm" onclick="skipSetup()">Skip (demo)</button>
         <button class="btn btn-primary" style="flex:1;" onclick="connectFirebase()">Continue →</button>
@@ -455,7 +455,7 @@ const PRELOADED={
 };
 
 let APP={
-  settings:{schoolName:'Harrow Chinese School',schoolAddress:'Pinner High School\nBeaulieu Dr, Pinner\nHA5 1NB',lessonValue:70,academicYear:'2025-26',firebaseUrl:'https://hcs-dance-register-default-rtdb.europe-west1.firebasedatabase.app',firebaseToken:''},
+  settings:{schoolName:'Harrow Chinese School',schoolAddress:'Pinner High School\nBeaulieu Dr, Pinner\nHA5 1NB',lessonValue:70,academicYear:'2025-26',firebaseUrl:'',firebaseToken:''},
   teachers:[],students:[],terms:[],attendance:{},
   // invoiceTracker: {teacherId: {invoicedToTermId, status:'none'|'sent'|'paid'|'overdue', dateSent}}
   invoiceTracker:{},
@@ -472,7 +472,8 @@ function loadLocal(){
       // Ensure required top-level keys exist in case this is an older save
       if(!APP.invoiceTracker)APP.invoiceTracker={};
       if(!APP.attendance)APP.attendance={};
-      if(!APP.settings.firebaseUrl)APP.settings.firebaseUrl='https://hcs-dance-register-default-rtdb.europe-west1.firebasedatabase.app';
+      // Only fall back to the default URL if no URL was ever saved — do NOT overwrite a user-entered URL
+      if(APP.settings.firebaseUrl===undefined)APP.settings.firebaseUrl='';
       if(APP.settings.firebaseToken===undefined)APP.settings.firebaseToken='';
       return true;
     }
