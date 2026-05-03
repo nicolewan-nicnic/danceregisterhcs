@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HCS Register Import</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{--navy:#1a2340;--crimson:#8b1a2e;--teal:#1d5c4a;--paper:#faf9f7;--paper-warm:#f4f0ea;--border:#ddd8d0;--ink:#1a2340;--ink-soft:#5a6070;--ink-muted:#9098a8;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);font-size:15px}
+header{background:var(--navy);color:white;padding:20px 24px}
+h1{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600}
+.sub{font-size:12px;opacity:.5;margin-top:2px}
+.wrap{max-width:760px;margin:0 auto;padding:24px 20px}
+.card{background:white;border:1px solid var(--border);border-radius:10px;margin-bottom:16px;overflow:hidden}
+.card-head{background:var(--paper-warm);padding:12px 16px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft)}
+.card-body{padding:16px}
+label{display:block;font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);margin-bottom:14px}
+input:focus{outline:none;border-color:var(--navy)}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;padding:14px;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;border:none;background:var(--crimson);color:white;margin-top:4px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat{background:var(--paper-warm);border-radius:8px;padding:14px;text-align:center}
+.stat-n{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--navy)}
+.stat-l{font-size:11px;color:var(--ink-muted);margin-top:2px}
+.notice{background:#fef9ec;border:1px solid #f59e0b;border-radius:8px;padding:12px 14px;font-size:13px;color:#78350f;margin-bottom:8px;line-height:1.5}
+.notice strong{display:block;margin-bottom:2px;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.people-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+.person-chip{background:var(--paper-warm);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:12px}
+.person-chip .name{font-weight:600;color:var(--ink)}
+.person-chip .meta{color:var(--ink-muted);margin-top:2px;font-size:11px}
+.term-block{border-bottom:1px solid var(--border);padding:8px 0}
+.term-block:last-child{border-bottom:none}
+.term-title{font-weight:700;font-size:13px;margin-bottom:4px}
+.date-row{display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;color:var(--ink-soft)}
+.dpill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:#d4edd9;color:var(--teal)}
+.ppill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:#f5d5cc;color:var(--crimson)}
+.cpill{font-size:10px;padding:2px 7px;border-radius:20px;background:#f0f0f0;color:#888}
+.qpill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:#fef3c7;color:#92400e}
+#log{background:#1a2340;color:#a8c8a0;font-family:monospace;font-size:12px;padding:14px;border-radius:8px;max-height:340px;overflow-y:auto;margin-top:12px;display:none}
+.le{color:#e8a090}.lo{color:#a8c8a0}.li{color:#90b8d8}.lw{color:#fcd34d}
+</style>
+</head>
+<body>
+<header>
+  <h1>HCS Register Import Tool</h1>
+  <div class="sub">Adds teachers, students, and 5 terms of historical attendance to Firebase</div>
+</header>
+<div class="wrap">
+
+<div class="card">
+  <div class="card-head">Firebase Connection</div>
+  <div class="card-body">
+    <label>Database URL</label>
+    <input id="fbUrl" value="https://hcs-dance-register-default-rtdb.europe-west1.firebasedatabase.app">
+    <label>Auth Token (leave blank if rules are open)</label>
+    <input id="fbToken" placeholder="optional">
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">One remaining query</div>
+  <div class="card-body">
+    <div class="notice">
+      <strong>⚠ Sneha Li Amin — name spelling</strong>
+      The registers previously showed this student as "Sasha Li Amin". You've now given the name as "Sneha Li Amin". Please confirm the correct spelling before running — this is what will be stored in the app.
+    </div>
+    <div class="notice">
+      <strong>⚠ Autumn 2024 — junior start date (14 Sep)</strong>
+      Did junior students (Hazel, Emily, Jessie, Aryana, Harriet, Ruby, Eris) attend on 14 Sep? Their marks for that date are currently left blank. If they were present or absent, correct them in the app after import.
+    </div>
+    <div class="notice">
+      <strong>⚠ Chloe/Nicole/Lydia/Iris — first session</strong>
+      These teachers appear from 5 Oct in the register. If they attended earlier (21 Sep, 28 Sep), correct those dates in the app after import.
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">People to add</div>
+  <div class="card-body">
+    <div style="font-size:12px;color:var(--ink-muted);margin-bottom:10px;">These will be written to Firebase automatically when you run the import.</div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin-bottom:6px;">Teachers</div>
+    <div class="people-grid" id="teacherChips"></div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin:10px 0 6px;">Students</div>
+    <div class="people-grid" id="studentChips"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">Attendance to import</div>
+  <div class="card-body">
+    <div class="summary">
+      <div class="stat"><div class="stat-n" id="sT">0</div><div class="stat-l">Terms</div></div>
+      <div class="stat"><div class="stat-n" id="sD">0</div><div class="stat-l">Lessons</div></div>
+      <div class="stat"><div class="stat-n" id="sP">0</div><div class="stat-l">Performances</div></div>
+      <div class="stat"><div class="stat-n" id="sR">0</div><div class="stat-l">Marks</div></div>
+    </div>
+    <div id="termList"></div>
+  </div>
+</div>
+
+<button class="btn" onclick="runImport()" id="importBtn">⬆ Run Import</button>
+<div id="log"></div>
+</div>
+
+<script>
+// ── People to add ──────────────────────────────────────────────────
+const NEW_TEACHERS = [
+  {id:'T_chloe_wan',   name:'Chloe Wan',   address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:'CW', archived:false},
+  {id:'T_nicole_wan',  name:'Nicole Wan',  address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:'NW', archived:false},
+  {id:'T_lydia_zhang', name:'Lydia Zhang', address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:'LZ', archived:false},
+  {id:'T_iris_tse',    name:'Iris Tse',    address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:'IT', archived:false},
+];
+
+const NEW_STUDENTS = [
+  {id:'IMP_melody_ma',      name:'Melody Ma',      chineseName:'',dob:'',classStatus:'senior',hcsStudent:false,archived:true},
+  {id:'IMP_sajni_mei_amin', name:'Sajni Mei Amin', chineseName:'',dob:'',classStatus:'senior',hcsStudent:false,archived:false},
+  {id:'IMP_sneha_li_amin',  name:'Sneha Li Amin',  chineseName:'',dob:'',classStatus:'senior',hcsStudent:false,archived:false},
+  {id:'IMP_ruby_garner',    name:'Ruby Garner',    chineseName:'',dob:'',classStatus:'junior',hcsStudent:false,archived:false},
+  {id:'IMP_lilian_lac',     name:'Lilian Lac',     chineseName:'',dob:'',classStatus:'junior',hcsStudent:false,archived:false},
+];
+
+// ── Attendance key map ─────────────────────────────────────────────
+// Teacher short keys → fixed IDs above
+const T = {
+  T_Chloe:  'T_chloe_wan',
+  T_Nicole: 'T_nicole_wan',
+  T_Lydia:  'T_lydia_zhang',
+  T_Iris:   'T_iris_tse',
+};
+
+// New student short keys → fixed IDs above
+const S = {
+  Melody:  'IMP_melody_ma',
+  Sajni:   'IMP_sajni_mei_amin',
+  Sneha:   'IMP_sneha_li_amin',
+  Ruby:    'IMP_ruby_garner',
+  Lilian:  'IMP_lilian_lac',
+};
+
+// ── Attendance data ────────────────────────────────────────────────
+// _type: 'lesson' | 'performance' | 'closed'
+// Only lessons are imported into attendance.
+// Performances are written as term dates but without attendance.
+//
+// Pre-loaded student IDs (from CSV Quick Start):
+//  CSV_S1=Emily Garner        CSV_S8=Hayley Wan
+//  CSV_S2=Zi Ting Chan        CSV_S9=Kira Pau
+//  CSV_S3=Jasmin Lai Amin     CSV_S10=Hazel Lam
+//  CSV_S4=Sophie Kong         CSV_S11=Aryana Tang
+//  CSV_S5=Jessie Chan         CSV_S12=Harriet Brady
+//  CSV_S6=Abigail Sum Yu Cheung  CSV_S13=Eris Wai Turner
+//  CSV_S7=Annabelle Tze Yu Cheung
+
+const DATA = {
+
+  // ════════════════════════════════════════════
+  // AUTUMN 2024
+  // 7/9(jnr-cancelled), 14/9, 21/9, 28/9, 5/10,
+  // 12/10, 19/10, 26/10, [2/11 HT], 9/11, 16/11,
+  // 23/11, 30/11, 7/12, 14/12
+  // ════════════════════════════════════════════
+  '2024_25_T1':{ label:'Autumn 2024', dates:{
+
+    // 7 Sep — junior-cancelled: seniors + teachers only
+    // Juniors (S1,S5,S10,S11,S12,S13,Ruby) = junior-cancelled, left blank
+    // Teachers: start unclear — left blank pending your check
+    'D20240907':{_type:'lesson',_note:'Junior-cancelled. Juniors blank.',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'absent',[S.Sneha]:'absent',
+    },
+
+    // 14 Sep — juniors uncertain (left blank), Kira not yet enrolled
+    'D20240914':{_type:'lesson',_note:'Junior marks unclear — left blank. Kira not enrolled.',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'absent',[S.Sneha]:'absent',
+    },
+
+    // 21 Sep — Kira joins; teachers start here (query: may be earlier)
+    'D20240921':{_type:'lesson',_note:'Teachers start here — may be earlier. Correct if needed.',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present',[S.Ruby]:'absent','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20240928':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'absent','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present',[S.Ruby]:'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20241005':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'absent',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'absent',[S.Ruby]:'absent','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20241012':{_type:'lesson',
+      'CSV_S2':'absent','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'absent',
+      'CSV_S3':'absent',[S.Sajni]:'present',[S.Sneha]:'absent',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present',[S.Ruby]:'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20241019':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'absent',[S.Ruby]:'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20241026':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'absent',[S.Sneha]:'present',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present',[S.Ruby]:'absent','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20241102':{_type:'closed'},
+
+    'D20241109':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'absent',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present',[S.Ruby]:'present','CSV_S13':'absent',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20241116':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'absent',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present',[S.Ruby]:'absent','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20241123':{_type:'lesson',
+      'CSV_S2':'absent','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'absent',[S.Sneha]:'present',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'absent','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'absent',[S.Ruby]:'absent','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'absent',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20241130':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present',[S.Ruby]:'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'absent',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20241207':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'absent',[S.Sneha]:'absent',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present',[S.Ruby]:'absent','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20241214':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present',[S.Ruby]:'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+  }},
+
+  // ════════════════════════════════════════════
+  // SPRING 2025
+  // 11/1, 18/1, 25/1, [1/2 CNY perf], 8/2, 15/2,
+  // [22/2 HT], 1/3, 8/3, 15/3, 22/3, 29/3
+  // Arielle Ho left — all blank (not imported)
+  // ════════════════════════════════════════════
+  '2024_25_T2':{ label:'Spring 2025', dates:{
+
+    'D20250111':{_type:'lesson',
+      'CSV_S2':'present',[S.Sajni]:'present','CSV_S4':'present',
+      'CSV_S3':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present','CSV_S11':'present',
+      [S.Sneha]:'absent','CSV_S12':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250118':{_type:'lesson',
+      'CSV_S2':'present',[S.Sajni]:'present','CSV_S4':'present',
+      'CSV_S3':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present','CSV_S11':'present',
+      [S.Sneha]:'present','CSV_S12':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250125':{_type:'lesson',
+      'CSV_S2':'present',[S.Sajni]:'present','CSV_S4':'present',
+      'CSV_S3':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present','CSV_S11':'present',
+      [S.Sneha]:'present','CSV_S12':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250201':{_type:'performance',_note:'CNY Celebration — not billed, not imported as lesson.'},
+
+    'D20250208':{_type:'lesson',
+      'CSV_S2':'present',[S.Sajni]:'absent','CSV_S4':'present',
+      'CSV_S3':'absent',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present','CSV_S11':'present',
+      [S.Sneha]:'absent','CSV_S12':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250215':{_type:'lesson',
+      'CSV_S2':'absent',[S.Sajni]:'absent','CSV_S4':'present',
+      'CSV_S3':'absent',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present','CSV_S11':'present',
+      [S.Sneha]:'absent','CSV_S12':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250222':{_type:'closed'},
+
+    'D20250301':{_type:'lesson',
+      'CSV_S2':'present',[S.Sajni]:'absent','CSV_S4':'present',
+      'CSV_S3':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S10':'absent','CSV_S1':'present','CSV_S5':'present','CSV_S11':'present',
+      [S.Sneha]:'absent','CSV_S12':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250308':{_type:'lesson',
+      'CSV_S2':'present',[S.Sajni]:'absent','CSV_S4':'present',
+      'CSV_S3':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present','CSV_S11':'present',
+      [S.Sneha]:'absent','CSV_S12':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250315':{_type:'lesson',
+      'CSV_S2':'present',[S.Sajni]:'present','CSV_S4':'present',
+      'CSV_S3':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present','CSV_S11':'absent',
+      [S.Sneha]:'present','CSV_S12':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250322':{_type:'lesson',
+      'CSV_S2':'present',[S.Sajni]:'absent','CSV_S4':'present',
+      'CSV_S3':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present','CSV_S11':'present',
+      [S.Sneha]:'absent','CSV_S12':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250329':{_type:'lesson',
+      'CSV_S2':'present',[S.Sajni]:'present','CSV_S4':'present',
+      'CSV_S3':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present','CSV_S11':'present',
+      [S.Sneha]:'present','CSV_S12':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+  }},
+
+  // ════════════════════════════════════════════
+  // SUMMER 2025
+  // 26/4, 3/5, [10/5 cancelled], 17/5, 24/5,
+  // [31/5 HT], 7/6, 14/6, 21/6, 28/6, 5/7, 12/7
+  // [19/7 = FC Performance on Sunday — not in app dates]
+  // Sajni absent all term. Arielle Ho left — blank.
+  // ════════════════════════════════════════════
+  '2024_25_T3':{ label:'Summer 2025', dates:{
+
+    'D20250426':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'absent',[S.Sneha]:'absent',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250503':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'absent',[S.Sneha]:'absent',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250510':{_type:'closed'},
+
+    'D20250517':{_type:'lesson',
+      'CSV_S2':'absent','CSV_S4':'present',[S.Melody]:'absent',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'absent',[S.Sneha]:'absent',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'absent',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250524':{_type:'lesson',_note:'Corrected from "26/5" (Monday) → 24 May (Saturday).',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'absent',[S.Sneha]:'absent',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'absent',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250531':{_type:'closed'},
+
+    'D20250607':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'absent',[S.Sneha]:'absent',
+      'CSV_S9':'present',
+      'CSV_S10':'absent','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250614':{_type:'lesson',
+      'CSV_S2':'absent','CSV_S4':'absent',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'absent',[S.Sneha]:'absent',
+      'CSV_S9':'present',
+      'CSV_S10':'absent','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'absent',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250621':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'absent',[S.Sneha]:'absent',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250628':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'absent',[S.Sneha]:'absent',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250705':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'absent',[S.Sneha]:'absent',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20250712':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'absent',[S.Sneha]:'absent',
+      'CSV_S9':'present',
+      'CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    // FC Performance on Sunday 20 Jul — cannot enter as a Saturday date in app
+    // Not imported. Note preserved here for reference.
+  }},
+
+  // ════════════════════════════════════════════
+  // SPRING 2026
+  // 10/1, 17/1, 24/1, 31/1, 7/2, 14/2,
+  // [21/2 HT], [28/2 CNY perf], 7/3, 14/3, 21/3, 28/3
+  // Show columns (Watford/Docklands etc) excluded.
+  // ════════════════════════════════════════════
+  '2025_26_T2':{ label:'Spring 2026', dates:{
+
+    'D20260110':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'present','CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20260117':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'present','CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20260124':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'absent','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'present','CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20260131':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'absent',[S.Sneha]:'present',
+      'CSV_S9':'present','CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20260207':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'present','CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20260214':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'absent',[S.Sajni]:'absent',[S.Sneha]:'present',
+      'CSV_S9':'present','CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20260221':{_type:'closed'},
+    'D20260228':{_type:'performance',_note:'CNY Celebration — not billed.'},
+
+    'D20260307':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'present','CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20260314':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'present','CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20260321':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'absent',
+      'CSV_S9':'present','CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'absent',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20260328':{_type:'lesson',
+      'CSV_S2':'present','CSV_S4':'present',[S.Melody]:'present',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'present','CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [S.Lilian]:'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'present',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+  }},
+
+  // ════════════════════════════════════════════
+  // SUMMER 2026
+  // 18/4, 25/4 (attendance data), then 2/5, 9/5,
+  // 16/5, 23/5, [30/5 HT], 6/6, 13/6, 20/6,
+  // 27/6, 4/7, [11/7 End of Year perf],
+  // [18/7 FC perf — Sunday 19/7 noted, closest Sat = 18/7]
+  // Only 18/4 and 25/4 have attendance data.
+  // ════════════════════════════════════════════
+  '2025_26_T3':{ label:'Summer 2026', dates:{
+
+    'D20260418':{_type:'lesson',
+      'CSV_S2':'absent','CSV_S4':'present',[S.Melody]:'absent',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'present','CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [S.Ruby]:'present',[S.Lilian]:'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'absent',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    'D20260425':{_type:'lesson',
+      'CSV_S2':'absent','CSV_S4':'present',[S.Melody]:'absent',
+      'CSV_S6':'present','CSV_S7':'present','CSV_S8':'present',
+      'CSV_S3':'present',[S.Sajni]:'present',[S.Sneha]:'present',
+      'CSV_S9':'present','CSV_S10':'present','CSV_S1':'present','CSV_S5':'present',
+      'CSV_S11':'present','CSV_S12':'present','CSV_S13':'present',
+      [S.Ruby]:'present',[S.Lilian]:'present',
+      [T.T_Chloe]:'present',[T.T_Nicole]:'absent',[T.T_Lydia]:'present',[T.T_Iris]:'present',
+    },
+
+    // Remaining dates — no attendance yet (ongoing term)
+    'D20260502':{_type:'lesson'},
+    'D20260509':{_type:'lesson'},
+    'D20260516':{_type:'lesson'},
+    'D20260523':{_type:'lesson'},
+    'D20260530':{_type:'closed'},
+    'D20260606':{_type:'lesson'},
+    'D20260613':{_type:'lesson'},
+    'D20260620':{_type:'lesson'},
+    'D20260627':{_type:'lesson',_note:'Corrected from "27/7" → 27 Jun.'},
+    'D20260704':{_type:'lesson'},
+    'D20260711':{_type:'performance',_note:'End of Year Performance.'},
+    // FC performance on Sunday 19 Jul 2026 — cannot be a Saturday date, not imported
+  }},
+};
+
+// ── Helpers ───────────────────────────────────────────────────────
+function getUrls() {
+  const b = document.getElementById('fbUrl').value.trim().replace(/\/?$/,'');
+  const t = document.getElementById('fbToken').value.trim();
+  const a = t ? '?auth='+encodeURIComponent(t) : '';
+  return { root: b+'/hcs.json'+a, att: b+'/hcs/attendance.json'+a,
+           teachers: b+'/hcs/teachers.json'+a, students: b+'/hcs/students.json'+a };
+}
+
+function log(msg, c='li') {
+  const el = document.getElementById('log');
+  el.style.display = 'block';
+  const d = document.createElement('div');
+  d.className = c; d.textContent = '['+new Date().toLocaleTimeString()+'] '+msg;
+  el.appendChild(d); el.scrollTop = el.scrollHeight;
+}
+
+// ── Init UI ────────────────────────────────────────────────────────
+function init() {
+  document.getElementById('teacherChips').innerHTML = NEW_TEACHERS.map(t =>
+    `<div class="person-chip"><div class="name">${t.name}</div><div class="meta">Teacher · details to fill in Settings</div></div>`
+  ).join('');
+
+  document.getElementById('studentChips').innerHTML = NEW_STUDENTS.map(s =>
+    `<div class="person-chip"><div class="name">${s.name}${s.archived?' (archived)':''}</div><div class="meta">${s.classStatus.charAt(0).toUpperCase()+s.classStatus.slice(1)}</div></div>`
+  ).join('');
+
+  let lessons=0, perfs=0, marks=0;
+  Object.values(DATA).forEach(term => {
+    Object.values(term.dates).forEach(d => {
+      if (d._type==='lesson') { lessons++; marks += Object.keys(d).filter(k=>!k.startsWith('_')).length; }
+      if (d._type==='performance') perfs++;
+    });
+  });
+  document.getElementById('sT').textContent = Object.keys(DATA).length;
+  document.getElementById('sD').textContent = lessons;
+  document.getElementById('sP').textContent = perfs;
+  document.getElementById('sR').textContent = marks;
+
+  document.getElementById('termList').innerHTML = Object.entries(DATA).map(([id,term]) => `
+    <div class="term-block">
+      <div class="term-title">${term.label} <small style="color:var(--ink-muted);font-weight:400;">${id}</small></div>
+      ${Object.entries(term.dates).map(([did,d]) => {
+        const dd = did.replace('D','').replace(/(\d{4})(\d{2})(\d{2})/,'$3/$2/$1');
+        const mc = Object.keys(d).filter(k=>!k.startsWith('_')).length;
+        if (d._type==='lesson')      return `<div class="date-row"><span class="dpill">${dd}</span><span>${mc} marks</span>${d._note?`<span class="qpill">note</span>`:''}</div>`;
+        if (d._type==='performance') return `<div class="date-row"><span class="ppill">${dd} performance</span></div>`;
+        if (d._type==='closed')      return `<div class="date-row"><span class="cpill">${dd} closed</span></div>`;
+        return '';
+      }).join('')}
+    </div>`).join('');
+}
+
+// ── Import ─────────────────────────────────────────────────────────
+async function runImport() {
+  const u = getUrls();
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('importBtn').disabled = true;
+
+  // Step 1: Load existing app data
+  log('Loading existing app data from Firebase…','li');
+  let app;
+  try {
+    const r = await fetch(u.root);
+    if (!r.ok) throw new Error('HTTP '+r.status+' — check URL and database rules');
+    app = await r.json();
+    if (!app) throw new Error('Firebase empty — do a Push from the main app first');
+  } catch(e) { log('ERROR: '+e.message,'le'); document.getElementById('importBtn').disabled=false; return; }
+  log('App data loaded ✓','lo');
+
+  // Step 2: Merge teachers (skip if name already exists)
+  const existingTeachers = app.teachers||[];
+  const existingTeacherNames = new Set(existingTeachers.map(t=>t.name.toLowerCase()));
+  const teachersToAdd = NEW_TEACHERS.filter(t => !existingTeacherNames.has(t.name.toLowerCase()));
+  const mergedTeachers = [...existingTeachers, ...teachersToAdd];
+  if (teachersToAdd.length) {
+    log(`Adding ${teachersToAdd.length} teacher(s): ${teachersToAdd.map(t=>t.name).join(', ')}`, 'li');
+    const r = await fetch(u.teachers, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mergedTeachers)});
+    if (!r.ok) { log('ERROR writing teachers: HTTP '+r.status,'le'); }
+    else log('Teachers written ✓','lo');
+  } else {
+    log('All teachers already exist — skipped','li');
+  }
+
+  // Step 3: Merge students (skip if name already exists)
+  const existingStudents = app.students||[];
+  const existingStudentNames = new Set(existingStudents.map(s=>s.name.toLowerCase()));
+  const studentsToAdd = NEW_STUDENTS.filter(s => !existingStudentNames.has(s.name.toLowerCase()));
+  const mergedStudents = [...existingStudents, ...studentsToAdd];
+  if (studentsToAdd.length) {
+    log(`Adding ${studentsToAdd.length} student(s): ${studentsToAdd.map(s=>s.name).join(', ')}`, 'li');
+    const r = await fetch(u.students, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mergedStudents)});
+    if (!r.ok) { log('ERROR writing students: HTTP '+r.status,'le'); }
+    else log('Students written ✓','lo');
+  } else {
+    log('All students already exist — skipped','li');
+  }
+
+  // Build name→id lookup from merged lists (covers both existing and newly added)
+  const teacherByName = {};
+  mergedTeachers.forEach(t => { teacherByName[t.name.toLowerCase()] = t.id; });
+  const studentByName = {};
+  mergedStudents.forEach(s => { studentByName[s.name.toLowerCase()] = s.id; });
+
+  // Step 4: Import attendance
+  log('Building attendance records…','li');
+  const existing = app.attendance||{};
+  const merged = {...existing};
+  let added=0, skipped=0;
+
+  Object.entries(DATA).forEach(([termId, term]) => {
+    const termExists = (app.terms||[]).some(t=>t.id===termId);
+    if (!termExists) { log(`SKIP: term ${termId} not found in app — add it in Dates first`,'le'); return; }
+
+    Object.entries(term.dates).forEach(([dateId, d]) => {
+      if (d._type !== 'lesson') return;
+
+      Object.entries(d).forEach(([key, val]) => {
+        if (key.startsWith('_')) return;
+
+        let personId = key;
+
+        // Resolve teacher shorthand keys T_Chloe etc.
+        if (key.startsWith('T_')) {
+          const fullId = T[key];
+          personId = teacherByName[NEW_TEACHERS.find(t=>t.id===fullId)?.name?.toLowerCase()||''] || fullId;
+          // Actually just use the fixed ID directly — it's what we just wrote
+          personId = fullId;
+        }
+
+        // Resolve new student shorthand keys S.Melody etc.
+        // These resolve via the S map to IMP_* IDs, which are the fixed IDs we wrote
+        // personId is already the IMP_* or T_* ID from the T/S maps
+
+        const attKey = `${termId}|${dateId}|${personId}`;
+        if (existing[attKey]) { skipped++; return; }
+        merged[attKey] = val;
+        added++;
+      });
+    });
+  });
+
+  log(`Prepared ${added} new attendance records (${skipped} already existed)`, 'li');
+
+  const r = await fetch(u.att, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(merged)});
+  if (!r.ok) { log('ERROR writing attendance: HTTP '+r.status,'le'); document.getElementById('importBtn').disabled=false; return; }
+  log(`✓ Done! ${added} attendance records imported.`, 'lo');
+  log('Now: main app → Settings → Pull from Firebase.','lo');
+  document.getElementById('importBtn').disabled = false;
+}
+
+init();
+</script>
+</body>
+</html>
