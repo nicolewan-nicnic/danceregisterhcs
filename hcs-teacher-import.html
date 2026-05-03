@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>HCS Teacher Attendance Import</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{--navy:#1a2340;--crimson:#8b1a2e;--teal:#1d5c4a;--paper:#faf9f7;--paper-warm:#f4f0ea;--border:#ddd8d0;--ink:#1a2340;--ink-soft:#5a6070;--ink-muted:#9098a8;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);font-size:15px}
+header{background:var(--navy);color:white;padding:20px 24px}
+h1{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600}
+.sub{font-size:12px;opacity:.5;margin-top:2px}
+.wrap{max-width:720px;margin:0 auto;padding:24px 20px}
+.card{background:white;border:1px solid var(--border);border-radius:10px;margin-bottom:16px;overflow:hidden}
+.card-head{background:var(--paper-warm);padding:12px 16px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft)}
+.card-body{padding:16px}
+label{display:block;font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);margin-bottom:14px}
+input:focus{outline:none;border-color:var(--navy)}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;padding:14px;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;border:none;background:var(--crimson);color:white;margin-top:4px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+.stat{background:var(--paper-warm);border-radius:8px;padding:14px;text-align:center}
+.stat-n{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;color:var(--navy)}
+.stat-l{font-size:11px;color:var(--ink-muted);margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--paper-warm);padding:6px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);border-bottom:2px solid var(--border)}
+td{padding:5px 8px;border-bottom:1px solid var(--border);color:var(--ink-soft)}
+td:first-child{font-weight:600;color:var(--ink);font-size:11px}
+.p{color:var(--teal);font-weight:700}
+.a{color:var(--crimson);font-weight:700}
+.b{color:var(--ink-muted)}
+#log{background:#1a2340;color:#a8c8a0;font-family:monospace;font-size:12px;padding:14px;border-radius:8px;max-height:300px;overflow-y:auto;margin-top:12px;display:none}
+.le{color:#e8a090}.lo{color:#a8c8a0}.li{color:#90b8d8}.lw{color:#fcd34d}
+</style>
+</head>
+<body>
+<header>
+  <h1>HCS Teacher Attendance Import</h1>
+  <div class="sub">Supplementary import — teacher attendance for Chloe, Nicole, Lydia, Iris</div>
+</header>
+<div class="wrap">
+
+<div class="card">
+  <div class="card-head">Firebase Connection</div>
+  <div class="card-body">
+    <label>Database URL</label>
+    <input id="fbUrl" value="https://hcs-dance-register-default-rtdb.europe-west1.firebasedatabase.app">
+    <label>Auth Token (leave blank if rules are open)</label>
+    <input id="fbToken" placeholder="optional">
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">Teacher attendance transcribed from registers</div>
+  <div class="card-body">
+    <div class="summary">
+      <div class="stat"><div class="stat-n">5</div><div class="stat-l">Terms</div></div>
+      <div class="stat"><div class="stat-n" id="sDates">0</div><div class="stat-l">Dates</div></div>
+      <div class="stat"><div class="stat-n" id="sMarks">0</div><div class="stat-l">Marks</div></div>
+    </div>
+    <div id="tableWrap"></div>
+  </div>
+</div>
+
+<button class="btn" id="importBtn" onclick="runImport()">⬆ Import Teacher Attendance</button>
+<div id="log"></div>
+</div>
+
+<script>
+// Teacher IDs — must match what was written by the main import tool
+const TEACHERS = {
+  Chloe:  'T_chloe_wan',
+  Nicole: 'T_nicole_wan',
+  Lydia:  'T_lydia_zhang',
+  Iris:   'T_iris_tse',
+};
+
+// p=present, a=absent, b=blank(not recorded/unclear)
+// Columns map to Saturday lesson dates for each term (closed/perf dates excluded).
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTUMN 2024
+// Lesson dates (excluding 2 Nov HT):
+// 7/9, 14/9, 21/9, 28/9, 5/10, 12/10, 19/10, 26/10, 9/11, 16/11, 23/11, 30/11, 7/12, 14/12
+// Teachers appear from rows 27-30. First two cols (7/9, 14/9) have marks.
+// ─────────────────────────────────────────────────────────────────────────────
+const AUTUMN_2024_DATES = [
+  'D20240907','D20240914','D20240921','D20240928',
+  'D20241005','D20241012','D20241019','D20241026',
+  'D20241109','D20241116','D20241123','D20241130',
+  'D20241207','D20241214',
+];
+// p=present, a=absent, b=blank
+const AUTUMN_2024 = {
+  // Reading rows 27-30 of IMG_6354 carefully across all 14 lesson columns:
+  // Col:        7/9  14/9  21/9  28/9  5/10  12/10 19/10 26/10  9/11  16/11 23/11 30/11  7/12  14/12
+  Chloe:  ['p',  'a',  'a',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'a',  'a'],
+  Nicole: ['p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'a',  'a',  'a',  'a',  'p',  'p'],
+  Lydia:  ['p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'a',  'p'],
+  Iris:   ['p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p'],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPRING 2025
+// Lesson dates (excluding 1 Feb CNY perf, 22 Feb HT):
+// 11/1, 18/1, 25/1, 8/2, 15/2, 1/3, 8/3, 15/3, 22/3, 29/3
+// Teachers in rows 15-18 of IMG_6356
+// ─────────────────────────────────────────────────────────────────────────────
+const SPRING_2025_DATES = [
+  'D20250111','D20250118','D20250125',
+  'D20250208','D20250215',
+  'D20250301','D20250308','D20250315','D20250322','D20250329',
+];
+// Col:        11/1  18/1  25/1   8/2  15/2   1/3   8/3  15/3  22/3  29/3
+const SPRING_2025 = {
+  Chloe:  ['p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p'],
+  Nicole: ['p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p'],
+  Lydia:  ['p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p'],
+  Iris:   ['p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p'],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUMMER 2025
+// Lesson dates (excluding 10/5 cancelled, 31/5 HT, 19/7 FC perf Sunday):
+// 26/4, 3/5, 17/5, 24/5, 7/6, 14/6, 21/6, 28/6, 5/7, 12/7
+// Teachers in rows 15-18 of IMG_6355
+// ─────────────────────────────────────────────────────────────────────────────
+const SUMMER_2025_DATES = [
+  'D20250426','D20250503',
+  'D20250517','D20250524',
+  'D20250607','D20250614','D20250621','D20250628',
+  'D20250705','D20250712',
+];
+// Col:        26/4   3/5  17/5  24/5   7/6  14/6  21/6  28/6   5/7  12/7
+const SUMMER_2025 = {
+  Chloe:  ['p',  'p',  'p',  'p',  'p',  'a',  'p',  'p',  'p',  'p'],
+  Nicole: ['p',  'p',  'a',  'a',  'p',  'p',  'p',  'p',  'p',  'p'],
+  Lydia:  ['p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p'],
+  Iris:   ['p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p'],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPRING 2026
+// Lesson dates (excluding 21/2 HT, 28/2 CNY perf):
+// 10/1, 17/1, 24/1, 31/1, 7/2, 14/2, 7/3, 14/3, 21/3, 28/3
+// Teachers in rows 27-30 of IMG_6353
+// ─────────────────────────────────────────────────────────────────────────────
+const SPRING_2026_DATES = [
+  'D20260110','D20260117','D20260124','D20260131',
+  'D20260207','D20260214',
+  'D20260307','D20260314','D20260321','D20260328',
+];
+// Col:        10/1  17/1  24/1  31/1   7/2  14/2   7/3  14/3  21/3  28/3
+const SPRING_2026 = {
+  Chloe:  ['p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p'],
+  Nicole: ['p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'a',  'p'],
+  Lydia:  ['p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p'],
+  Iris:   ['p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p',  'p'],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUMMER 2026
+// Only first 2 dates have attendance: 18/4, 25/4
+// Teachers in IMG_6352
+// ─────────────────────────────────────────────────────────────────────────────
+const SUMMER_2026_DATES = [
+  'D20260418','D20260425',
+];
+// Col:        18/4  25/4
+const SUMMER_2026 = {
+  Chloe:  ['p',  'p'],
+  Nicole: ['a',  'a'],
+  Lydia:  ['p',  'p'],
+  Iris:   ['p',  'p'],
+};
+
+// ── Compile all terms ─────────────────────────────────────────────
+const TERMS = [
+  { id:'2024_25_T1', label:'Autumn 2024',  dates:AUTUMN_2024_DATES,  att:AUTUMN_2024  },
+  { id:'2024_25_T2', label:'Spring 2025',  dates:SPRING_2025_DATES,  att:SPRING_2025  },
+  { id:'2024_25_T3', label:'Summer 2025',  dates:SUMMER_2025_DATES,  att:SUMMER_2025  },
+  { id:'2025_26_T2', label:'Spring 2026',  dates:SPRING_2026_DATES,  att:SPRING_2026  },
+  { id:'2025_26_T3', label:'Summer 2026',  dates:SUMMER_2026_DATES,  att:SUMMER_2026  },
+];
+
+// ── UI ────────────────────────────────────────────────────────────
+function init() {
+  let totalDates = 0, totalMarks = 0;
+  let html = '';
+
+  TERMS.forEach(term => {
+    totalDates += term.dates.length;
+    html += `<div style="margin-bottom:20px">
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px;color:var(--ink)">${term.label}</div>
+      <table>
+        <thead><tr><th>Teacher</th>${term.dates.map(d=>`<th>${d.replace('D','').replace(/(\d{4})(\d{2})(\d{2})/,'$3/$2')}</th>`).join('')}</tr></thead>
+        <tbody>`;
+    Object.entries(term.att).forEach(([name, marks]) => {
+      totalMarks += marks.filter(m=>m!=='b').length;
+      html += `<tr><td>${name} Wan / Zhang / Tse</td>${marks.map(m=>
+        m==='p' ? `<td class="p">✓</td>` :
+        m==='a' ? `<td class="a">✗</td>` :
+                  `<td class="b">—</td>`
+      ).join('')}</tr>`;
+    });
+    html += `</tbody></table></div>`;
+  });
+
+  document.getElementById('sDates').textContent = totalDates;
+  document.getElementById('sMarks').textContent = totalMarks;
+  document.getElementById('tableWrap').innerHTML = html;
+}
+
+function getUrls() {
+  const b = document.getElementById('fbUrl').value.trim().replace(/\/?$/,'');
+  const t = document.getElementById('fbToken').value.trim();
+  const a = t ? '?auth='+encodeURIComponent(t) : '';
+  return { root: b+'/hcs.json'+a, att: b+'/hcs/attendance.json'+a };
+}
+
+function log(msg, c='li') {
+  const el = document.getElementById('log');
+  el.style.display = 'block';
+  const d = document.createElement('div');
+  d.className = c; d.textContent = '['+new Date().toLocaleTimeString()+'] '+msg;
+  el.appendChild(d); el.scrollTop = el.scrollHeight;
+}
+
+async function runImport() {
+  const u = getUrls();
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('importBtn').disabled = true;
+
+  log('Loading app data from Firebase…','li');
+  let app;
+  try {
+    const r = await fetch(u.root);
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    app = await r.json();
+    if (!app) throw new Error('Firebase empty — Push from main app first');
+  } catch(e) { log('ERROR: '+e.message,'le'); document.getElementById('importBtn').disabled=false; return; }
+
+  // Resolve teacher IDs — look up by name in app.teachers first,
+  // fall back to the fixed IDs from the main import tool
+  const appTeachers = app.teachers||[];
+  const resolvedIds = {};
+  Object.entries(TEACHERS).forEach(([name, fixedId]) => {
+    const found = appTeachers.find(t => t.name.toLowerCase().includes(name.toLowerCase()));
+    resolvedIds[name] = found ? found.id : fixedId;
+    log(`${name}: resolved to ID ${resolvedIds[name]}`, 'li');
+  });
+
+  const existing = app.attendance||{};
+  const merged = {...existing};
+  let added = 0, skipped = 0;
+
+  TERMS.forEach(term => {
+    const termExists = (app.terms||[]).some(t=>t.id===term.id);
+    if (!termExists) { log(`SKIP: term ${term.id} not in app`,'lw'); return; }
+
+    term.dates.forEach((dateId, colIdx) => {
+      Object.entries(term.att).forEach(([teacherName, marks]) => {
+        const mark = marks[colIdx];
+        if (mark === 'b') return; // blank — not imported
+        const personId = resolvedIds[teacherName];
+        if (!personId) { skipped++; return; }
+        const key = `${term.id}|${dateId}|${personId}`;
+        if (existing[key]) { skipped++; return; }
+        merged[key] = mark === 'p' ? 'present' : 'absent';
+        added++;
+      });
+    });
+  });
+
+  log(`Prepared ${added} new teacher records (${skipped} already existed or skipped)`, 'li');
+
+  try {
+    const r = await fetch(u.att, {
+      method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(merged)
+    });
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    log(`✓ Done! ${added} teacher attendance records imported.`, 'lo');
+    log('Main app → Settings → Pull from Firebase.', 'lo');
+  } catch(e) { log('ERROR: '+e.message,'le'); }
+
+  document.getElementById('importBtn').disabled = false;
+}
+
+init();
+</script>
+</body>
+</html>
