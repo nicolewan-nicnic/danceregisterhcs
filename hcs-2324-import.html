@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>HCS 2023-24 Import</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{--navy:#1a2340;--crimson:#8b1a2e;--teal:#1d5c4a;--paper:#faf9f7;--paper-warm:#f4f0ea;--border:#ddd8d0;--ink:#1a2340;--ink-soft:#5a6070;--ink-muted:#9098a8;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);font-size:14px}
+header{background:var(--navy);color:white;padding:20px 24px}
+h1{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600}
+.sub{font-size:12px;opacity:.5;margin-top:2px}
+.wrap{max-width:960px;margin:0 auto;padding:24px 20px}
+.card{background:white;border:1px solid var(--border);border-radius:10px;margin-bottom:16px;overflow:hidden}
+.card-head{background:var(--paper-warm);padding:12px 16px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft)}
+.card-body{padding:16px}
+label{display:block;font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);margin-bottom:14px}
+input:focus{outline:none;border-color:var(--navy)}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;padding:14px;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;border:none;background:var(--crimson);color:white;margin-top:4px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat{background:var(--paper-warm);border-radius:8px;padding:12px;text-align:center}
+.stat-n{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--navy)}
+.stat-l{font-size:10px;color:var(--ink-muted);margin-top:2px}
+.notice{background:#fef9ec;border:1px solid #f59e0b;border-radius:8px;padding:12px 14px;font-size:13px;color:#78350f;margin-bottom:10px;line-height:1.5}
+.notice strong{display:block;margin-bottom:2px;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.info{background:#eff6ff;border:1px solid #3b82f6;border-radius:8px;padding:12px 14px;font-size:13px;color:#1e3a5f;margin-bottom:10px;line-height:1.5}
+.info strong{display:block;margin-bottom:2px;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+table{border-collapse:collapse;font-size:11px}
+th{background:var(--paper-warm);padding:5px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);border:1px solid var(--border);white-space:nowrap}
+th.dh{writing-mode:vertical-rl;transform:rotate(180deg);min-width:28px;height:75px;vertical-align:bottom;padding:3px 2px;font-size:9px}
+th.closed-h{background:#e8f4f0;color:var(--teal)}
+th.perf-h{background:#f5d5cc;color:var(--crimson)}
+th.jnr-h{background:#fef3c7;color:#92400e}
+td{padding:3px 5px;border:1px solid var(--border);text-align:center;vertical-align:middle;min-width:26px}
+td.nc{text-align:left;font-weight:600;color:var(--ink);font-size:11px;white-space:nowrap;background:var(--paper-warm);padding:4px 8px;min-width:140px}
+td.role{font-size:9px;color:var(--ink-muted);padding:3px 4px;background:var(--paper-warm)}
+td.cl{background:#e8f4f0;color:var(--teal);font-size:9px}
+td.pf{background:#f5d5cc;color:var(--crimson);font-size:9px}
+td.jc{background:#fef3c7;color:#92400e;font-size:9px}
+.p{color:var(--teal);font-weight:700;font-size:12px}
+.a{color:var(--crimson);font-weight:700;font-size:12px}
+.b{color:#ddd;font-size:10px}
+#log{background:#1a2340;color:#a8c8a0;font-family:monospace;font-size:12px;padding:14px;border-radius:8px;max-height:300px;overflow-y:auto;margin-top:12px;display:none}
+.le{color:#e8a090}.lo{color:#a8c8a0}.li{color:#90b8d8}.lw{color:#fcd34d}
+</style>
+</head>
+<body>
+<header>
+  <h1>HCS 2023–24 Register Import</h1>
+  <div class="sub">Feb 2024 – Dec 2024 · Spring term 2 + Summer term 3 + Autumn term 1 (2024-25)</div>
+</header>
+<div class="wrap">
+
+<div class="card">
+  <div class="card-head">Firebase Connection</div>
+  <div class="card-body">
+    <label>Database URL</label>
+    <input id="fbUrl" value="https://hcs-dance-register-default-rtdb.europe-west1.firebasedatabase.app">
+    <label>Auth Token</label>
+    <input id="fbToken" placeholder="optional">
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">Before running</div>
+  <div class="card-body">
+    <div class="notice">
+      <strong>⚠ Add Arielle Ho first</strong>
+      Add her in People as a Senior student before running. She can be archived after. The tool resolves her by name — if not found, her records will be skipped and logged as a warning.
+    </div>
+    <div class="info">
+      <strong>ℹ Autumn 2024 records will replace existing data</strong>
+      The Autumn 2024 dates (14 Sep – 14 Dec) overlap with what was previously imported from the other register. This tool overwrites those records with the data from this register. The spring and summer dates are new.
+    </div>
+    <div class="info">
+      <strong>ℹ Teachers: no data for Spring/Summer 2024</strong>
+      Chloe, Nicole, Lydia and Iris do not appear in the spring/summer section of this register — those columns are blank. Their attendance is only recorded from Autumn 2024 onwards in this document.
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">Attendance grid — verify before running</div>
+  <div class="card-body" style="overflow-x:auto">
+    <div id="tableWrap"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">Summary</div>
+  <div class="card-body">
+    <div class="summary">
+      <div class="stat"><div class="stat-n">3</div><div class="stat-l">Terms</div></div>
+      <div class="stat"><div class="stat-n" id="sL">0</div><div class="stat-l">Lesson dates</div></div>
+      <div class="stat"><div class="stat-n" id="sP">0</div><div class="stat-l">Performances</div></div>
+      <div class="stat"><div class="stat-n" id="sM">0</div><div class="stat-l">Attendance marks</div></div>
+    </div>
+  </div>
+</div>
+
+<button class="btn" id="importBtn" onclick="runImport()">⬆ Import 2023–24 Register</button>
+<div id="log"></div>
+</div>
+
+<script>
+// ── Full date sequence ─────────────────────────────────────────────
+// All verified Saturdays. type: lesson | closed | performance | jnr-cancelled
+const DATES = [
+  // ── Spring 2024 (Term 2, from 24 Feb) ──
+  {id:'D20240224', d:'24/02', type:'lesson',        term:'2023_24_T2'},
+  {id:'D20240302', d:'02/03', type:'lesson',        term:'2023_24_T2'},
+  {id:'D20240309', d:'09/03', type:'lesson',        term:'2023_24_T2'},
+  {id:'D20240316', d:'16/03', type:'lesson',        term:'2023_24_T2'},
+  {id:'D20240323', d:'23/03', type:'lesson',        term:'2023_24_T2'},  // confirmed lesson
+  {id:'D20240330', d:'30/03', type:'closed',        term:'2023_24_T2', note:'Easter'},
+  {id:'D20240406', d:'06/04', type:'closed',        term:'2023_24_T2', note:'Easter'},
+  {id:'D20240413', d:'13/04', type:'closed',        term:'2023_24_T2', note:'Easter'},
+  // ── Summer 2024 (Term 3) ──
+  {id:'D20240420', d:'20/04', type:'lesson',        term:'2023_24_T3'},
+  {id:'D20240427', d:'27/04', type:'lesson',        term:'2023_24_T3'},
+  {id:'D20240504', d:'04/05', type:'lesson',        term:'2023_24_T3'},
+  {id:'D20240511', d:'11/05', type:'closed',        term:'2023_24_T3', note:'School outing'},
+  {id:'D20240518', d:'18/05', type:'lesson',        term:'2023_24_T3'},
+  {id:'D20240525', d:'25/05', type:'lesson',        term:'2023_24_T3'},  // lesson, not HT
+  {id:'D20240601', d:'01/06', type:'closed',        term:'2023_24_T3', note:'Half term'},
+  {id:'D20240608', d:'08/06', type:'lesson',        term:'2023_24_T3'},
+  {id:'D20240615', d:'15/06', type:'lesson',        term:'2023_24_T3'},
+  {id:'D20240622', d:'22/06', type:'lesson',        term:'2023_24_T3'},
+  {id:'D20240629', d:'29/06', type:'lesson',        term:'2023_24_T3'},
+  {id:'D20240706', d:'06/07', type:'lesson',        term:'2023_24_T3'},
+  {id:'D20240713', d:'13/07', type:'performance',   term:'2023_24_T3', note:'End of Year 散學禮'},
+  // ── Autumn 2024 (Term 1, 2024-25) ──
+  {id:'D20240914', d:'14/09', type:'jnr-cancelled', term:'2024_25_T1', note:'Snr only'},
+  {id:'D20240921', d:'21/09', type:'lesson',        term:'2024_25_T1'},
+  {id:'D20240928', d:'28/09', type:'lesson',        term:'2024_25_T1'},
+  {id:'D20241005', d:'05/10', type:'lesson',        term:'2024_25_T1'},
+  {id:'D20241012', d:'12/10', type:'lesson',        term:'2024_25_T1'},
+  {id:'D20241019', d:'19/10', type:'lesson',        term:'2024_25_T1'},
+  {id:'D20241026', d:'26/10', type:'lesson',        term:'2024_25_T1'},
+  {id:'D20241102', d:'02/11', type:'closed',        term:'2024_25_T1', note:'Half term'},
+  {id:'D20241109', d:'09/11', type:'lesson',        term:'2024_25_T1'},
+  {id:'D20241116', d:'16/11', type:'lesson',        term:'2024_25_T1'},
+  {id:'D20241123', d:'23/11', type:'lesson',        term:'2024_25_T1'},
+  {id:'D20241130', d:'30/11', type:'lesson',        term:'2024_25_T1'},
+  {id:'D20241207', d:'07/12', type:'lesson',        term:'2024_25_T1'},
+  {id:'D20241214', d:'14/12', type:'lesson',        term:'2024_25_T1'},
+];
+
+// ── People ─────────────────────────────────────────────────────────
+// Column order matches the ATT matrix below.
+const PEOPLE = [
+  {name:'Zi Ting Chan',        id:'CSV_S2',            type:'student'},
+  {name:'Sajni Mei Amin',      id:'IMP_sajni_mei_amin',type:'student'},
+  {name:'Sophie Kong',         id:'CSV_S4',            type:'student'},
+  {name:'Arielle Ho',          id:'ARIELLE',           type:'student'},  // resolved by name
+  {name:'Jasmin Lai Amin',     id:'CSV_S3',            type:'student'},
+  {name:'Melody Ma',           id:'IMP_melody_ma',     type:'student'},
+  {name:'Jessie Chan',         id:'CSV_S5',            type:'student', junior:true},
+  {name:'Emily Garner',        id:'CSV_S1',            type:'student', junior:true},
+  {name:'Abigail Sum Yu',      id:'CSV_S6',            type:'student'},
+  {name:'Annabelle Tze Yu',    id:'CSV_S7',            type:'student'},
+  {name:'Hayley Wan',          id:'CSV_S8',            type:'student'},
+  {name:'Hazel Lam',           id:'CSV_S10',           type:'student', junior:true},
+  {name:'Chloe Wan',           id:'T_chloe_wan',       type:'teacher'},
+  {name:'Nicole Wan',          id:'T_nicole_wan',      type:'teacher'},
+  {name:'Lydia Zhang',         id:'T_lydia_zhang',     type:'teacher'},
+  {name:'Iris Tse',            id:'T_iris_tse',        type:'teacher'},
+];
+
+// ── Attendance matrix ──────────────────────────────────────────────
+// One entry per DATES row. null = closed/perf (no marks imported).
+// p=present, a=absent, b=blank, j=junior-cancelled (N/A, not imported)
+//
+// Columns: [0]ZiTing [1]Sajni [2]Sophie [3]Arielle [4]Jasmin [5]Melody
+//          [6]Jessie [7]Emily [8]Abigail [9]Annabelle [10]Hayley [11]Hazel
+//          [12]Chloe [13]Nicole [14]Lydia [15]Iris
+//
+// Spring 2024: teachers (cols 12-15) have no data — all 'b'
+// Autumn 2024: all columns have data
+
+const ATT = [
+  // ── Spring 2024 (5 lessons) ──────────────────────────────────────
+  // 24 Feb
+  ['p','p','p','a','p','p','b','b','p','p','p','p', 'b','b','b','b'],
+  // 02 Mar
+  ['p','a','p','a','p','p','b','b','p','p','p','p', 'b','b','b','b'],
+  // 09 Mar
+  ['p','p','p','a','p','p','b','b','p','p','p','p', 'b','b','b','b'],
+  // 16 Mar
+  ['p','p','p','a','p','p','b','b','a','p','p','p', 'b','b','b','b'],
+  // 23 Mar — lesson (confirmed)
+  ['p','p','p','a','p','p','b','b','p','p','p','p', 'b','b','b','b'],
+  // 30 Mar — Easter closed
+  null,
+  // 06 Apr — Easter closed
+  null,
+  // 13 Apr — Easter closed
+  null,
+  // ── Summer 2024 (10 lessons) ─────────────────────────────────────
+  // 20 Apr
+  ['p','a','p','a','a','p','p','p','p','p','p','p', 'b','b','b','b'],
+  // 27 Apr
+  ['p','a','p','a','p','p','p','p','p','p','p','p', 'b','b','b','b'],
+  // 04 May
+  ['p','a','p','a','p','p','p','p','p','p','p','p', 'b','b','b','b'],
+  // 11 May — school outing closed
+  null,
+  // 18 May
+  ['p','a','p','a','p','p','p','p','p','p','p','p', 'b','b','b','b'],
+  // 25 May — lesson (corrected from closed)
+  ['p','a','p','a','p','p','p','p','p','p','p','p', 'b','b','b','b'],
+  // 01 Jun — half term closed
+  null,
+  // 08 Jun
+  ['p','a','p','a','p','p','p','p','p','p','a','p', 'b','b','b','b'],
+  // 15 Jun
+  ['p','a','p','a','p','p','p','p','p','p','p','p', 'b','b','b','b'],
+  // 22 Jun
+  ['p','a','p','a','p','p','p','p','p','p','p','p', 'b','b','b','b'],
+  // 29 Jun
+  ['p','a','p','a','p','p','p','p','p','p','p','p', 'b','b','b','b'],
+  // 06 Jul
+  ['p','a','p','a','p','a','p','p','p','p','p','p', 'b','b','b','b'],
+  // 13 Jul — performance
+  null,
+  // ── Autumn 2024 (14 lessons + jnr-cancelled) ─────────────────────
+  // 14 Sep — junior-cancelled (j = N/A for juniors)
+  ['p','a','p','b','p','p','j','j','p','p','p','j', 'p','p','p','p'],
+  // 21 Sep
+  ['p','p','p','b','p','p','p','p','p','p','p','p', 'p','p','p','p'],
+  // 28 Sep
+  ['p','p','a','b','p','p','p','p','a','p','p','p', 'p','p','p','p'],
+  // 05 Oct
+  ['p','p','p','b','p','p','p','p','p','p','p','p', 'p','p','p','p'],
+  // 12 Oct
+  ['a','p','p','b','a','p','p','p','p','p','a','p', 'p','p','p','p'],
+  // 19 Oct
+  ['p','p','p','b','a','p','p','p','p','p','p','p', 'p','p','p','p'],
+  // 26 Oct
+  ['p','a','p','b','p','p','p','p','p','p','p','p', 'p','p','p','p'],
+  // 02 Nov — half term closed
+  null,
+  // 09 Nov
+  ['p','p','p','b','p','p','p','p','p','p','p','p', 'p','p','p','p'],
+  // 16 Nov
+  ['p','p','p','b','p','p','p','p','p','p','p','p', 'p','p','p','p'],
+  // 23 Nov
+  ['a','a','p','b','p','p','p','p','p','p','p','p', 'p','a','p','p'],
+  // 30 Nov
+  ['p','p','p','b','p','p','p','p','p','p','p','p', 'p','a','p','p'],
+  // 07 Dec
+  ['p','a','p','b','a','p','p','p','p','p','p','p', 'p','p','p','p'],
+  // 14 Dec
+  ['p','p','p','b','p','p','p','p','p','p','p','p', 'p','p','p','p'],
+];
+
+// ── Helpers ────────────────────────────────────────────────────────
+function urls() {
+  const b = document.getElementById('fbUrl').value.trim().replace(/\/?$/,'');
+  const t = document.getElementById('fbToken').value.trim();
+  const a = t ? '?auth='+encodeURIComponent(t) : '';
+  return { root:b+'/hcs.json'+a, att:b+'/hcs/attendance.json'+a };
+}
+function log(msg,c='li') {
+  const el=document.getElementById('log'); el.style.display='block';
+  const d=document.createElement('div'); d.className=c;
+  d.textContent='['+new Date().toLocaleTimeString()+'] '+msg;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+}
+
+// ── Init UI ────────────────────────────────────────────────────────
+function init() {
+  let lessons=0, perfs=0, marks=0;
+  DATES.forEach(d => {
+    if(d.type==='lesson'||d.type==='jnr-cancelled') lessons++;
+    if(d.type==='performance') perfs++;
+  });
+  ATT.forEach(row => { if(row) marks += row.filter(m=>m==='p'||m==='a').length; });
+  document.getElementById('sL').textContent = lessons;
+  document.getElementById('sP').textContent = perfs;
+  document.getElementById('sM').textContent = marks;
+
+  // Header row
+  const ths = DATES.map(d => {
+    const cls = d.type==='closed'?'dh closed-h':d.type==='performance'?'dh perf-h':d.type==='jnr-cancelled'?'dh jnr-h':'dh';
+    const note = d.note ? ` ${d.note}` : '';
+    return `<th class="${cls}">${d.d}${note}</th>`;
+  }).join('');
+
+  // Data rows
+  const rows = PEOPLE.map((p, pIdx) => {
+    const cells = DATES.map((date, dIdx) => {
+      const t = date.type;
+      if (t==='closed')      return `<td class="cl">${date.note||'closed'}</td>`;
+      if (t==='performance') return `<td class="pf">perf</td>`;
+      const row = ATT[dIdx];
+      if (!row) return `<td class="cl">—</td>`;
+      const m = row[pIdx];
+      if (t==='jnr-cancelled' && m==='j') return `<td class="jc">jnr</td>`;
+      return m==='p' ? `<td><span class="p">✓</span></td>`
+           : m==='a' ? `<td><span class="a">✗</span></td>`
+           :           `<td><span class="b">—</span></td>`;
+    }).join('');
+    const role = p.type==='teacher' ? ' (T)' : p.junior ? ' (Jr)' : '';
+    return `<tr><td class="nc">${p.name}${role}</td>${cells}</tr>`;
+  }).join('');
+
+  document.getElementById('tableWrap').innerHTML =
+    `<table><thead><tr><th style="min-width:140px">Name</th>${ths}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// ── Import ─────────────────────────────────────────────────────────
+async function runImport() {
+  const u = urls();
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('importBtn').disabled = true;
+
+  log('Loading app data…','li');
+  let app;
+  try {
+    const r = await fetch(u.root);
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    app = await r.json();
+    if (!app) throw new Error('Firebase empty — Push from main app first');
+  } catch(e) { log('ERROR: '+e.message,'le'); document.getElementById('importBtn').disabled=false; return; }
+  log('Loaded ✓','lo');
+
+  // Resolve person IDs
+  const studentByName = {};
+  (app.students||[]).forEach(s => { studentByName[s.name.toLowerCase()] = s.id; });
+  const teacherByName = {};
+  (app.teachers||[]).forEach(t => { teacherByName[t.name.toLowerCase()] = t.id; });
+
+  const resolvedIds = {};
+  PEOPLE.forEach(p => {
+    if (p.id === 'ARIELLE') {
+      const found = studentByName['arielle ho'];
+      if (found) { resolvedIds['ARIELLE'] = found; log('Arielle Ho → '+found,'lo'); }
+      else log('WARN: Arielle Ho not in app — add her in People first','lw');
+    } else if (p.type==='teacher') {
+      const found = teacherByName[p.name.toLowerCase()];
+      resolvedIds[p.id] = found || p.id;
+      if (!found) log(`WARN: Teacher "${p.name}" not found — using fixed ID`,'lw');
+    } else {
+      resolvedIds[p.id] = p.id; // fixed IDs for CSV_S* and IMP_*
+    }
+  });
+
+  // Check required terms exist
+  const neededTerms = [...new Set(DATES.map(d=>d.term))];
+  neededTerms.forEach(tid => {
+    if (!(app.terms||[]).some(t=>t.id===tid))
+      log(`WARN: Term "${tid}" not found in app — those dates will be skipped`,'lw');
+  });
+
+  const existing = app.attendance||{};
+  // Start from existing but REPLACE autumn 2024 records (overwrite, don't skip)
+  const merged = {...existing};
+  let added=0, replaced=0, skipped=0;
+
+  DATES.forEach((date, dIdx) => {
+    if (date.type==='closed' || date.type==='performance') return;
+    const termExists = (app.terms||[]).some(t=>t.id===date.term);
+    if (!termExists) return;
+
+    const row = ATT[dIdx];
+    if (!row) return;
+
+    const isAutumn = date.term === '2024_25_T1';
+
+    PEOPLE.forEach((person, pIdx) => {
+      const m = row[pIdx];
+      if (!m || m==='b' || m==='j') return; // blank or jnr-cancelled
+
+      const personId = resolvedIds[person.id];
+      if (!personId) { skipped++; return; }
+
+      const key = `${date.term}|${date.id}|${personId}`;
+      const val = m==='p' ? 'present' : 'absent';
+
+      if (isAutumn && existing[key]) {
+        // Replace existing autumn record
+        merged[key] = val;
+        replaced++;
+      } else if (!existing[key]) {
+        merged[key] = val;
+        added++;
+      } else {
+        skipped++;
+      }
+    });
+  });
+
+  log(`${added} new records, ${replaced} autumn records replaced, ${skipped} skipped`,'li');
+
+  try {
+    const r = await fetch(u.att, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(merged)});
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    log(`✓ Done!`,'lo');
+    log('Main app → Settings → Pull from Firebase.','lo');
+  } catch(e) { log('ERROR: '+e.message,'le'); }
+
+  document.getElementById('importBtn').disabled = false;
+}
+
+init();
+</script>
+</body>
+</html>
