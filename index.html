@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>HCS Dance Group</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
@@ -464,7 +463,22 @@ let APP={
 };
 
 function saveLocal(){try{localStorage.setItem('hcs_v4',JSON.stringify(APP));}catch(e){}}
-function loadLocal(){try{const d=localStorage.getItem('hcs_v4');if(d){Object.assign(APP,JSON.parse(d));return true;}}catch(e){}return false;}
+function loadLocal(){
+  try{
+    const d=localStorage.getItem('hcs_v4');
+    if(d){
+      const parsed=JSON.parse(d);
+      Object.assign(APP,parsed);
+      // Ensure required top-level keys exist in case this is an older save
+      if(!APP.invoiceTracker)APP.invoiceTracker={};
+      if(!APP.attendance)APP.attendance={};
+      if(!APP.settings.firebaseUrl)APP.settings.firebaseUrl='https://hcs-dance-register-default-rtdb.europe-west1.firebasedatabase.app';
+      if(APP.settings.firebaseToken===undefined)APP.settings.firebaseToken='';
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
 // Stubs — real implementations defined in OFFLINE SYNC QUEUE section below
 function markDirty(){try{localStorage.setItem('hcs_dirty','1');}catch(e){}}
 function markClean(){try{localStorage.removeItem('hcs_dirty');}catch(e){}}
@@ -501,10 +515,12 @@ function addSetupTeacher(){
   l.appendChild(d);if(setupTC>=4)document.getElementById('addTeacherBtn').style.display='none';
 }
 function finishSetup(){
+  const firebaseUrl=APP.settings.firebaseUrl; // preserved from connectFirebase() in step 0
   APP.settings.schoolName=document.getElementById('setupSchoolName').value||'Harrow Chinese School';
   APP.settings.schoolAddress=document.getElementById('setupSchoolAddress').value;
   APP.settings.lessonValue=parseFloat(document.getElementById('setupLessonValue').value)||70;
   APP.settings.academicYear=document.getElementById('setupAcYear').value||'2025-26';
+  APP.settings.firebaseUrl=firebaseUrl; // restore — finishSetup rebuilt settings from scratch
   APP.teachers=[];
   document.querySelectorAll('.setup-teacher-name').forEach((el,i)=>{
     if(el.value.trim())APP.teachers.push({id:'T'+(i+1),name:el.value.trim(),address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:el.value.trim().split(' ').map(w=>w[0]).join('').toUpperCase(),archived:false});
@@ -520,7 +536,9 @@ function finishSetup(){
 function quickStart(){
   APP.terms=JSON.parse(JSON.stringify(PRELOADED.terms));
   APP.students=JSON.parse(JSON.stringify(PRELOADED.students));
-  Object.assign(APP.settings,PRELOADED.settings);
+  // Preserve device-local fields (Firebase URL/token) when merging preloaded settings
+  const preserved={firebaseUrl:APP.settings.firebaseUrl,firebaseToken:APP.settings.firebaseToken};
+  Object.assign(APP.settings,PRELOADED.settings,preserved);
   APP.setupDone=true;APP.demoMode=true;
   saveLocal();document.getElementById('setupOverlay').style.display='none';initApp();
   showToast('2024–25 & 2025–26 data loaded ✓');
@@ -660,13 +678,17 @@ function openCellPopup(e,termId,dateId){
 }
 function setCellState(nt){
   if(!activeCellPopup)return;
-  const {termId,dateId}=activeCellPopup;const term=APP.terms.find(t=>t.id===termId);if(!term)return;
+  const{termId,dateId}=activeCellPopup;
+  const term=APP.terms.find(t=>t.id===termId);if(!term)return;
   if(nt==='remove'){
     const hasAtt=Object.keys(APP.attendance).some(k=>k.includes('|'+dateId+'|'));
-    if(hasAtt&&!confirm('Attendance data exists. Remove anyway?')){closeCellPopup();return;}
+    if(hasAtt&&!confirm('Attendance data exists for this date. Remove anyway?')){closeCellPopup();return;}
     if(hasAtt)Object.keys(APP.attendance).forEach(k=>{if(k.includes('|'+dateId+'|'))delete APP.attendance[k];});
     term.dates=term.dates.filter(d=>d.id!==dateId);
-  }else{const d=term.dates.find(x=>x.id===dateId);if(d)d.type=nt;}
+  }else{
+    const d=term.dates.find(x=>x.id===dateId);if(!d)return;
+    d.type=nt;
+  }
   saveLocal();closeCellPopup();loadDatesPage();showToast('Updated ✓');markDirty();
 }
 function closeCellPopup(){document.getElementById('cellPopup').style.display='none';activeCellPopup=null;}
@@ -884,8 +906,8 @@ function selClass(c){
   });
 }
 function showEditPersonModal(type,id){
-  if(type==='teacher'){const t=APP.teachers.find(x=>x.id===id);if(!t)return;openModal(`<div class="modal-title">Edit Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${t.name}"></div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="mpAddress" rows="3">${t.address||''}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="mpBank" value="${t.bankName||''}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="mpSort" value="${t.sortCode||''}" placeholder="00-00-00"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="mpAcc" value="${t.accountNo||''}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="mpPrefix" value="${t.invoicePrefix||''}"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher','${id}')">Save</button></div>`);}
-  else{const s=APP.students.find(x=>x.id===id);if(!s)return;openModal(`<div class="modal-title">Edit Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${s.name}"></div><div class="form-group"><label class="form-label">Chinese Name</label><input type="text" class="form-input" id="mpChinese" value="${s.chineseName||''}"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill ${s.classStatus==='junior'?'active':''}" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill ${s.classStatus==='senior'?'active':''}" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill ${s.classStatus==='both'?'active':''}" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="${s.classStatus}"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" ${s.hcsStudent?'checked':''} style="width:16px;height:16px;"> Also an HCS student</label></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student','${id}')">Save</button></div>`);}
+  if(type==='teacher'){const t=APP.teachers.find(x=>x.id===id);if(!t)return;openModal(`<div class="modal-title">Edit Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${esc(t.name)}"></div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="mpAddress" rows="3">${esc(t.address||'')}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="mpBank" value="${esc(t.bankName||'')}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="mpSort" value="${esc(t.sortCode||'')}" placeholder="00-00-00"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="mpAcc" value="${esc(t.accountNo||'')}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="mpPrefix" value="${esc(t.invoicePrefix||'')}"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher','${id}')">Save</button></div>`);}
+  else{const s=APP.students.find(x=>x.id===id);if(!s)return;openModal(`<div class="modal-title">Edit Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${esc(s.name)}"></div><div class="form-group"><label class="form-label">Chinese Name</label><input type="text" class="form-input" id="mpChinese" value="${esc(s.chineseName||'')}"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill ${s.classStatus==='junior'?'active':''}" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill ${s.classStatus==='senior'?'active':''}" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill ${s.classStatus==='both'?'active':''}" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="${esc(s.classStatus)}"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" ${s.hcsStudent?'checked':''} style="width:16px;height:16px;"> Also an HCS student</label></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student','${id}')">Save</button></div>`);}
 }
 function savePerson(type,id){
   const nameEl=document.getElementById('mpName');
@@ -943,10 +965,17 @@ function calcPay(teacherId,fromId,toId){
     lessons.forEach(d=>{
       const pc=APP.teachers.filter(t=>!t.archived&&APP.attendance[`${term.id}|${d.id}|${t.id}`]==='present').length;
       const ip=APP.attendance[`${term.id}|${d.id}|${teacherId}`]==='present';
-      if(ip&&pc>0){const share=APP.settings.lessonValue/pc;termPay+=share;attended++;sessions.push({date:d.date,teacherCount:pc,share});}
+      if(ip&&pc>0){
+        // Round share to nearest penny to avoid floating point accumulation (e.g. 70/3 = 23.333...)
+        const share=Math.round((APP.settings.lessonValue/pc)*100)/100;
+        termPay+=share;attended++;sessions.push({date:d.date,teacherCount:pc,share});
+      }
     });
+    // Round termPay to 2dp to eliminate any residual float error
+    termPay=Math.round(termPay*100)/100;
     breakdown.push({term,sessions,termPay,attended,total:lessons.length});total+=termPay;
   });
+  total=Math.round(total*100)/100;
   return{total,breakdown};
 }
 function previewInvoice(){
@@ -1105,7 +1134,9 @@ async function syncToDb(){
   _isSyncing=true;
   updateSyncStatus('warn','Syncing…');
   try{
-    const payload=JSON.stringify(APP);
+    // Strip device-local settings before pushing so they don't overwrite other devices
+    const {firebaseUrl,firebaseToken,...sharedSettings}=APP.settings;
+    const payload=JSON.stringify({...APP,settings:sharedSettings});
     const resp=await fetch(url,{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
@@ -1140,7 +1171,10 @@ async function loadFromDb(){
     if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
     const data=await resp.json();
     if(!data){showToast('No data in Firebase — pushing current data');syncToDb();return;}
+    // Preserve device-local settings (Firebase URL, token) — merge everything else
+    const localSettings={firebaseUrl:APP.settings.firebaseUrl,firebaseToken:APP.settings.firebaseToken};
     Object.assign(APP,data);
+    APP.settings={...APP.settings,...localSettings};
     saveLocal();populateTermSelectors();loadRegister();loadSettingsPage();
     _fbConnected=true;
     markClean();
@@ -1160,15 +1194,16 @@ function syncNow(){
 }
 
 function trySilentConnect(){
-  // If a Firebase URL is configured, attempt a quick connectivity check
   const url=getFbUrl();
   if(!url){updateSyncStatus('none','No sync');return;}
   if(isDirty()){
     updateSyncStatus('warn','Unsynced');
     scheduleSyncRetry(2000);
   }else{
-    // Ping to confirm connectivity without a full push
-    fetch(url+'.json'.replace('.json.json','.json'),{method:'GET'})
+    // Ping using a shallow GET (only fetches the top-level keys, not the full payload)
+    const base=(APP.settings.firebaseUrl||'').replace(/\/?$/,'');
+    const token=APP.settings.firebaseToken?`&auth=${encodeURIComponent(APP.settings.firebaseToken)}`:'';
+    fetch(`${base}/hcs.json?shallow=true${token}`,{method:'GET'})
       .then(r=>{if(r.ok){_fbConnected=true;updateSyncStatus('ok','Connected');}else{updateSyncStatus('err','Auth error');}})
       .catch(()=>updateSyncStatus('err','Offline'));
   }
@@ -1194,6 +1229,8 @@ function closeModal(e){if(e&&e.target!==document.getElementById('modalOverlay'))
 // ── TOAST ──
 let tt;function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),2500);}
 function ini(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);}
+// Escape HTML special chars to prevent broken modals when names contain quotes or angle brackets
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function initApp(){
   populateTermSelectors();loadRegister();loadSettingsPage();
