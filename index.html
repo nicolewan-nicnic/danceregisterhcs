@@ -171,26 +171,46 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
   .cal-legend{padding:8px 24px 10px;}
 }
 @media(min-width:960px){
-  body{display:grid;grid-template-columns:220px 1fr;grid-template-rows:auto 1fr;min-height:100vh;}
-  .app-header{grid-column:1/-1;grid-row:1;}
-  .bottom-nav{display:flex;flex-direction:column;position:fixed;left:0;top:56px;bottom:0;width:220px;padding-bottom:0;border-top:none;border-right:1px solid rgba(255,255,255,.08);z-index:99;}
-  .nav-btn{flex-direction:row;justify-content:flex-start;padding:14px 20px;gap:12px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;}
-  .nav-btn svg{width:18px;height:18px;flex-shrink:0;}
-  .main{grid-column:2;grid-row:2;padding-bottom:0;padding-top:0;margin-left:0;overflow-y:auto;height:calc(100vh - 56px);min-height:0;}
-  .page.active{height:100%;}
+  /* Top navigation bar layout */
+  body{display:flex;flex-direction:column;min-height:100vh;}
+  .app-header{display:flex;flex-direction:row;align-items:center;padding:0 24px;height:52px;gap:0;flex-shrink:0;}
+  .app-title-block{flex:none;margin-right:32px;}
+  .app-title{font-size:17px;}
+  .app-subtitle{display:none;}
+  /* Nav becomes a horizontal top bar inside the header */
+  .bottom-nav{
+    position:static;display:flex;flex-direction:row;flex:1;
+    background:transparent;border-top:none;border-bottom:none;
+    padding-bottom:0;gap:0;align-self:stretch;
+  }
+  .nav-btn{
+    flex:none;flex-direction:row;align-items:center;gap:7px;
+    padding:0 16px;height:100%;color:rgba(255,255,255,.5);
+    font-size:12px;letter-spacing:.04em;border-radius:0;
+    border-bottom:3px solid transparent;transition:color .15s,border-color .15s;
+  }
+  .nav-btn:hover{color:rgba(255,255,255,.85);}
+  .nav-btn.active{color:white;border-bottom-color:var(--salmon);}
+  .nav-btn svg{width:16px;height:16px;flex-shrink:0;}
+  /* Undo + sync pushed to the right */
+  .undo-btn{margin-left:auto;}
+  .sync-status{margin-left:8px;}
+  /* Main content fills below header */
+  .main{flex:1;overflow-y:auto;padding-bottom:0;}
   .section-header{padding:28px 40px 16px;}
   .card{margin:0 32px 14px;}
   .inv-tracker{margin:0 32px 14px;}
   .register-controls{padding:0 32px 14px;}
   .cal-legend{padding:8px 32px 10px;}
   .scroll-hint{display:none;}
-  /* On desktop the register and cal tables don't need a fixed cap */
-  .register-wrapper{overflow-x:auto;} /* still scrollable on desktop for wide registers */
+  .register-wrapper{overflow-x:auto;}
   #calWrapper>div{margin:0 32px 16px!important;}
   .year-cal-table,.cal-table{min-width:0;width:100%;}
-  /* Wider modal for desktop */
+  /* Desktop modal centred */
   .modal-overlay{align-items:center;}
   .modal{border-radius:12px;max-width:560px;margin:auto;}
+  /* Name column hugs content */
+  .register-table .name-col{min-width:0;width:1%;white-space:nowrap;padding:8px 16px 8px 12px;}
 }
 /* DRAG REORDER */
 .drag-handle{cursor:grab;color:var(--ink-muted);padding:0 8px;font-size:18px;line-height:1;flex-shrink:0;touch-action:none}
@@ -221,6 +241,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .undo-btn{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:600;cursor:pointer;border:none;background:rgba(255,255,255,.15);color:rgba(255,255,255,.7);display:none;white-space:nowrap;transition:all .2s;}
 .undo-btn:hover{background:rgba(255,255,255,.25);color:white;}
 .undo-btn.visible{display:inline-flex;align-items:center;gap:4px;}
+/* REGISTER TERM PILLS */
+.reg-term-pill{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:white;color:var(--ink-soft);transition:all .15s;white-space:nowrap;}
+.reg-term-pill.active{background:var(--navy);color:white;border-color:var(--navy);}
+.reg-year-opt{padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;border-bottom:1px solid var(--border);color:var(--navy);transition:background .1s;}
+.reg-year-opt:last-child{border-bottom:none;}
+.reg-year-opt:hover{background:var(--paper-warm);}
+.reg-year-opt.active{background:var(--navy);color:white;}
 /* DATES VIEW */
 .term-block-header{display:flex;align-items:center;justify-content:space-between;padding:10px 0 8px;}
 .term-block-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--navy);}
@@ -239,11 +266,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
   <div id="cpMain">
     <div class="cell-popup-item" id="cpLesson" onclick="setCellState('lesson')"><div class="cell-popup-dot" style="border:2px solid #ccc;"></div>Lesson</div>
     <div class="cell-popup-item" id="cpJunior" onclick="setCellState('junior-cancelled')"><div class="cell-popup-dot" style="background:var(--salmon-light);border:1px solid var(--salmon);"></div>Junior cancelled</div>
-    <div class="cell-popup-item" id="cpPerf" onclick="setCellState('performance')"><div class="cell-popup-dot" style="background:var(--salmon);"></div>Performance</div>
+    <div class="cell-popup-item" id="cpPerf" onclick="showPerfReasons()"><div class="cell-popup-dot" style="background:var(--salmon);"></div>Performance ›</div>
     <div class="cell-popup-item" id="cpClosed" onclick="showClosedReasons()"><div class="cell-popup-dot" style="background:var(--teal);"></div>Closed / Holiday ›</div>
     <div class="cell-popup-item" id="cpRemove" onclick="setCellState('remove')" style="color:var(--crimson);"><div class="cell-popup-dot" style="background:var(--crimson);"></div>Hide date</div>
     <div class="cell-popup-item" id="cpRestore" onclick="setCellState('lesson')" style="color:var(--teal);display:none;"><div class="cell-popup-dot" style="background:var(--teal);"></div>Restore date</div>
     <div class="cell-popup-item" onclick="closeCellPopup()" style="color:var(--ink-muted);">✕ Cancel</div>
+  </div>
+  <!-- Performance reason submenu -->
+  <div id="cpPerfReasons" style="display:none;">
+    <div class="cell-popup-item" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted);cursor:default;background:var(--paper-warm);">← <span onclick="showClosedMain()" style="cursor:pointer;">Back</span> &nbsp;·&nbsp; Performance type</div>
+    <div class="cell-popup-item" onclick="setCellPerformance('Chinese New Year')"><div class="cell-popup-dot" style="background:var(--salmon);"></div>Chinese New Year</div>
+    <div class="cell-popup-item" onclick="setCellPerformance('End of Year')"><div class="cell-popup-dot" style="background:var(--salmon);"></div>End of Year</div>
+    <div class="cell-popup-item" onclick="setCellPerformance('')"><div class="cell-popup-dot" style="background:var(--salmon);"></div>Other (no label)</div>
   </div>
   <!-- Closed reason submenu -->
   <div id="cpReasons" style="display:none;">
@@ -312,10 +346,23 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 <main class="main">
   <div class="page active" id="pageRegister">
     <div class="section-header"><div><div class="section-title">Register</div><div class="section-sub" id="registerSub">Weekly attendance</div></div></div>
-    <div class="register-controls">
-      <select class="term-select" id="termSelector" onchange="loadRegister()"></select>
-      <button class="btn btn-sm btn-ghost" onclick="jumpToToday()">Today</button>
-      <button class="btn btn-sm btn-ghost" id="reorderBtn" onclick="toggleReorderMode()" style="display:none;">⇅ Reorder</button>
+    <div class="register-controls" style="flex-direction:column;align-items:stretch;gap:10px;">
+      <!-- Year navigator: chevron left | year label (clickable dropdown) | chevron right -->
+      <div style="display:flex;align-items:center;gap:0;">
+        <button class="btn btn-sm btn-ghost" onclick="stepRegisterYear(-1)" style="border-radius:var(--radius-sm) 0 0 var(--radius-sm);border-right:none;padding:7px 11px;font-size:16px;" title="Previous year">‹</button>
+        <div style="position:relative;flex:1;">
+          <button id="regYearBtn" onclick="toggleYearDropdown()" style="width:100%;padding:7px 12px;border:1.5px solid var(--border);border-radius:0;background:white;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--navy);cursor:pointer;text-align:center;display:block;">—</button>
+          <div id="regYearDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);z-index:50;max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(26,35,64,.12);" id="regYearDropdown"></div>
+        </div>
+        <button class="btn btn-sm btn-ghost" onclick="stepRegisterYear(1)" style="border-radius:0 var(--radius-sm) var(--radius-sm) 0;border-left:none;padding:7px 11px;font-size:16px;" title="Next year">›</button>
+        <div style="flex:1;"></div>
+        <button class="btn btn-sm btn-ghost" onclick="jumpToToday()" style="margin-left:6px;">Today</button>
+        <button class="btn btn-sm btn-ghost" id="reorderBtn" onclick="toggleReorderMode()" style="display:none;margin-left:4px;">⇅ Reorder</button>
+      </div>
+      <!-- Term pills -->
+      <div id="regTermPills" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      <!-- Hidden select kept for compatibility -->
+      <select id="termSelector" onchange="loadRegister()" style="display:none;"></select>
     </div>
     <div class="scroll-hint">← scroll dates →</div>
     <div class="register-wrapper" id="registerWrapper"><div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No register yet</h3><p>Set up terms and dates to begin</p></div></div>
@@ -538,7 +585,7 @@ const PRELOADED={
 };
 
 let APP={
-  settings:{schoolName:'Harrow Chinese School',schoolAddress:'Pinner High School\nBeaulieu Dr, Pinner\nHA5 1NB',lessonValue:70,academicYear:'2025-26',firebaseUrl:'',firebaseToken:''},
+  settings:{schoolName:'Harrow Chinese School',schoolAddress:'Pinner High School\nBeaulieu Dr, Pinner\nHA5 1NB',lessonValue:70,academicYear:'2025-26',firebaseUrl:'https://hcs-dance-register-default-rtdb.europe-west1.firebasedatabase.app',firebaseToken:''},
   teachers:[],students:[],terms:[],attendance:{},
   // invoiceTracker: {teacherId: {invoicedToTermId, status:'none'|'sent'|'paid'|'overdue', dateSent}}
   invoiceTracker:{},
@@ -556,7 +603,7 @@ function loadLocal(){
       if(!APP.invoiceTracker)APP.invoiceTracker={};
       if(!APP.attendance)APP.attendance={};
       // Only fall back to the default URL if no URL was ever saved — do NOT overwrite a user-entered URL
-      if(APP.settings.firebaseUrl===undefined)APP.settings.firebaseUrl='';
+      if(!APP.settings.firebaseUrl)APP.settings.firebaseUrl='https://hcs-dance-register-default-rtdb.europe-west1.firebasedatabase.app';
       if(APP.settings.firebaseToken===undefined)APP.settings.firebaseToken='';
       if(!APP.studentOrder)APP.studentOrder=[];
       return true;
@@ -668,6 +715,10 @@ function getTermsForYear(acYear){
     return false;
   }).sort((a,b)=>(a.dates[0]?.date||'').localeCompare(b.dates[0]?.date||''));
 }
+// ── REGISTER YEAR/TERM NAVIGATOR STATE ──
+let _regAcYear=''; // currently selected academic year e.g. "2025-26"
+let _regTermId=''; // currently selected term id
+
 function populateTermSelectors(){
   ['termSelector','invoiceFromTerm','invoiceToTerm'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
@@ -675,7 +726,7 @@ function populateTermSelectors(){
   });
   // Default invoiceTo to last term
   const to=document.getElementById('invoiceToTerm');if(to&&APP.terms.length)to.value=APP.terms[APP.terms.length-1].id;
-  // Populate term selector for term-view
+  // Populate term selector for dates term-view
   const dsel=document.getElementById('termSelectorDates');
   if(dsel){
     dsel.innerHTML=APP.terms.map(t=>`<option value="${t.id}">${t.label}</option>`).join('');
@@ -683,22 +734,97 @@ function populateTermSelectors(){
     const cur=APP.terms.find(t=>t.dates&&t.dates.some(d=>d.date>=today));
     if(cur)dsel.value=cur.id;
   }
-  // Populate year selector
+  // Populate dates year selector
   const ysel=document.getElementById('yearSelectorDates');
   if(ysel){
     const years=getAcademicYears();
     ysel.innerHTML=years.map(y=>`<option value="${y}">${y} Academic Year</option>`).join('');
-    // Default to current academic year
-    const today=new Date().toISOString().slice(0,10);
-    const mo=new Date().getMonth()+1;
-    const yr=new Date().getFullYear();
-    const y1=mo>=9?yr:yr-1;
-    const curYear=`${y1}-${String(y1+1).slice(-2)}`;
+    const mo=new Date().getMonth()+1;const yr=new Date().getFullYear();
+    const y1=mo>=9?yr:yr-1;const curYear=`${y1}-${String(y1+1).slice(-2)}`;
     if(years.includes(curYear))ysel.value=curYear;
     else if(years.length)ysel.value=years[years.length-1];
   }
+  // Populate register year/term navigator
+  populateRegisterNav();
 }
-function getActiveTerm(sid='termSelector'){const sel=document.getElementById(sid);const id=sel?.value||APP.terms[0]?.id;return APP.terms.find(t=>t.id===id)||APP.terms[0];}
+
+function getRegAcYears(){return getAcademicYears();}
+
+function populateRegisterNav(){
+  const years=getRegAcYears();
+  if(!years.length)return;
+  // Default _regAcYear to current or most recent
+  if(!_regAcYear||!years.includes(_regAcYear)){
+    const mo=new Date().getMonth()+1;const yr=new Date().getFullYear();
+    const y1=mo>=9?yr:yr-1;const curYear=`${y1}-${String(y1+1).slice(-2)}`;
+    _regAcYear=years.includes(curYear)?curYear:years[years.length-1];
+  }
+  // Update year button label
+  const yBtn=document.getElementById('regYearBtn');
+  if(yBtn)yBtn.textContent=_regAcYear+' ▾';
+  // Build dropdown options
+  const dd=document.getElementById('regYearDropdown');
+  if(dd){
+    dd.innerHTML=years.map(y=>`<div class="reg-year-opt${y===_regAcYear?' active':''}" onclick="selectRegYear('${y}')">${y}</div>`).join('');
+  }
+  // Build term pills for this year
+  const terms=getTermsForYear(_regAcYear);
+  const pills=document.getElementById('regTermPills');
+  if(pills){
+    // Default _regTermId to first term of this year if not set or not in year
+    if(!_regTermId||!terms.find(t=>t.id===_regTermId)){
+      _regTermId=terms[0]?.id||'';
+    }
+    pills.innerHTML=terms.map(t=>`<button class="reg-term-pill${t.id===_regTermId?' active':''}" onclick="selectRegTerm('${t.id}')">${t.label}</button>`).join('');
+  }
+  // Sync hidden select
+  const sel=document.getElementById('termSelector');
+  if(sel&&_regTermId)sel.value=_regTermId;
+}
+
+function selectRegYear(y){
+  _regAcYear=y;_regTermId=''; // reset term so it picks first of new year
+  closeYearDropdown();
+  populateRegisterNav();
+  loadRegister();
+}
+function selectRegTerm(id){
+  _regTermId=id;
+  // Update pill styles
+  document.querySelectorAll('.reg-term-pill').forEach(p=>{
+    p.classList.toggle('active',p.getAttribute('onclick')===`selectRegTerm('${id}')`);
+  });
+  const sel=document.getElementById('termSelector');if(sel)sel.value=id;
+  loadRegister();
+}
+function stepRegisterYear(dir){
+  const years=getRegAcYears();if(!years.length)return;
+  const idx=years.indexOf(_regAcYear);
+  const next=years[idx+dir];
+  if(next)selectRegYear(next);
+  else showToast(dir<0?'No earlier years':'No later years');
+}
+function toggleYearDropdown(){
+  const dd=document.getElementById('regYearDropdown');
+  if(!dd)return;
+  dd.style.display=dd.style.display==='none'?'block':'none';
+}
+function closeYearDropdown(){
+  const dd=document.getElementById('regYearDropdown');if(dd)dd.style.display='none';
+}
+document.addEventListener('click',e=>{
+  const dd=document.getElementById('regYearDropdown');
+  const btn=document.getElementById('regYearBtn');
+  if(dd&&btn&&!dd.contains(e.target)&&e.target!==btn)closeYearDropdown();
+});
+function getActiveTerm(sid='termSelector'){
+  // For the register's hidden select, prefer _regTermId state
+  if(sid==='termSelector'&&_regTermId){
+    const t=APP.terms.find(x=>x.id===_regTermId);if(t)return t;
+  }
+  const sel=document.getElementById(sid);const id=sel?.value||APP.terms[0]?.id;
+  return APP.terms.find(t=>t.id===id)||APP.terms[0];
+}
 
 // ── INVOICE TRACKER ──
 function renderInvTracker(){
@@ -981,7 +1107,7 @@ function openCellPopup(e,termId,dateId){
   const term=APP.terms.find(t=>t.id===termId);
   const d=term?term.dates.find(x=>x.id===dateId):null;
   const isRemoved=d&&d.type==='removed';
-  // Always start on main menu
+  // Always start on main menu (resets all submenus)
   showClosedMain();
   // Show restore or remove depending on state
   const removeEl=document.getElementById('cpRemove');
@@ -998,11 +1124,28 @@ function openCellPopup(e,termId,dateId){
 }
 function showClosedReasons(){
   document.getElementById('cpMain').style.display='none';
+  document.getElementById('cpPerfReasons').style.display='none';
   document.getElementById('cpReasons').style.display='';
+}
+function showPerfReasons(){
+  document.getElementById('cpMain').style.display='none';
+  document.getElementById('cpReasons').style.display='none';
+  document.getElementById('cpPerfReasons').style.display='';
 }
 function showClosedMain(){
   document.getElementById('cpMain').style.display='';
   document.getElementById('cpReasons').style.display='none';
+  document.getElementById('cpPerfReasons').style.display='none';
+}
+function setCellPerformance(reason){
+  if(!activeCellPopup)return;
+  const{termId,dateId}=activeCellPopup;
+  const term=APP.terms.find(t=>t.id===termId);if(!term)return;
+  const d=term.dates.find(x=>x.id===dateId);if(!d)return;
+  pushUndoSnapshot();
+  d.type='performance';
+  d.label=reason;
+  saveLocal();closeCellPopup();loadDatesPage();showToast(reason?`Performance: ${reason}`:'Performance added');markDirty();
 }
 function setCellClosed(reason){
   if(!activeCellPopup)return;
@@ -1729,7 +1872,7 @@ function ini(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().sl
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function initApp(){
-  populateTermSelectors();loadRegister();loadSettingsPage();
+  populateTermSelectors();populateRegisterNav();loadRegister();loadSettingsPage();
   // Show reorder button if students exist
   const rBtn=document.getElementById('reorderBtn');if(rBtn&&APP.students.filter(s=>!s.archived).length)rBtn.style.display='';
   // Initialise dates view toggle state
