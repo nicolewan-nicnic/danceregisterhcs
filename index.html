@@ -227,6 +227,23 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .term-block-header{display:flex;align-items:center;justify-content:space-between;padding:10px 0 8px;}
 .term-block-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--navy);}
 .lesson-count-badge{font-size:11px;color:var(--ink-muted);margin-left:8px;font-family:'DM Sans',sans-serif;font-weight:400;}
+/* INVOICE LOG */
+.inv-log-row{display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px;}
+.inv-log-row:last-child{border-bottom:none;}
+.inv-log-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.inv-log-dot.sent{background:var(--teal);}
+.inv-log-dot.paid{background:#2a9d8f;}
+.inv-log-dot.overdue{background:var(--crimson);}
+.inv-log-dot.none{background:var(--border);}
+.inv-log-body{flex:1;}
+.inv-log-teacher{font-weight:600;color:var(--navy);}
+.inv-log-detail{font-size:11px;color:var(--ink-muted);margin-top:2px;}
+.inv-log-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+.inv-log-status.sent{background:#e1f5ee;color:#085041;}
+.inv-log-status.paid{background:#d0f0ec;color:#0b6e65;}
+.inv-log-status.overdue{background:#fce8e8;color:var(--crimson);}
+.inv-log-status.none{background:var(--paper-warm);color:var(--ink-muted);}
+.inv-log-actions{display:flex;gap:4px;align-items:center;}
 /* PROFILES / MEASUREMENTS */
 /* PROFILE SHELL */
 .profile-shell{display:flex;height:calc(100vh - 120px);min-height:400px;overflow:hidden;position:relative;}
@@ -481,12 +498,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
     <div style="display:none;"><div id="teacherList"></div><div id="studentList"></div></div>
   </div>
   <div class="page" id="pageInvoices">
-    <div class="section-header"><div><div class="section-title">Invoices</div><div class="section-sub">Generate teacher invoices</div></div></div>
-    <!-- INVOICE TRACKER -->
-    <div class="inv-tracker fade-in">
-      <div class="inv-tracker-header"><span class="inv-tracker-title">Invoice Tracker</span><button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:white;font-size:11px;" onclick="showInvTrackerEdit()">Edit</button></div>
-      <table class="inv-tracker-table"><thead><tr><th>Teacher</th><th>Invoiced to</th><th>Status</th><th>Date sent</th></tr></thead><tbody id="invTrackerBody"></tbody></table>
+    <div class="section-header"><div><div class="section-title">Invoices</div><div class="section-sub">Generate &amp; track teacher invoices</div></div></div>
+
+    <!-- INVOICE LOG (manual tracking) -->
+    <div class="card fade-in">
+      <div class="card-header"><span class="card-title">Invoice Log</span><button class="btn btn-sm btn-ghost" onclick="showAddLogEntry()">+ Log Entry</button></div>
+      <div id="invoiceLogBody"><div style="padding:12px 16px;font-size:13px;color:var(--ink-muted);">No entries yet. Tap + Log Entry to record an invoice that has been sent.</div></div>
     </div>
+
+    <!-- INVOICE PERIOD -->
     <div class="card fade-in">
       <div class="card-header"><span class="card-title">Invoice Period</span></div>
       <div class="card-body">
@@ -494,16 +514,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
           <div class="form-group"><label class="form-label">From Term</label><select class="form-input" id="invoiceFromTerm" onchange="previewInvoice()"></select></div>
           <div class="form-group"><label class="form-label">To Term</label><select class="form-input" id="invoiceToTerm" onchange="previewInvoice()"></select></div>
         </div>
-        <button class="btn btn-navy btn-full" onclick="downloadAllInvoices()">⬇ Download All Teacher Invoices</button>
+        <button class="btn btn-navy btn-full" onclick="downloadAllInvoices()">⬇ Download All Individual Invoices</button>
       </div>
     </div>
+
+    <!-- INDIVIDUAL INVOICE -->
     <div class="card fade-in">
-      <div class="card-header"><span class="card-title">Individual Preview</span></div>
+      <div class="card-header"><span class="card-title">Individual Invoice</span></div>
       <div class="card-body">
         <div class="form-group"><label class="form-label">Teacher</label><select class="form-input" id="invoiceTeacher" onchange="previewInvoice()"></select></div>
         <button class="btn btn-primary btn-full" onclick="downloadSingleInvoice()">⬇ Download PDF</button>
       </div>
     </div>
+
+    <!-- COMBINED INVOICE -->
+    <div class="card fade-in">
+      <div class="card-header"><span class="card-title">Combined Invoice</span><button class="btn btn-sm btn-ghost" onclick="showCombinedInvoiceModal()">Configure</button></div>
+      <div id="combinedInvSummary" style="padding:10px 16px;font-size:13px;color:var(--ink-muted);">No combination saved yet. Tap Configure to set one up.</div>
+      <div id="combinedInvActions" style="display:none;padding:0 16px 14px;display:none;">
+        <button class="btn btn-primary btn-full" onclick="downloadCombinedInvoice()">⬇ Download Combined PDF</button>
+      </div>
+    </div>
+
     <div id="invoicePreviewArea"></div>
   </div>
   <div class="page" id="pageSettings">
@@ -674,6 +706,8 @@ let APP={
   teachers:[],students:[],terms:[],attendance:{},
   // invoiceTracker: {teacherId: {invoicedToTermId, status:'none'|'sent'|'paid'|'overdue', dateSent}}
   invoiceTracker:{},
+  combinedInvoices:[],
+  invoiceLog:[],
   studentOrder:[],measurementUnit:'metric',demoMode:false,setupDone:false
 };
 
@@ -692,6 +726,8 @@ function loadLocal(){
       if(APP.settings.firebaseToken===undefined)APP.settings.firebaseToken='';
       if(!APP.studentOrder)APP.studentOrder=[];
       if(!APP.measurementUnit)APP.measurementUnit='metric';
+      if(!APP.combinedInvoices)APP.combinedInvoices=[];
+      if(!APP.invoiceLog)APP.invoiceLog=[];
       return true;
     }
   }catch(e){}
@@ -913,59 +949,260 @@ function getActiveTerm(sid='termSelector'){
 }
 
 // ── INVOICE TRACKER ──
-function renderInvTracker(){
-  const tbody=document.getElementById('invTrackerBody');
-  const teachers=APP.teachers.filter(t=>!t.archived);
-  if(!teachers.length){tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--ink-muted);padding:16px;font-size:13px;">No teachers added yet</td></tr>`;return;}
-  tbody.innerHTML=teachers.map(t=>{
-    const rec=APP.invoiceTracker[t.id]||{};
-    const toTerm=rec.invoicedToTermId?APP.terms.find(x=>x.id===rec.invoicedToTermId):null;
-    const status=rec.status||'none';
-    const statusLabels={none:'Not invoiced',sent:'Invoice sent',paid:'Paid',overdue:'Overdue'};
-    const statusCls={none:'inv-status-none',sent:'inv-status-sent',paid:'inv-status-paid',overdue:'inv-status-overdue'};
-    return`<tr>
-      <td><strong>${t.name}</strong></td>
-      <td style="color:var(--ink-soft);font-size:12px;">${toTerm?toTerm.label:'—'}</td>
-      <td><span class="inv-status-badge ${statusCls[status]}">${statusLabels[status]}</span></td>
-      <td style="color:var(--ink-soft);font-size:12px;">${rec.dateSent||'—'}</td>
-    </tr>`;
+// ── INVOICE LOG ──
+function renderInvTracker(){renderInvoiceLog();}// legacy alias
+
+function renderInvoiceLog(){
+  const el=document.getElementById('invoiceLogBody');if(!el)return;
+  const log=[...APP.invoiceLog].sort((a,b)=>b.date.localeCompare(a.date));
+  if(!log.length){el.innerHTML='<div style="padding:12px 16px;font-size:13px;color:var(--ink-muted);">No entries yet. Tap + Log Entry to record an invoice that has been sent.</div>';return;}
+  const statusLabel={sent:'Sent',paid:'Paid',overdue:'Overdue',none:'Pending'};
+  el.innerHTML=log.map(e=>{
+    const teacher=APP.teachers.find(t=>t.id===e.teacherId);
+    const tLabel=teacher?teacher.name:(e.teacherName||'Unknown');
+    const toTerm=e.toTermId?APP.terms.find(t=>t.id===e.toTermId):null;
+    const s=e.status||'sent';
+    return`<div class="inv-log-row">
+      <div class="inv-log-dot ${s}"></div>
+      <div class="inv-log-body">
+        <div class="inv-log-teacher">${tLabel}${e.combined?' <span style="font-size:10px;background:#d0d8f0;color:var(--navy);padding:1px 6px;border-radius:20px;">combined</span>':''}</div>
+        <div class="inv-log-detail">${e.date}${toTerm?' · up to '+toTerm.label:''}${e.notes?' · '+e.notes:''}</div>
+      </div>
+      <span class="inv-log-status ${s}">${statusLabel[s]||s}</span>
+      <div class="inv-log-actions">
+        <button class="btn btn-sm btn-ghost" style="font-size:10px;padding:3px 8px;" onclick="editLogEntry('${e.id}')">Edit</button>
+        <button class="btn btn-sm btn-ghost" style="font-size:10px;padding:3px 8px;color:var(--crimson);" onclick="deleteLogEntry('${e.id}')">✕</button>
+      </div>
+    </div>`;
   }).join('');
 }
 
-function showInvTrackerEdit(){
+function showAddLogEntry(prefillTeacherId,prefillCombined){
   const teachers=APP.teachers.filter(t=>!t.archived);
-  if(!teachers.length){showToast('No teachers yet');return;}
-  openModal(`<div class="modal-title">Update Invoice Status</div>
-    ${teachers.map(t=>{
-      const rec=APP.invoiceTracker[t.id]||{};
-      return`<div style="padding:12px 0;border-bottom:1px solid var(--border);">
-        <div style="font-weight:700;font-size:14px;margin-bottom:8px;">${t.name}</div>
-        <div class="form-row" style="margin-bottom:8px;">
-          <div class="form-group" style="margin:0;"><label class="form-label">Invoiced to term</label><select class="form-input" id="itrk_term_${t.id}">
-            <option value="">— not invoiced —</option>
-            ${APP.terms.map(x=>`<option value="${x.id}" ${rec.invoicedToTermId===x.id?'selected':''}>${x.label}</option>`).join('')}
-          </select></div>
-          <div class="form-group" style="margin:0;"><label class="form-label">Status</label><select class="form-input" id="itrk_status_${t.id}">
-            <option value="none" ${(rec.status||'none')==='none'?'selected':''}>Not invoiced</option>
-            <option value="sent" ${rec.status==='sent'?'selected':''}>Invoice sent</option>
-            <option value="paid" ${rec.status==='paid'?'selected':''}>Paid</option>
-            <option value="overdue" ${rec.status==='overdue'?'selected':''}>Overdue</option>
-          </select></div>
-        </div>
-        <div class="form-group" style="margin:0;"><label class="form-label">Date sent</label><input type="date" class="form-input" id="itrk_date_${t.id}" value="${rec.dateSent||''}"></div>
-      </div>`;
-    }).join('')}
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveInvTracker()">Save</button></div>`);
+  const today=new Date().toISOString().slice(0,10);
+  openModal(`<div class="modal-title">Log Invoice Entry</div>
+    <p style="font-size:12px;color:var(--ink-muted);margin-bottom:14px;">Record that an invoice has been sent. This is independent of PDF generation.</p>
+    <div class="form-group"><label class="form-label">Teacher / Payee</label>
+      <select class="form-input" id="log_teacher">
+        ${teachers.map(t=>`<option value="${t.id}" ${t.id===prefillTeacherId?'selected':''}>${t.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Status</label>
+        <select class="form-input" id="log_status">
+          <option value="sent">Sent</option>
+          <option value="paid">Paid</option>
+          <option value="overdue">Overdue</option>
+          <option value="none">Pending</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Date sent</label>
+        <input type="date" class="form-input" id="log_date" value="${today}">
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Invoiced up to term (optional)</label>
+      <select class="form-input" id="log_term">
+        <option value="">— not specified —</option>
+        ${APP.terms.map(t=>`<option value="${t.id}">${t.label}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Notes (optional)</label>
+      <input type="text" class="form-input" id="log_notes" placeholder="e.g. Combined with Teacher 2">
+    </div>
+    <input type="hidden" id="log_combined" value="${prefillCombined?'1':''}">
+    <input type="hidden" id="log_edit_id" value="">
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveLogEntry()">Save Entry</button></div>`);
 }
 
-function saveInvTracker(){
-  APP.teachers.filter(t=>!t.archived).forEach(t=>{
-    const termId=document.getElementById('itrk_term_'+t.id)?.value||'';
-    const status=document.getElementById('itrk_status_'+t.id)?.value||'none';
-    const dateSent=document.getElementById('itrk_date_'+t.id)?.value||'';
-    APP.invoiceTracker[t.id]={invoicedToTermId:termId||null,status,dateSent};
+function editLogEntry(id){
+  const e=APP.invoiceLog.find(x=>x.id===id);if(!e)return;
+  openModal(`<div class="modal-title">Edit Log Entry</div>
+    <div class="form-group"><label class="form-label">Teacher / Payee</label>
+      <select class="form-input" id="log_teacher">
+        ${APP.teachers.filter(t=>!t.archived).map(t=>`<option value="${t.id}" ${t.id===e.teacherId?'selected':''}>${t.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Status</label>
+        <select class="form-input" id="log_status">
+          <option value="sent" ${e.status==='sent'?'selected':''}>Sent</option>
+          <option value="paid" ${e.status==='paid'?'selected':''}>Paid</option>
+          <option value="overdue" ${e.status==='overdue'?'selected':''}>Overdue</option>
+          <option value="none" ${e.status==='none'?'selected':''}>Pending</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Date sent</label>
+        <input type="date" class="form-input" id="log_date" value="${e.date||''}">
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Invoiced up to term</label>
+      <select class="form-input" id="log_term">
+        <option value="">— not specified —</option>
+        ${APP.terms.map(t=>`<option value="${t.id}" ${t.id===e.toTermId?'selected':''}>${t.label}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label>
+      <input type="text" class="form-input" id="log_notes" value="${esc(e.notes||'')}">
+    </div>
+    <input type="hidden" id="log_combined" value="${e.combined?'1':''}">
+    <input type="hidden" id="log_edit_id" value="${id}">
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveLogEntry()">Save</button></div>`);
+}
+
+function saveLogEntry(){
+  const teacherId=document.getElementById('log_teacher')?.value||'';
+  const status=document.getElementById('log_status')?.value||'sent';
+  const date=document.getElementById('log_date')?.value||new Date().toISOString().slice(0,10);
+  const toTermId=document.getElementById('log_term')?.value||'';
+  const notes=document.getElementById('log_notes')?.value.trim()||'';
+  const combined=document.getElementById('log_combined')?.value==='1';
+  const editId=document.getElementById('log_edit_id')?.value||'';
+  if(!teacherId){showToast('Select a teacher');return;}
+  pushUndoSnapshot();
+  if(editId){
+    const e=APP.invoiceLog.find(x=>x.id===editId);
+    if(e){e.teacherId=teacherId;e.status=status;e.date=date;e.toTermId=toTermId||null;e.notes=notes;e.combined=combined;}
+  } else {
+    APP.invoiceLog.push({id:'LOG'+Date.now(),teacherId,status,date,toTermId:toTermId||null,notes,combined});
+  }
+  saveLocal();markDirty();closeModal();renderInvoiceLog();showToast('Entry saved ✓');
+}
+
+function deleteLogEntry(id){
+  if(!confirm('Delete this log entry?'))return;
+  pushUndoSnapshot();
+  APP.invoiceLog=APP.invoiceLog.filter(e=>e.id!==id);
+  saveLocal();markDirty();renderInvoiceLog();showToast('Entry deleted');
+}
+
+// ── COMBINED INVOICE ──
+function showCombinedInvoiceModal(){
+  const teachers=APP.teachers.filter(t=>!t.archived);
+  if(teachers.length<2){showToast('Need at least 2 teachers for a combined invoice');return;}
+  const saved=APP.combinedInvoices[0]||{payeeId:'',includeIds:teachers.map(t=>t.id)};
+  openModal(`<div class="modal-title">Combined Invoice</div>
+    <p style="font-size:12px;color:var(--ink-muted);margin-bottom:14px;">The combined invoice is issued in the payee's name, with all selected teachers' lessons merged into one total. Saves as the default combination.</p>
+    <div class="form-group"><label class="form-label">Invoice payee (whose name &amp; bank details appear)</label>
+      <select class="form-input" id="comb_payee">
+        ${teachers.map(t=>`<option value="${t.id}" ${t.id===saved.payeeId?'selected':''}>${t.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Include lessons from</label>
+      ${teachers.map(t=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px;">
+        <input type="checkbox" id="comb_inc_${t.id}" ${(saved.includeIds||[]).includes(t.id)?'checked':''} style="width:16px;height:16px;">
+        ${t.name}
+      </label>`).join('')}
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveCombinedConfig()">Save &amp; Preview</button></div>`);
+}
+
+function saveCombinedConfig(){
+  const payeeId=document.getElementById('comb_payee')?.value||'';
+  const includeIds=APP.teachers.filter(t=>!t.archived&&document.getElementById('comb_inc_'+t.id)?.checked).map(t=>t.id);
+  if(!payeeId){showToast('Select a payee');return;}
+  if(!includeIds.length){showToast('Select at least one teacher to include');return;}
+  pushUndoSnapshot();
+  APP.combinedInvoices=[{payeeId,includeIds}];
+  saveLocal();markDirty();closeModal();
+  renderCombinedSummary();showToast('Combined invoice saved ✓');
+}
+
+function renderCombinedSummary(){
+  const el=document.getElementById('combinedInvSummary');
+  const act=document.getElementById('combinedInvActions');
+  if(!APP.combinedInvoices||!APP.combinedInvoices.length){
+    if(el)el.innerHTML='<div style="padding:10px 16px;font-size:13px;color:var(--ink-muted);">No combination saved yet. Tap Configure to set one up.</div>';
+    if(act)act.style.display='none';return;
+  }
+  const conf=APP.combinedInvoices[0];
+  const payee=APP.teachers.find(t=>t.id===conf.payeeId);
+  const included=APP.teachers.filter(t=>conf.includeIds?.includes(t.id));
+  if(!payee||!included.length){if(el)el.innerHTML='<div style="padding:10px 16px;font-size:13px;color:var(--ink-muted);">Configuration is invalid. Tap Configure.</div>';if(act)act.style.display='none';return;}
+  if(el)el.innerHTML=`<div style="padding:10px 16px;">
+    <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:4px;">Payee</div>
+    <div style="font-weight:700;font-size:14px;color:var(--navy);margin-bottom:8px;">${payee.name}</div>
+    <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:4px;">Combining lessons from</div>
+    <div style="font-size:13px;color:var(--ink);">${included.map(t=>`<span style="display:inline-block;background:var(--paper-warm);border:1px solid var(--border);border-radius:20px;padding:2px 10px;margin:2px;font-size:12px;">${t.name}</span>`).join('')}</div>
+  </div>`;
+  if(act){act.style.display='block';}
+}
+
+function calcCombinedPay(includeIds,fromId,toId){
+  // Sum calcPay for each included teacher then merge totals
+  let grandTotal=0;
+  const allBreakdown=[];
+  includeIds.forEach(tid=>{
+    const res=calcPay(tid,fromId,toId);
+    if(!res)return;
+    grandTotal+=res.total;
+    res.breakdown.forEach(b=>{
+      const existing=allBreakdown.find(x=>x.term.id===b.term.id);
+      if(existing){existing.termPay+=b.termPay;existing.attended+=b.attended;}
+      else allBreakdown.push({...b,termPay:b.termPay,attended:b.attended});
+    });
   });
-  pushUndoSnapshot();saveLocal();closeModal();renderInvTracker();showToast('Invoice tracker updated ✓');markDirty();
+  grandTotal=Math.round(grandTotal*100)/100;
+  allBreakdown.forEach(b=>b.termPay=Math.round(b.termPay*100)/100);
+  return{total:grandTotal,breakdown:allBreakdown};
+}
+
+function downloadCombinedInvoice(){
+  const conf=APP.combinedInvoices&&APP.combinedInvoices[0];
+  if(!conf){showToast('Configure a combined invoice first');return;}
+  const payee=APP.teachers.find(t=>t.id===conf.payeeId);
+  if(!payee){showToast('Payee not found');return;}
+  const fromId=document.getElementById('invoiceFromTerm')?.value||APP.terms[0]?.id;
+  const toId=document.getElementById('invoiceToTerm')?.value||APP.terms[APP.terms.length-1]?.id;
+  const calc=calcCombinedPay(conf.includeIds,fromId,toId);
+  if(!calc){showToast('Could not calculate');return;}
+  genCombinedPDF(payee,calc);
+  // Auto-log as sent for the payee and all included teachers
+  const today=new Date().toISOString().slice(0,10);
+  pushUndoSnapshot();
+  conf.includeIds.forEach(tid=>{
+    APP.invoiceLog.push({id:'LOG'+Date.now()+'_'+tid,teacherId:tid,status:'sent',date:today,toTermId:toId||null,notes:'Combined invoice',combined:true});
+  });
+  saveLocal();markDirty();renderInvoiceLog();
+  showToast('Downloading combined PDF…');
+}
+
+function genCombinedPDF(payee,calc){
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=18;let y=M;
+  doc.setFillColor(26,35,64);doc.rect(0,0,W,34,'F');
+  doc.setFontSize(18);doc.setFont('helvetica','bold');doc.setTextColor(232,160,144);doc.text('Harrow Chinese School',M,13);
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(255,255,255);doc.text(APP.settings.schoolAddress.replace(/
+/g,', '),M,21);
+  const issueDate=new Date().toLocaleDateString('en-GB');
+  const invNum=`${payee.invoicePrefix||'INV'}-${APP.settings.academicYear}-CMB`;
+  doc.setFontSize(8);doc.text(`Invoice: ${invNum}`,W-M,13,{align:'right'});doc.text(`Date: ${issueDate}`,W-M,20,{align:'right'});doc.text(`Year: ${APP.settings.academicYear}`,W-M,27,{align:'right'});
+  y=44;const bw=(W-M*2-8)/2;
+  doc.setFillColor(244,240,234);doc.rect(M,y,bw,28,'F');doc.rect(M+bw+8,y,bw,28,'F');
+  doc.setFontSize(7);doc.setTextColor(144,152,168);doc.text('FROM (TEACHER)',M+4,y+5);doc.text('TO (SCHOOL)',M+bw+12,y+5);
+  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(26,35,64);doc.text(payee.name,M+4,y+12);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(74,74,90);
+  (payee.address||'').split('
+').slice(0,3).forEach((l,i)=>doc.text(l,M+4,y+18+i*5));
+  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(26,35,64);doc.text(APP.settings.schoolName,M+bw+12,y+12);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(74,74,90);
+  APP.settings.schoolAddress.split('
+').slice(0,3).forEach((l,i)=>doc.text(l,M+bw+12,y+18+i*5));
+  y+=36;
+  const cols=[M,M+70,M+140];
+  doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,8,'F');doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+  ['Term','Lessons','Amount'].forEach((h,i)=>doc.text(h,cols[i]+2,y+5.5));y+=8;
+  calc.breakdown.filter(b=>b.termPay>0).forEach((b,ri)=>{
+    doc.setFillColor(...(ri%2===0?[255,255,255]:[244,240,234]));doc.rect(M,y,W-M*2,8,'F');
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(26,35,64);
+    doc.text(b.term.label,cols[0]+2,y+5.5);
+    doc.text(`${b.attended}`,cols[1]+2,y+5.5);
+    doc.setFont('helvetica','bold');doc.text(`£${b.termPay.toFixed(2)}`,W-M-2,y+5.5,{align:'right'});
+    doc.setFont('helvetica','normal');y+=8;
+  });
+  doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,10,'F');doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(255,255,255);doc.text('TOTAL DUE',cols[0]+2,y+7);doc.setTextColor(232,160,144);doc.text(`£${calc.total.toFixed(2)}`,W-M-2,y+7,{align:'right'});y+=16;
+  if(payee.accountNo){doc.setFillColor(244,240,234);doc.rect(M,y,W-M*2,18,'F');doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(144,152,168);doc.text('PAYMENT DETAILS',M+4,y+5);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(26,35,64);doc.text(`Bank: ${payee.bankName||'—'}   Sort Code: ${payee.sortCode||'—'}   Account: ${payee.accountNo||'—'}`,M+4,y+12);}
+  doc.setFillColor(26,35,64);doc.rect(0,284,W,13,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(200,200,200);doc.text(`${APP.settings.schoolName} · ${APP.settings.academicYear} · ${issueDate}`,W/2,292,{align:'center'});
+  doc.save(`${payee.name.replace(/ /g,'_')}_Combined_Invoice_${APP.settings.academicYear}.pdf`);
 }
 
 // ── UNDO SYSTEM ──
@@ -979,7 +1216,9 @@ function pushUndoSnapshot(){
     students:APP.students,
     teachers:APP.teachers,
     studentOrder:APP.studentOrder,
-    invoiceTracker:APP.invoiceTracker
+    invoiceTracker:APP.invoiceTracker,
+    combinedInvoices:APP.combinedInvoices,
+    invoiceLog:APP.invoiceLog
   }));
   if(_undoStack.length>MAX_UNDO)_undoStack.shift();
   showUndoBtn(true);
@@ -993,6 +1232,8 @@ function performUndo(){
   APP.teachers=snap.teachers;
   APP.studentOrder=snap.studentOrder||[];
   APP.invoiceTracker=snap.invoiceTracker||{};
+  APP.combinedInvoices=snap.combinedInvoices||[];
+  APP.invoiceLog=snap.invoiceLog||[];
   saveLocal();markDirty();
   // Refresh whichever page is active
   const activePage=document.querySelector('.page.active')?.id;
@@ -1887,6 +2128,8 @@ function doArchive(type,id){const l=type==='teacher'?APP.teachers:APP.students;c
 function loadInvoicesPage(){
   populateTermSelectors();
   document.getElementById('invoiceTeacher').innerHTML=APP.teachers.filter(t=>!t.archived).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  renderInvoiceLog();
+  renderCombinedSummary();
   previewInvoice();
 }
 function calcPay(teacherId,fromId,toId){
@@ -2163,7 +2406,9 @@ async function loadFromDb(silent=false){
 
     if(data.invoiceTracker&&typeof data.invoiceTracker==='object'){
       APP.invoiceTracker=data.invoiceTracker;
-    } else {
+    }
+    if(Array.isArray(data.combinedInvoices))APP.combinedInvoices=data.combinedInvoices;
+    if(Array.isArray(data.invoiceLog))APP.invoiceLog=data.invoiceLog; else {
       APP.invoiceTracker=APP.invoiceTracker||{};
     }
 
