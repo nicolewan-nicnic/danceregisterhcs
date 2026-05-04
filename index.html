@@ -171,32 +171,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
   .cal-legend{padding:8px 24px 10px;}
 }
 @media(min-width:960px){
-  /* Top navigation bar layout */
-  body{display:flex;flex-direction:column;min-height:100vh;}
-  .app-header{display:flex;flex-direction:row;align-items:center;padding:0 24px;height:52px;gap:0;flex-shrink:0;}
-  .app-title-block{flex:none;margin-right:32px;}
-  .app-title{font-size:17px;}
-  .app-subtitle{display:none;}
-  /* Nav becomes a horizontal top bar inside the header */
-  .bottom-nav{
-    position:static;display:flex;flex-direction:row;flex:1;
-    background:transparent;border-top:none;border-bottom:none;
-    padding-bottom:0;gap:0;align-self:stretch;
-  }
-  .nav-btn{
-    flex:none;flex-direction:row;align-items:center;gap:7px;
-    padding:0 16px;height:100%;color:rgba(255,255,255,.5);
-    font-size:12px;letter-spacing:.04em;border-radius:0;
-    border-bottom:3px solid transparent;transition:color .15s,border-color .15s;
-  }
-  .nav-btn:hover{color:rgba(255,255,255,.85);}
-  .nav-btn.active{color:white;border-bottom-color:var(--salmon);}
-  .nav-btn svg{width:16px;height:16px;flex-shrink:0;}
-  /* Undo + sync pushed to the right */
-  .undo-btn{margin-left:auto;}
-  .sync-status{margin-left:8px;}
-  /* Main content fills below header */
-  .main{flex:1;overflow-y:auto;padding-bottom:0;}
+  /* Desktop layout — bottom nav stays, content gets wider padding */
   .section-header{padding:28px 40px 16px;}
   .card{margin:0 32px 14px;}
   .inv-tracker{margin:0 32px 14px;}
