@@ -728,6 +728,10 @@ function loadLocal(){
       if(!APP.measurementUnit)APP.measurementUnit='metric';
       if(!APP.combinedInvoices)APP.combinedInvoices=[];
       if(!APP.invoiceLog)APP.invoiceLog=[];
+      // If we have real data, always treat as set up — prevents welcome screen on cached devices
+      if(!APP.setupDone && (APP.terms.length||APP.teachers.length||APP.students.length)){
+        APP.setupDone=true;
+      }
       return true;
     }
   }catch(e){}
@@ -759,7 +763,20 @@ function initSetupDots(){
   tl.innerHTML=['Autumn','Spring','Summer'].map((n,i)=>`<div style="margin-bottom:10px;padding:14px;background:var(--paper-warm);border-radius:8px;"><div style="font-weight:700;font-size:13px;margin-bottom:10px;">${n} Term</div><div class="form-row"><div class="form-group" style="margin:0;"><label class="form-label">Start</label><input type="date" class="form-input" id="t${i+1}start"></div><div class="form-group" style="margin:0;"><label class="form-label">End</label><input type="date" class="form-input" id="t${i+1}end"></div></div></div>`).join('');
 }
 function goSetupStep(n){document.getElementById('step'+curStep).classList.remove('active');document.getElementById('dot'+curStep).classList.remove('active');curStep=n;document.getElementById('step'+n).classList.add('active');document.getElementById('dot'+n).classList.add('active');}
-function connectFirebase(){APP.settings.firebaseUrl=(document.getElementById('setupFirebaseUrl')?.value||'').trim();goSetupStep(1);}
+function connectFirebase(){
+  const url=(document.getElementById('setupFirebaseUrl')?.value||'').trim();
+  if(!url){goSetupStep(1);return;} // no URL entered — proceed to manual setup
+  APP.settings.firebaseUrl=url;
+  APP.setupDone=true;
+  APP.demoMode=false;
+  saveLocal();
+  // Close the setup overlay immediately and boot the app
+  document.getElementById('setupOverlay').style.display='none';
+  initApp();
+  showToast('Connecting to Firebase…');
+  // Pull all data — this will populate everything from Firebase
+  loadFromDb(false);
+}
 function skipSetup(){APP.demoMode=true;goSetupStep(1);}
 function addSetupTeacher(){
   if(setupTC>=4)return;setupTC++;
@@ -2521,21 +2538,20 @@ function initApp(){
 window.addEventListener('DOMContentLoaded',()=>{
   initSetupDots();
   const has=loadLocal();
-  // Always read fbUrl AFTER loadLocal() so the hardcoded default is available
   const fbUrl=APP.settings.firebaseUrl;
   console.log('[HCS] Startup — has local save:', has, '| setupDone:', APP.setupDone, '| fbUrl:', fbUrl?'set':'none');
 
-  if(has&&APP.setupDone){
-    // Returning visit — render with cached data immediately, then sync from Firebase
+  if(has && APP.setupDone){
+    // Returning visit — render immediately with cached data, then sync
     document.getElementById('setupOverlay').style.display='none';
     initApp();
     if(fbUrl){
-      console.log('[HCS] Returning device — pulling latest from Firebase');
+      console.log('[HCS] Returning device — syncing from Firebase');
       loadFromDb(false);
     }
-  } else if(fbUrl){
-    // Fresh device but Firebase URL is known — skip setup, pull everything from Firebase
-    console.log('[HCS] Fresh device with Firebase URL — pulling all data');
+  } else if(!has && fbUrl){
+    // Fresh device, no local save, but Firebase URL is baked in — pull everything
+    console.log('[HCS] Fresh device, known Firebase URL — pulling from Firebase');
     APP.setupDone=true;
     APP.demoMode=false;
     saveLocal();
@@ -2543,9 +2559,11 @@ window.addEventListener('DOMContentLoaded',()=>{
     initApp();
     loadFromDb(false);
   } else {
-    // No Firebase at all — show demo data
-    console.log('[HCS] No Firebase URL — loading demo data');
-    quickStart();
+    // No local save and no confirmed setup — show the welcome screen
+    // Pre-fill the Firebase URL input so the user can see it / confirm it
+    console.log('[HCS] Showing setup screen');
+    const urlInput=document.getElementById('setupFirebaseUrl');
+    if(urlInput && fbUrl) urlInput.value=fbUrl;
   }
 });
 </script>
