@@ -1741,11 +1741,16 @@ async function syncToDb(){
   try{
     // Build a clean payload — exclude device-local and ephemeral fields
     const {firebaseUrl,firebaseToken,...sharedSettings}=APP.settings;
+    // Firebase forbids | in keys — encode attendance keys before pushing
+    const encodedAttendance={};
+    Object.entries(APP.attendance).forEach(([k,v])=>{
+      encodedAttendance[k.replace(/\|/g,'__PIPE__')]=v;
+    });
     const payload=JSON.stringify({
       terms: APP.terms,
       students: APP.students,
       teachers: APP.teachers,
-      attendance: APP.attendance,
+      attendance: encodedAttendance,
       invoiceTracker: APP.invoiceTracker,
       studentOrder: APP.studentOrder,
       settings: sharedSettings
@@ -1795,7 +1800,14 @@ async function loadFromDb(silent=false){
     if(Array.isArray(data.terms))       APP.terms        = data.terms;
     if(Array.isArray(data.students))    APP.students     = data.students;
     if(Array.isArray(data.teachers))    APP.teachers     = data.teachers;
-    if(data.attendance&&typeof data.attendance==='object') APP.attendance = data.attendance;
+    if(data.attendance&&typeof data.attendance==='object'){
+      // Decode Firebase-safe keys back to pipe-separated keys
+      const decoded={};
+      Object.entries(data.attendance).forEach(([k,v])=>{
+        decoded[k.replace(/__PIPE__/g,'|')]=v;
+      });
+      APP.attendance=decoded;
+    }
     if(data.invoiceTracker&&typeof data.invoiceTracker==='object') APP.invoiceTracker = data.invoiceTracker;
     if(Array.isArray(data.studentOrder)) APP.studentOrder = data.studentOrder;
     if(data.settings&&typeof data.settings==='object'){
@@ -1825,7 +1837,8 @@ async function loadFromDb(silent=false){
     _fbConnected=true;
     markClean();
     updateSyncStatus('ok','Synced');
-    const counts=`${data.students?.length||0} students, ${data.teachers?.length||0} teachers, ${data.terms?.length||0} terms`;
+    const attCount=Object.keys(APP.attendance).length;
+    const counts=`${data.students?.length||0} students, ${data.teachers?.length||0} teachers, ${data.terms?.length||0} terms, ${attCount} attendance records`;
     if(!silent)showToast(`Loaded from Firebase ✓ (${counts})`);
     else showToast(`Synced ✓`);
   }catch(e){
