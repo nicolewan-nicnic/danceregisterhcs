@@ -1766,7 +1766,7 @@ async function syncToDb(){
   _isSyncing=false;
 }
 
-async function loadFromDb(){
+async function loadFromDb(silent=false){
   const url=getFbUrl();
   if(!url){showToast('Enter Firebase URL in Settings first');return;}
   updateSyncStatus('warn','Loading…');
@@ -1774,16 +1774,32 @@ async function loadFromDb(){
     const resp=await fetch(url);
     if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
     const data=await resp.json();
-    if(!data){showToast('No data in Firebase — pushing current data');syncToDb();return;}
+    if(!data){
+      if(!silent)showToast('No data in Firebase — pushing current data');
+      syncToDb();return;
+    }
     // Preserve device-local settings (Firebase URL, token) — merge everything else
     const localSettings={firebaseUrl:APP.settings.firebaseUrl,firebaseToken:APP.settings.firebaseToken};
     Object.assign(APP,data);
     APP.settings={...APP.settings,...localSettings};
-    saveLocal();populateTermSelectors();loadRegister();loadSettingsPage();
+    if(!APP.studentOrder)APP.studentOrder=[];
+    if(!APP.invoiceTracker)APP.invoiceTracker={};
+    if(!APP.attendance)APP.attendance={};
+    APP.setupDone=true;
+    saveLocal();
+    // Full UI refresh
+    populateTermSelectors();
+    populateRegisterNav();
+    loadRegister();
+    loadSettingsPage();
+    loadPeoplePage();
+    renderInvTracker();
+    setDatesView(datesViewMode||'year');
     _fbConnected=true;
     markClean();
     updateSyncStatus('ok','Synced');
-    showToast('Loaded from Firebase ✓');
+    if(!silent)showToast('Loaded from Firebase ✓');
+    else showToast('Up to date ✓');
   }catch(e){
     console.error('Firebase load error:',e);
     updateSyncStatus('err','Load failed');
@@ -1804,12 +1820,8 @@ function trySilentConnect(){
     updateSyncStatus('warn','Unsynced');
     scheduleSyncRetry(2000);
   }else{
-    // Ping using a shallow GET (only fetches the top-level keys, not the full payload)
-    const base=(APP.settings.firebaseUrl||'').replace(/\/?$/,'');
-    const token=APP.settings.firebaseToken?`&auth=${encodeURIComponent(APP.settings.firebaseToken)}`:'';
-    fetch(`${base}/hcs.json?shallow=true${token}`,{method:'GET'})
-      .then(r=>{if(r.ok){_fbConnected=true;updateSyncStatus('ok','Connected');}else{updateSyncStatus('err','Auth error');}})
-      .catch(()=>updateSyncStatus('err','Offline'));
+    // Pull latest data silently — ensures this device is always up to date on load
+    loadFromDb(true);
   }
 }
 
@@ -1864,10 +1876,28 @@ function initApp(){
 window.addEventListener('DOMContentLoaded',()=>{
   initSetupDots();const has=loadLocal();
   if(has&&APP.setupDone){
-    document.getElementById('setupOverlay').style.display='none';initApp();
-  } else if(!has){
-    // First ever load — auto-start with preloaded data, no setup needed
-    quickStart();
+    document.getElementById('setupOverlay').style.display='none';
+    initApp();
+    // If Firebase URL is configured and we have clean local data, silently pull latest
+    if(APP.settings.firebaseUrl&&!isDirty()){
+      loadFromDb(true); // silent=true — don't toast on success, just update
+    }
+  } else {
+    // First ever load on this device — if Firebase URL is pre-configured, pull from it
+    // Otherwise fall back to the preloaded demo data
+    const fbUrl=APP.settings.firebaseUrl;
+    if(fbUrl){
+      // Bootstrap enough state so the UI can render while we fetch
+      APP.setupDone=true;
+      saveLocal();
+      document.getElementById('setupOverlay').style.display='none';
+      initApp();
+      updateSyncStatus('warn','Syncing…');
+      showToast('Fetching data from Firebase…');
+      loadFromDb(false);
+    } else {
+      quickStart();
+    }
   }
 });
 </script>
