@@ -227,6 +227,58 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .term-block-header{display:flex;align-items:center;justify-content:space-between;padding:10px 0 8px;}
 .term-block-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--navy);}
 .lesson-count-badge{font-size:11px;color:var(--ink-muted);margin-left:8px;font-family:'DM Sans',sans-serif;font-weight:400;}
+/* PROFILES / MEASUREMENTS */
+.profile-shell{display:flex;height:calc(100vh - 120px);min-height:400px;overflow:hidden;}
+.profile-sidebar{width:200px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;background:var(--paper-warm);}
+.prof-sb-section{padding:8px 12px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-muted);border-top:1px solid var(--border);}
+.prof-sb-section:first-child{border-top:none;}
+.prof-sb-item{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;transition:background .1s;border-left:2.5px solid transparent;}
+.prof-sb-item:hover{background:white;}
+.prof-sb-item.active{background:white;border-left-color:var(--navy);}
+.prof-sb-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:var(--navy);color:white;}
+.prof-sb-name{font-size:12px;font-weight:600;line-height:1.2;}
+.prof-sb-meta{font-size:10px;color:var(--ink-muted);}
+.profile-main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:white;}
+.profile-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.prof-hd-av{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;background:var(--navy);color:white;}
+.prof-hd-name{font-size:17px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond',serif;}
+.prof-hd-meta{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+.prof-tab-bar{display:flex;border-bottom:1px solid var(--border);padding:0 20px;flex-shrink:0;}
+.prof-tab{padding:9px 14px;font-size:12px;font-weight:600;color:var(--ink-muted);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1px;transition:color .12s;}
+.prof-tab.active{color:var(--navy);border-bottom-color:var(--navy);}
+.prof-tab-content{flex:1;overflow-y:auto;padding:16px 20px;}
+.meas-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.meas-row:last-child{border-bottom:none;}
+.meas-label{flex:1;font-size:13px;color:var(--ink);}
+.meas-input{width:72px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-weight:600;text-align:right;background:var(--paper-warm);color:var(--navy);}
+.meas-input:focus{outline:none;border-color:var(--navy);background:white;}
+.meas-unit{font-size:11px;color:var(--ink-muted);min-width:24px;}
+.field-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.field-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;}
+.info-field{background:var(--paper-warm);border-radius:6px;padding:10px 12px;border:1px solid var(--border);}
+.info-field-label{font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;}
+.info-field-val{font-size:15px;font-weight:600;color:var(--navy);}
+.info-field-val.empty{color:var(--ink-muted);font-size:13px;font-weight:400;}
+.hist-group{margin-bottom:16px;}
+.hist-date-label{font-size:11px;font-weight:700;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.hist-row{display:flex;align-items:center;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border);}
+.hist-row:last-child{border-bottom:none;}
+.hist-field{flex:1;color:var(--ink-soft);}
+.hist-val{font-weight:600;min-width:60px;text-align:right;}
+.hist-diff{font-size:10px;padding:1px 7px;border-radius:20px;margin-left:8px;font-weight:600;min-width:50px;text-align:center;}
+.diff-up{background:#e1f5ee;color:#085041;}
+.diff-dn{background:#fce8e8;color:#a32d2d;}
+.diff-eq{background:var(--paper-warm);color:var(--ink-muted);}
+/* ROSTER VIEW */
+.roster-table{width:100%;border-collapse:collapse;font-size:12px;}
+.roster-table th{background:var(--navy);color:white;padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;}
+.roster-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.roster-table tr:hover td{background:var(--paper-warm);}
+.roster-table td.empty-meas{color:var(--ink-muted);font-size:11px;}
+.unit-toggle{display:flex;gap:0;border:1.5px solid var(--border);border-radius:6px;overflow:hidden;}
+.unit-toggle button{border:none;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--ink-soft);transition:all .12s;}
+.unit-toggle button.active{background:var(--navy);color:white;}
+.all-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted);padding:10px 0 4px;border-bottom:2px solid var(--navy);margin-bottom:0;}
 /* CSV import */
 .csv-drop{border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;color:var(--ink-muted);font-size:13px;cursor:pointer;transition:all .2s;margin-bottom:12px}
 .csv-drop:hover{border-color:var(--crimson);color:var(--crimson);background:var(--salmon-light)}
@@ -361,15 +413,33 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
     <div id="calWrapper"><div class="empty-state"><h3>No dates yet</h3><p>Tap + Add Term to get started</p></div></div>
   </div>
   <div class="page" id="pagePeople">
-    <div class="section-header"><div><div class="section-title">People</div><div class="section-sub">Teachers & students</div></div></div>
-    <div class="card fade-in">
-      <div class="card-header"><span class="card-title">Teachers</span><button class="btn btn-sm btn-ghost" onclick="showAddPersonModal('teacher')">+ Add</button></div>
-      <div id="teacherList"></div>
+    <div class="section-header" style="flex-wrap:wrap;gap:8px;">
+      <div><div class="section-title">People</div><div class="section-sub" id="peopleSub">Teachers & students</div></div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <div class="unit-toggle" id="unitToggle">
+          <button class="active" id="unitCm" onclick="setUnit('metric')">cm / kg</button>
+          <button id="unitIn" onclick="setUnit('imperial')">in / lbs</button>
+        </div>
+        <button class="btn btn-sm btn-ghost" id="viewRosterBtn" onclick="setPeopleView('roster')">Roster</button>
+        <button class="btn btn-sm btn-navy" id="viewProfileBtn" onclick="setPeopleView('profile')">Profiles</button>
+        <button class="btn btn-sm btn-ghost" onclick="showAddPersonModal('teacher')">+ Teacher</button>
+        <button class="btn btn-sm btn-ghost" onclick="showImportCSVModal()">↑ CSV</button>
+        <button class="btn btn-sm btn-ghost" onclick="showAddPersonModal('student')">+ Student</button>
+      </div>
     </div>
-    <div class="card fade-in">
-      <div class="card-header"><span class="card-title">Students</span><div style="display:flex;gap:6px;"><button class="btn btn-sm btn-ghost" onclick="showImportCSVModal()">↑ Import CSV</button><button class="btn btn-sm btn-ghost" onclick="showAddPersonModal('student')">+ Add</button></div></div>
-      <div id="studentList"></div>
+    <!-- PROFILE VIEW -->
+    <div id="profileView" class="profile-shell">
+      <div class="profile-sidebar" id="profileSidebar"></div>
+      <div class="profile-main" id="profileMain">
+        <div class="empty-state" style="margin:auto;"><h3>Select a person</h3><p>Choose from the list on the left</p></div>
+      </div>
     </div>
+    <!-- ROSTER VIEW -->
+    <div id="rosterView" style="display:none;padding:0 16px 16px;overflow-x:auto;">
+      <div id="rosterContent"></div>
+    </div>
+    <!-- Legacy lists (hidden, used by old code) -->
+    <div style="display:none;"><div id="teacherList"></div><div id="studentList"></div></div>
   </div>
   <div class="page" id="pageInvoices">
     <div class="section-header"><div><div class="section-title">Invoices</div><div class="section-sub">Generate teacher invoices</div></div></div>
@@ -565,7 +635,7 @@ let APP={
   teachers:[],students:[],terms:[],attendance:{},
   // invoiceTracker: {teacherId: {invoicedToTermId, status:'none'|'sent'|'paid'|'overdue', dateSent}}
   invoiceTracker:{},
-  studentOrder:[],demoMode:false,setupDone:false
+  studentOrder:[],measurementUnit:'metric',demoMode:false,setupDone:false
 };
 
 function saveLocal(){try{localStorage.setItem('hcs_v4',JSON.stringify(APP));}catch(e){}}
@@ -582,6 +652,7 @@ function loadLocal(){
       if(!APP.settings.firebaseUrl)APP.settings.firebaseUrl='https://hcs-dance-register-default-rtdb.europe-west1.firebasedatabase.app';
       if(APP.settings.firebaseToken===undefined)APP.settings.firebaseToken='';
       if(!APP.studentOrder)APP.studentOrder=[];
+      if(!APP.measurementUnit)APP.measurementUnit='metric';
       return true;
     }
   }catch(e){}
@@ -599,7 +670,7 @@ function showPage(n){
   closeCellPopup();
   if(n==='Register')loadRegister();
   if(n==='Dates')loadDatesPage();
-  if(n==='People')loadPeoplePage();
+  if(n==='People'){loadPeoplePage();}
   if(n==='Invoices'){loadInvoicesPage();renderInvTracker();}
   if(n==='Settings')loadSettingsPage();
 }
@@ -1441,117 +1512,276 @@ function jumpToToday(){
 }
 
 // ── PEOPLE ──
+function ini(n){return(n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();}
+let _peopleView='profile';
+let _activeProfId=null;
+
+function setPeopleView(v){
+  _peopleView=v;
+  document.getElementById('profileView').style.display=v==='profile'?'flex':'none';
+  document.getElementById('rosterView').style.display=v==='roster'?'block':'none';
+  document.getElementById('viewProfileBtn').className='btn btn-sm '+(v==='profile'?'btn-navy':'btn-ghost');
+  document.getElementById('viewRosterBtn').className='btn btn-sm '+(v==='roster'?'btn-navy':'btn-ghost');
+  if(v==='roster')renderRoster();
+}
+function setUnit(u){
+  APP.measurementUnit=u;
+  document.getElementById('unitCm').className=u==='metric'?'active':'';
+  document.getElementById('unitIn').className=u==='imperial'?'active':'';
+  saveLocal();markDirty();
+  if(_peopleView==='roster')renderRoster();
+  else if(_activeProfId)openProfile(_activeProfId);
+}
+function dispVal(valCm,field){
+  if(valCm===null||valCm===undefined||valCm==='')return '';
+  const v=parseFloat(valCm);if(isNaN(v))return '';
+  if(APP.measurementUnit==='imperial'){
+    if(field==='weight')return Math.round(v*2.2046*10)/10;
+    return Math.round(v*0.3937*10)/10;
+  }
+  return v;
+}
+function dispUnit(field){
+  if(APP.measurementUnit==='imperial')return field==='weight'?'lbs':'in';
+  return field==='weight'?'kg':'cm';
+}
+function toMetric(val,field){
+  const v=parseFloat(val);if(isNaN(v))return null;
+  if(APP.measurementUnit==='imperial'){
+    if(field==='weight')return Math.round(v/2.2046*100)/100;
+    return Math.round(v/0.3937*100)/100;
+  }
+  return v;
+}
+const MEAS_FIELDS=[
+  {id:'height',label:'Height',field:'height'},
+  {id:'weight',label:'Weight',field:'weight'},
+  {id:'chest',label:'Chest',field:'chest'},
+  {id:'waist',label:'Waist',field:'waist'},
+  {id:'hip',label:'Hip',field:'hip'},
+  {id:'neck',label:'Neck circumference',field:'neck'},
+  {id:'sleeve',label:'Sleeve to wrist',field:'sleeve'},
+  {id:'shoulderWaist',label:'Shoulder to waist',field:'shoulderWaist'},
+  {id:'trouserAnkle',label:'Trouser — waist to ankle',field:'trouserAnkle'},
+  {id:'trouserKnee',label:'Trouser — waist to knee',field:'trouserKnee'},
+];
+function getPersonById(id){return APP.teachers.find(x=>x.id===id)||APP.students.find(x=>x.id===id)||null;}
+function getPersonType(id){return APP.teachers.find(x=>x.id===id)?'teacher':'student';}
+function getLatestMeasurements(person){
+  if(!person.measurements||!person.measurements.length)return{};
+  return person.measurements[person.measurements.length-1].data||{};
+}
 function loadPeoplePage(){
+  renderProfileSidebar();
+  setPeopleView(_peopleView);
+  // Sync hidden legacy lists
+  document.getElementById('teacherList').innerHTML=APP.teachers.filter(t=>!t.archived).map(t=>`<div>${t.name}</div>`).join('');
+  document.getElementById('studentList').innerHTML=APP.students.filter(s=>!s.archived).map(s=>`<div>${s.name}</div>`).join('');
+  const u=APP.measurementUnit||'metric';
+  document.getElementById('unitCm').className=u==='metric'?'active':'';
+  document.getElementById('unitIn').className=u==='imperial'?'active':'';
+  if(_activeProfId)openProfile(_activeProfId);
+  else if(APP.teachers.filter(t=>!t.archived).length)openProfile(APP.teachers.filter(t=>!t.archived)[0].id);
+  else if(APP.students.filter(s=>!s.archived).length)openProfile(APP.students.filter(s=>!s.archived)[0].id);
+}
+function renderProfileSidebar(){
   const teachers=APP.teachers.filter(t=>!t.archived);
-  document.getElementById('teacherList').innerHTML=teachers.length?teachers.map(t=>`<div class="person-item"><div class="person-avatar" style="background:var(--crimson);">${ini(t.name)}</div><div><div class="person-name">${t.name}</div><div class="person-meta">${t.accountNo?'Invoice details saved':'No invoice details yet'}</div></div><div class="person-actions"><button class="btn btn-sm btn-ghost" onclick="showEditPersonModal('teacher','${t.id}')">Edit</button><button class="btn btn-sm btn-ghost" onclick="archivePerson('teacher','${t.id}')">Archive</button></div></div>`).join(''):`<div class="card-body" style="color:var(--ink-muted);font-size:13px;">No teachers yet.</div>`;
   const students=APP.students.filter(s=>!s.archived);
-  document.getElementById('studentList').innerHTML=students.length?students.map(s=>{
-    const b=s.classStatus==='junior'?'badge-junior':s.classStatus==='senior'?'badge-senior':'badge-both';
-    const l=s.classStatus==='junior'?'Junior (初班)':s.classStatus==='senior'?'Senior (高班)':'Both';
-    const hcs=s.hcsStudent?`<span style="font-size:10px;background:#d0d8f0;color:var(--navy);padding:2px 7px;border-radius:20px;font-weight:600;margin-left:4px;">HCS</span>`:'';
-    return`<div class="person-item"><div class="person-avatar" style="background:var(--navy);">${ini(s.name)}</div><div><div class="person-name">${s.name}${hcs}</div><div class="person-meta"><span class="class-badge ${b}">${l}</span>${s.chineseName?` · ${s.chineseName}`:''}</div></div><div class="person-actions"><button class="btn btn-sm btn-ghost" onclick="showEditPersonModal('student','${s.id}')">Edit</button><button class="btn btn-sm btn-ghost" onclick="archivePerson('student','${s.id}')">Archive</button></div></div>`;
-  }).join(''):`<div class="card-body" style="color:var(--ink-muted);font-size:13px;">No students yet. Use Import CSV or Add.</div>`;
+  let html='';
+  if(teachers.length){
+    html+='<div class="prof-sb-section">Teachers</div>';
+    html+=teachers.map(t=>`<div class="prof-sb-item${_activeProfId===t.id?' active':''}" onclick="openProfile('${t.id}')"><div class="prof-sb-av">${ini(t.name)}</div><div><div class="prof-sb-name">${t.name}</div><div class="prof-sb-meta">Teacher</div></div></div>`).join('');
+  }
+  if(students.length){
+    html+='<div class="prof-sb-section">Students</div>';
+    html+=students.map(s=>`<div class="prof-sb-item${_activeProfId===s.id?' active':''}" onclick="openProfile('${s.id}')"><div class="prof-sb-av" style="background:var(--teal);">${ini(s.name)}</div><div><div class="prof-sb-name">${s.name}</div><div class="prof-sb-meta">${s.classStatus==='junior'?'Junior':s.classStatus==='senior'?'Senior':'Both'}</div></div></div>`).join('');
+  }
+  document.getElementById('profileSidebar').innerHTML=html||'<div style="padding:16px;font-size:13px;color:var(--ink-muted);">No people yet</div>';
 }
-
-function showImportCSVModal(){
-  openModal(`<div class="modal-title">Import Students from CSV</div>
-    <p style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;">CSV should have columns: <code style="background:var(--paper-warm);padding:2px 6px;border-radius:4px;font-size:11px;">Student Full Name, Student Chinese Name, Student DOB, Dance Group, HCS student?</code></p>
-    <p style="font-size:12px;color:var(--ink-muted);margin-bottom:12px;">JD = Junior Dance, SD = Senior Dance. Transitioning students can be updated manually after import.</p>
-    <div class="csv-drop" id="csvDropZone" onclick="document.getElementById('csvFileInput').click()">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 8px;display:block;opacity:.4;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Tap to select CSV file
+function openProfile(id){
+  _activeProfId=id;
+  renderProfileSidebar();
+  const p=getPersonById(id);if(!p)return;
+  const type=getPersonType(id);
+  const latest=getLatestMeasurements(p);
+  const age=p.birthYear?(new Date().getFullYear()-parseInt(p.birthYear))+' yrs':'';
+  const meta=type==='teacher'?'Teacher'+(p.birthYear?' · b. '+p.birthYear:''):
+    (p.classStatus==='junior'?'Junior (初班)':p.classStatus==='senior'?'Senior (高班)':'Both')+(p.birthYear?' · b. '+p.birthYear:'')+(p.chineseName?' · '+p.chineseName:'');
+  document.getElementById('profileMain').innerHTML=`
+    <div class="profile-header">
+      <div class="prof-hd-av" style="background:${type==='teacher'?'var(--navy)':'var(--teal)'};">${ini(p.name)}</div>
+      <div style="flex:1;">
+        <div class="prof-hd-name">${p.name}${age?` <span style="font-size:13px;font-weight:400;color:var(--ink-muted);font-family:'DM Sans',sans-serif;">${age}</span>`:''}</div>
+        <div class="prof-hd-meta">${meta}</div>
+      </div>
+      <button class="btn btn-sm btn-ghost" onclick="showEditPersonModal('${type}','${id}')">Edit</button>
+      <button class="btn btn-sm btn-ghost" onclick="archivePerson('${type}','${id}')">Archive</button>
     </div>
-    <input type="file" id="csvFileInput" accept=".csv" style="display:none;" onchange="handleCSVFile(event)">
-    <div id="csvPreview"></div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;display:none;" id="csvImportBtn" onclick="doImportCSV()">Import Students</button></div>`);
+    <div class="prof-tab-bar">
+      <div class="prof-tab active" id="ptDetails" onclick="switchProfTab('details')">Details</div>
+      <div class="prof-tab" id="ptMeas" onclick="switchProfTab('meas')">Measurements</div>
+      <div class="prof-tab" id="ptHistory" onclick="switchProfTab('history')">History</div>
+    </div>
+    <div class="prof-tab-content" id="ptcDetails">${renderDetailsTab(p,type,latest)}</div>
+    <div class="prof-tab-content" id="ptcMeas" style="display:none;">${renderMeasTab(p,latest)}</div>
+    <div class="prof-tab-content" id="ptcHistory" style="display:none;">${renderHistoryTab(p)}</div>`;
 }
-
-let csvParsedStudents=[];
-function handleCSVFile(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    const lines=ev.target.result.split('\n').filter(l=>l.trim());
-    const header=lines[0].split(',').map(h=>h.trim().toLowerCase());
-    csvParsedStudents=lines.slice(1).map(line=>{
-      const cols=line.split(',').map(c=>c.trim().replace(/^"|"$/g,''));
-      const group=(cols[3]||'').toUpperCase();
-      const hcs=(cols[4]||'').toUpperCase()==='TRUE';
-      return{name:cols[0]||'',chineseName:cols[1]||'',dob:cols[2]||'',classStatus:group==='JD'?'junior':'senior',hcsStudent:hcs};
-    }).filter(s=>s.name);
-    document.getElementById('csvPreview').innerHTML=`<div style="font-weight:600;font-size:13px;margin-bottom:8px;">${csvParsedStudents.length} students found:</div>`+csvParsedStudents.map(s=>`<div class="csv-preview-row"><div class="person-avatar" style="background:var(--navy);width:28px;height:28px;font-size:11px;flex-shrink:0;">${ini(s.name)}</div><div><div style="font-weight:600;font-size:13px;">${s.name}</div><div style="font-size:11px;color:var(--ink-soft);"><span class="class-badge ${s.classStatus==='junior'?'badge-junior':'badge-senior'}">${s.classStatus==='junior'?'Junior':'Senior'}</span> ${s.chineseName?'· '+s.chineseName:''} ${s.hcsStudent?'· HCS':''}</div></div></div>`).join('');
-    document.getElementById('csvImportBtn').style.display='flex';
-  };
-  reader.readAsText(file);
-}
-function doImportCSV(){
-  let added=0,skipped=0,idCounter=0;
-  csvParsedStudents.forEach(s=>{
-    const exists=APP.students.find(x=>x.name.toLowerCase()===s.name.toLowerCase());
-    if(exists){skipped++;return;}
-    // Use a counter suffix to guarantee uniqueness even within the same ms
-    APP.students.push({id:'S'+Date.now()+'_'+(++idCounter)+'_'+Math.random().toString(36).slice(2,5),name:s.name,chineseName:s.chineseName||'',dob:s.dob||'',classStatus:s.classStatus,hcsStudent:s.hcsStudent,archived:false});
-    added++;
+function switchProfTab(tab){
+  ['Details','Meas','History'].forEach(t=>{
+    const el=document.getElementById('ptc'+t);if(el)el.style.display=t.toLowerCase()===tab?'block':'none';
+    const bt=document.getElementById('pt'+t);if(bt)bt.className='prof-tab'+(t.toLowerCase()===tab?' active':'');
   });
-  if(added>0)pushUndoSnapshot();saveLocal();closeModal();loadPeoplePage();
-  showToast(`Imported ${added} student${added!==1?'s':''} (${skipped} already existed)`);
-  if(added>0)markDirty();
+}
+function renderDetailsTab(p,type,latest){
+  const yr=p.birthYear||'';
+  const age=yr?(new Date().getFullYear()-parseInt(yr))+' years':'—';
+  let html=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted);margin-bottom:8px;">Personal</div>
+  <div class="field-2">
+    <div class="info-field"><div class="info-field-label">Birth year</div><div class="info-field-val${yr?'':' empty'}">${yr||'Not set'}</div></div>
+    <div class="info-field"><div class="info-field-label">Age</div><div class="info-field-val${yr?'':' empty'}">${age}</div></div>`;
+  if(type==='student'){
+    html+=`<div class="info-field"><div class="info-field-label">Chinese name</div><div class="info-field-val${p.chineseName?'':' empty'}">${p.chineseName||'—'}</div></div>
+    <div class="info-field"><div class="info-field-label">Class</div><div class="info-field-val">${p.classStatus==='junior'?'Junior (初班)':p.classStatus==='senior'?'Senior (高班)':'Both'}</div></div>`;
+    if(p.hcsStudent)html+=`<div class="info-field" style="grid-column:span 2;"><div class="info-field-label">HCS Student</div><div class="info-field-val">Yes — Harrow Chinese School</div></div>`;
+  } else {
+    html+=`<div class="info-field"><div class="info-field-label">Bank</div><div class="info-field-val${p.bankName?'':' empty'}">${p.bankName||'—'}</div></div>
+    <div class="info-field"><div class="info-field-label">Sort code</div><div class="info-field-val${p.sortCode?'':' empty'}">${p.sortCode||'—'}</div></div>`;
+  }
+  html+='</div>';
+  const hasMeas=MEAS_FIELDS.some(mf=>latest[mf.field]!==null&&latest[mf.field]!==undefined&&latest[mf.field]!=='');
+  html+=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted);margin:14px 0 8px;">Latest measurements</div>`;
+  if(!hasMeas){html+=`<div style="font-size:13px;color:var(--ink-muted);padding:8px 0;">None recorded yet. Use the Measurements tab.</div>`;}
+  else{
+    html+='<div class="field-3">';
+    MEAS_FIELDS.forEach(mf=>{
+      const dv=dispVal(latest[mf.field],mf.field);
+      const shortLabel=mf.label.replace('circumference','circ.').replace(' to wrist','→wrist').replace(' to waist','→waist').replace('Trouser — waist to ','→');
+      html+=`<div class="info-field"><div class="info-field-label">${shortLabel}</div><div class="info-field-val${dv===''?' empty':''}">${dv!==''?dv+'<span style="font-size:10px;font-weight:400;color:var(--ink-muted);margin-left:2px;">'+dispUnit(mf.field)+'</span>':'—'}</div></div>`;
+    });
+    html+='</div>';
+  }
+  return html;
+}
+function renderMeasTab(p,latest){
+  return`<p style="font-size:12px;color:var(--ink-muted);margin-bottom:14px;line-height:1.5;">Enter current measurements — all in ${dispUnit('height')} (or kg for weight). Each save is dated and stored in History.</p>
+  ${MEAS_FIELDS.map(mf=>`<div class="meas-row"><span class="meas-label">${mf.label}</span><input class="meas-input" type="number" step="0.1" id="mi_${mf.id}" value="${dispVal(latest[mf.field],mf.field)}" placeholder="—"><span class="meas-unit">${dispUnit(mf.field)}</span></div>`).join('')}
+  <button class="btn btn-primary btn-full" style="margin-top:14px;" onclick="saveMeasurements('${p.id}')">Save measurements</button>`;
+}
+function renderHistoryTab(p){
+  if(!p.measurements||!p.measurements.length)return'<div style="font-size:13px;color:var(--ink-muted);padding:10px 0;">No history yet.</div>';
+  const snaps=[...p.measurements].reverse();
+  let html='';
+  snaps.forEach((snap,si)=>{
+    const prev=si<snaps.length-1?snaps[si+1].data:null;
+    html+=`<div class="hist-group"><div class="hist-date-label">${snap.date}${si===0?' — most recent':''}</div>`;
+    MEAS_FIELDS.forEach(mf=>{
+      const v=snap.data[mf.field];const dv=dispVal(v,mf.field);
+      if(dv==='')return;
+      let diffHtml='';
+      if(prev){
+        const diff=parseFloat(v)-parseFloat(prev[mf.field]||0);
+        if(!isNaN(diff)){
+          const ddv=Math.round(dispVal(diff,mf.field)*10)/10;
+          if(ddv>0)diffHtml=`<span class="hist-diff diff-up">+${ddv} ${dispUnit(mf.field)}</span>`;
+          else if(ddv<0)diffHtml=`<span class="hist-diff diff-dn">${ddv} ${dispUnit(mf.field)}</span>`;
+          else diffHtml=`<span class="hist-diff diff-eq">no change</span>`;
+        }
+      } else diffHtml=`<span class="hist-diff diff-eq">baseline</span>`;
+      html+=`<div class="hist-row"><span class="hist-field">${mf.label}</span><span class="hist-val">${dv} ${dispUnit(mf.field)}</span>${diffHtml}</div>`;
+    });
+    html+='</div>';
+  });
+  return html;
+}
+function saveMeasurements(id){
+  const p=getPersonById(id);if(!p)return;
+  const data={};
+  MEAS_FIELDS.forEach(mf=>{
+    const el=document.getElementById('mi_'+mf.id);
+    data[mf.field]=el&&el.value!==''?toMetric(el.value,mf.field):(getLatestMeasurements(p)[mf.field]||null);
+  });
+  if(!p.measurements)p.measurements=[];
+  const today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const last=p.measurements[p.measurements.length-1];
+  if(last&&last.date===today)p.measurements[p.measurements.length-1]={date:today,data};
+  else p.measurements.push({date:today,data});
+  pushUndoSnapshot();saveLocal();markDirty();
+  showToast('Measurements saved ✓');openProfile(id);switchProfTab('history');
+}
+function renderRoster(){
+  const teachers=APP.teachers.filter(t=>!t.archived);
+  const students=APP.students.filter(s=>!s.archived);
+  const all=[...teachers.map(t=>({...t,_type:'teacher'})),...students.map(s=>({...s,_type:'student'}))];
+  let html=`<div style="overflow-x:auto;margin-top:8px;"><table class="roster-table"><thead><tr><th>Name</th><th>Type</th><th>Birth yr</th>${MEAS_FIELDS.map(m=>`<th>${m.label.replace('circumference','circ.').replace('Trouser — waist to ','Tr→').replace('Shoulder to ','Sh→').replace(' to wrist','→wrist')}</th>`).join('')}</tr></thead><tbody>`;
+  let lastType='';
+  all.forEach(p=>{
+    if(p._type!==lastType){
+      html+=`<tr><td colspan="${3+MEAS_FIELDS.length}" style="background:var(--navy);color:white;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:6px 10px;">${p._type==='teacher'?'Teachers':'Students'}</td></tr>`;
+      lastType=p._type;
+    }
+    const latest=getLatestMeasurements(p);
+    const age=p.birthYear?` <span style="font-size:10px;color:var(--ink-muted);">(${new Date().getFullYear()-parseInt(p.birthYear)}y)</span>`:'';
+    html+=`<tr onclick="openProfile('${p.id}');setPeopleView('profile')" style="cursor:pointer;">
+      <td><strong>${p.name}</strong>${p.chineseName?`<br><span style="font-size:10px;color:var(--ink-muted);">${p.chineseName}</span>`:''}</td>
+      <td>${p._type==='teacher'?'Teacher':p.classStatus==='junior'?'Junior':p.classStatus==='senior'?'Senior':'Both'}</td>
+      <td>${p.birthYear?p.birthYear+age:'—'}</td>
+      ${MEAS_FIELDS.map(mf=>{const dv=dispVal(latest[mf.field],mf.field);return`<td class="${dv===''?'empty-meas':''}">${dv!==''?dv+'<span style="font-size:9px;color:var(--ink-muted);margin-left:1px;">'+dispUnit(mf.field)+'</span>':'—'}</td>`;}).join('')}
+    </tr>`;
+  });
+  html+='</tbody></table></div>';
+  document.getElementById('rosterContent').innerHTML=html;
 }
 
 function showAddPersonModal(type){
-  if(type==='teacher'){openModal(`<div class="modal-title">Add Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" placeholder="Full name"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher',null)">Add</button></div>`);}
-  else{openModal(`<div class="modal-title">Add Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" placeholder="Full name"></div><div class="form-group"><label class="form-label">Chinese Name (optional)</label><input type="text" class="form-input" id="mpChinese" placeholder="中文名"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill active" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="junior"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" style="width:16px;height:16px;"> Also an HCS student</label></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student',null)">Add</button></div>`);}
-}
-function selClass(c){
-  const hidden=document.getElementById('mpClass');
-  if(hidden)hidden.value=c;
-  ['Junior','Senior','Both'].forEach(x=>{
-    const el=document.getElementById('p'+x);
-    if(el)el.classList.toggle('active',x.toLowerCase()===c||(x==='Both'&&c==='both'));
-  });
+  if(type==='teacher'){openModal(`<div class="modal-title">Add Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" placeholder="Full name"></div><div class="form-group"><label class="form-label">Birth Year</label><input type="number" class="form-input" id="mpBirthYear" placeholder="e.g. 1990" min="1940" max="2015"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher',null)">Add</button></div>`);}
+  else{openModal(`<div class="modal-title">Add Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" placeholder="Full name"></div><div class="form-group"><label class="form-label">Birth Year</label><input type="number" class="form-input" id="mpBirthYear" placeholder="e.g. 2015" min="2000" max="2025"></div><div class="form-group"><label class="form-label">Chinese Name (optional)</label><input type="text" class="form-input" id="mpChinese" placeholder="中文名"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill active" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="junior"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" style="width:16px;height:16px;"> Also an HCS student</label></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student',null)">Add</button></div>`);}
 }
 function showEditPersonModal(type,id){
-  if(type==='teacher'){const t=APP.teachers.find(x=>x.id===id);if(!t)return;openModal(`<div class="modal-title">Edit Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${esc(t.name)}"></div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="mpAddress" rows="3">${esc(t.address||'')}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="mpBank" value="${esc(t.bankName||'')}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="mpSort" value="${esc(t.sortCode||'')}" placeholder="00-00-00"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="mpAcc" value="${esc(t.accountNo||'')}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="mpPrefix" value="${esc(t.invoicePrefix||'')}"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher','${id}')">Save</button></div>`);}
-  else{const s=APP.students.find(x=>x.id===id);if(!s)return;openModal(`<div class="modal-title">Edit Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${esc(s.name)}"></div><div class="form-group"><label class="form-label">Chinese Name</label><input type="text" class="form-input" id="mpChinese" value="${esc(s.chineseName||'')}"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill ${s.classStatus==='junior'?'active':''}" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill ${s.classStatus==='senior'?'active':''}" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill ${s.classStatus==='both'?'active':''}" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="${esc(s.classStatus)}"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" ${s.hcsStudent?'checked':''} style="width:16px;height:16px;"> Also an HCS student</label></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student','${id}')">Save</button></div>`);}
+  if(type==='teacher'){
+    const t=APP.teachers.find(x=>x.id===id);if(!t)return;
+    openModal(`<div class="modal-title">Edit Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${esc(t.name)}"></div><div class="form-group"><label class="form-label">Birth Year</label><input type="number" class="form-input" id="mpBirthYear" value="${t.birthYear||''}" placeholder="e.g. 1990" min="1940" max="2015"></div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="mpAddress" rows="3">${esc(t.address||'')}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="mpBank" value="${esc(t.bankName||'')}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="mpSort" value="${esc(t.sortCode||'')}" placeholder="00-00-00"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="mpAcc" value="${esc(t.accountNo||'')}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="mpPrefix" value="${esc(t.invoicePrefix||'')}"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher','${id}')">Save</button></div>`);
+  } else {
+    const s=APP.students.find(x=>x.id===id);if(!s)return;
+    openModal(`<div class="modal-title">Edit Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${esc(s.name)}"></div><div class="form-group"><label class="form-label">Birth Year</label><input type="number" class="form-input" id="mpBirthYear" value="${s.birthYear||''}" placeholder="e.g. 2015" min="2000" max="2025"></div><div class="form-group"><label class="form-label">Chinese Name</label><input type="text" class="form-input" id="mpChinese" value="${esc(s.chineseName||'')}"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill ${s.classStatus==='junior'?'active':''}" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill ${s.classStatus==='senior'?'active':''}" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill ${s.classStatus==='both'?'active':''}" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="${esc(s.classStatus)}"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" ${s.hcsStudent?'checked':''} style="width:16px;height:16px;"> Also an HCS student</label></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student','${id}')">Save</button></div>`);
+  }
+}
+function selClass(c){
+  const hidden=document.getElementById('mpClass');if(hidden)hidden.value=c;
+  ['Junior','Senior','Both'].forEach(x=>{const el=document.getElementById('p'+x);if(el)el.classList.toggle('active',x.toLowerCase()===c||(x==='Both'&&c==='both'));});
 }
 function savePerson(type,id){
-  const nameEl=document.getElementById('mpName');
-  const name=nameEl?nameEl.value.trim():'';
+  const nameEl=document.getElementById('mpName');const name=nameEl?nameEl.value.trim():'';
   if(!name){showToast('Enter a name');return;}
+  const byEl=document.getElementById('mpBirthYear');
+  const birthYear=byEl&&byEl.value?parseInt(byEl.value):null;
   if(type==='teacher'){
     if(id){
-      const t=APP.teachers.find(x=>x.id===id);
-      if(!t){showToast('Teacher not found');return;}
-      t.name=name;
-      const addrEl=document.getElementById('mpAddress');if(addrEl!==null)t.address=addrEl.value;
-      const bankEl=document.getElementById('mpBank');if(bankEl!==null)t.bankName=bankEl.value;
-      const sortEl=document.getElementById('mpSort');if(sortEl!==null)t.sortCode=sortEl.value;
-      const accEl=document.getElementById('mpAcc');if(accEl!==null)t.accountNo=accEl.value;
-      const pfxEl=document.getElementById('mpPrefix');if(pfxEl!==null)t.invoicePrefix=pfxEl.value;
+      const t=APP.teachers.find(x=>x.id===id);if(!t){showToast('Teacher not found');return;}
+      t.name=name;t.birthYear=birthYear;
+      const addrEl=document.getElementById('mpAddress');if(addrEl)t.address=addrEl.value;
+      const bankEl=document.getElementById('mpBank');if(bankEl)t.bankName=bankEl.value;
+      const sortEl=document.getElementById('mpSort');if(sortEl)t.sortCode=sortEl.value;
+      const accEl=document.getElementById('mpAcc');if(accEl)t.accountNo=accEl.value;
+      const pfxEl=document.getElementById('mpPrefix');if(pfxEl)t.invoicePrefix=pfxEl.value;
     }else{
       if(APP.teachers.filter(t=>!t.archived).length>=4){showToast('Max 4 teachers');return;}
-      APP.teachers.push({id:'T'+Date.now(),name,address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:name.split(' ').map(w=>w[0]).join('').toUpperCase(),archived:false});
+      APP.teachers.push({id:'T'+Date.now(),name,birthYear,address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:name.split(' ').map(w=>w[0]).join('').toUpperCase(),archived:false,measurements:[]});
     }
   }else{
-    const clsEl=document.getElementById('mpClass');
-    const cls=clsEl?clsEl.value:'junior';
+    const clsEl=document.getElementById('mpClass');const cls=clsEl?clsEl.value:'junior';
     if(!['junior','senior','both'].includes(cls)){showToast('Please select a class');return;}
-    const chineseEl=document.getElementById('mpChinese');
-    const chinese=chineseEl?chineseEl.value.trim():'';
-    const hcsEl=document.getElementById('mpHCS');
-    const hcs=hcsEl?hcsEl.checked:false;
+    const chinese=(document.getElementById('mpChinese')||{}).value?.trim()||'';
+    const hcs=document.getElementById('mpHCS')?.checked||false;
     if(id){
-      const s=APP.students.find(x=>x.id===id);
-      if(!s){showToast('Student not found');return;}
-      s.name=name;s.classStatus=cls;s.chineseName=chinese;s.hcsStudent=hcs;
+      const s=APP.students.find(x=>x.id===id);if(!s){showToast('Student not found');return;}
+      s.name=name;s.classStatus=cls;s.chineseName=chinese;s.hcsStudent=hcs;s.birthYear=birthYear;
     }else{
-      APP.students.push({id:'S'+Date.now(),name,chineseName:chinese,classStatus:cls,hcsStudent:hcs,archived:false});
+      APP.students.push({id:'S'+Date.now(),name,chineseName:chinese,birthYear,classStatus:cls,hcsStudent:hcs,archived:false,measurements:[]});
     }
   }
-  pushUndoSnapshot();saveLocal();closeModal();loadPeoplePage();showToast('Saved ✓');
-  markDirty();
+  pushUndoSnapshot();saveLocal();closeModal();loadPeoplePage();showToast('Saved ✓');markDirty();
 }
-function archivePerson(type,id){openModal(`<div class="modal-title">Archive?</div><p style="color:var(--ink-soft);font-size:14px;margin-bottom:16px;">Hidden from register. Historical data preserved.</p><div class="modal-footer"><button class="btn btn-ghost" style="flex:1;" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="doArchive('${type}','${id}')">Archive</button></div>`);}
+function archivePerson(type,id){openModal(`<div class="modal-title">Archive?</div><p style="color:var(--ink-soft);font-size:14px;margin-bottom:16px;">Hidden from register. All data preserved.</p><div class="modal-footer"><button class="btn btn-ghost" style="flex:1;" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="doArchive('${type}','${id}')">Archive</button></div>`);}
 function doArchive(type,id){const l=type==='teacher'?APP.teachers:APP.students;const p=l.find(x=>x.id===id);if(p){pushUndoSnapshot();p.archived=true;}saveLocal();closeModal();loadPeoplePage();showToast('Archived');markDirty();}
 
 // ── INVOICES ──
@@ -1784,48 +2014,73 @@ async function loadFromDb(silent=false){
   const url=getFbUrl();
   if(!url){showToast('Enter Firebase URL in Settings first');return;}
   updateSyncStatus('warn','Loading…');
+  // Save credentials before any merge so we never lose them
+  const savedFbUrl=APP.settings.firebaseUrl;
+  const savedFbToken=APP.settings.firebaseToken;
   try{
     const resp=await fetch(url);
     if(!resp.ok){
       const errText=await resp.text().catch(()=>'');
-      throw new Error(`HTTP ${resp.status}${errText?' — '+errText.slice(0,80):''}`);
+      throw new Error(`HTTP ${resp.status}${errText?' — '+errText.slice(0,120):''}`);
     }
-    const data=await resp.json();
-    if(!data||typeof data!=='object'){
-      if(!silent)showToast('Firebase is empty — push data from the source device first');
+    const raw=await resp.text();
+    console.log('[HCS] Firebase raw response (first 500 chars):', raw.slice(0,500));
+    let data;
+    try{ data=JSON.parse(raw); }
+    catch(pe){ throw new Error('Firebase returned invalid JSON: '+raw.slice(0,80)); }
+
+    if(data===null||data===undefined){
       updateSyncStatus('warn','Empty');
+      if(!silent)showToast('Firebase is empty — push data from your main device first');
       return;
     }
-    // Explicitly pull each field — never let Firebase overwrite device-local fields
-    if(Array.isArray(data.terms))       APP.terms        = data.terms;
-    if(Array.isArray(data.students))    APP.students     = data.students;
-    if(Array.isArray(data.teachers))    APP.teachers     = data.teachers;
+    if(typeof data!=='object'){
+      throw new Error('Unexpected Firebase response type: '+typeof data);
+    }
+
+    console.log('[HCS] Firebase data keys:', Object.keys(data));
+    console.log('[HCS] teachers count:', Array.isArray(data.teachers)?data.teachers.length:'NOT AN ARRAY → '+typeof data.teachers);
+    console.log('[HCS] students count:', Array.isArray(data.students)?data.students.length:'NOT AN ARRAY → '+typeof data.students);
+    console.log('[HCS] terms count:', Array.isArray(data.terms)?data.terms.length:'NOT AN ARRAY → '+typeof data.terms);
+    console.log('[HCS] attendance keys:', data.attendance?Object.keys(data.attendance).length:'none');
+
+    // Replace every data field — be explicit and unconditional so nothing is skipped
+    APP.teachers     = Array.isArray(data.teachers)    ? data.teachers    : (APP.teachers||[]);
+    APP.students     = Array.isArray(data.students)    ? data.students    : (APP.students||[]);
+    APP.terms        = Array.isArray(data.terms)       ? data.terms       : (APP.terms||[]);
+    APP.studentOrder = Array.isArray(data.studentOrder)? data.studentOrder: (APP.studentOrder||[]);
+
+    // Decode attendance (Firebase forbids | in keys, we encode them as __PIPE__)
     if(data.attendance&&typeof data.attendance==='object'){
-      // Decode Firebase-safe keys back to pipe-separated keys
       const decoded={};
       Object.entries(data.attendance).forEach(([k,v])=>{
         decoded[k.replace(/__PIPE__/g,'|')]=v;
       });
       APP.attendance=decoded;
+      console.log('[HCS] Decoded attendance keys:', Object.keys(decoded).length);
+    } else {
+      APP.attendance=APP.attendance||{};
     }
-    if(data.invoiceTracker&&typeof data.invoiceTracker==='object') APP.invoiceTracker = data.invoiceTracker;
-    if(Array.isArray(data.studentOrder)) APP.studentOrder = data.studentOrder;
+
+    if(data.invoiceTracker&&typeof data.invoiceTracker==='object'){
+      APP.invoiceTracker=data.invoiceTracker;
+    } else {
+      APP.invoiceTracker=APP.invoiceTracker||{};
+    }
+
+    // Merge settings — always restore this device's Firebase credentials
     if(data.settings&&typeof data.settings==='object'){
-      // Merge remote settings but keep this device's Firebase credentials
-      APP.settings={
-        ...APP.settings,
-        ...data.settings,
-        firebaseUrl: APP.settings.firebaseUrl,
-        firebaseToken: APP.settings.firebaseToken
-      };
+      APP.settings={...data.settings};
     }
-    // Ensure required fields exist
-    if(!APP.studentOrder)  APP.studentOrder=[];
-    if(!APP.invoiceTracker)APP.invoiceTracker={};
-    if(!APP.attendance)    APP.attendance={};
+    APP.settings.firebaseUrl=savedFbUrl;
+    APP.settings.firebaseToken=savedFbToken;
     APP.setupDone=true;
     APP.demoMode=false;
+
     saveLocal();
+    _fbConnected=true;
+    markClean();
+
     // Full UI refresh
     populateTermSelectors();
     populateRegisterNav();
@@ -1834,17 +2089,17 @@ async function loadFromDb(silent=false){
     loadPeoplePage();
     renderInvTracker();
     setDatesView(datesViewMode||'year');
-    _fbConnected=true;
-    markClean();
+
     updateSyncStatus('ok','Synced');
     const attCount=Object.keys(APP.attendance).length;
-    const counts=`${data.students?.length||0} students, ${data.teachers?.length||0} teachers, ${data.terms?.length||0} terms, ${attCount} attendance records`;
-    if(!silent)showToast(`Loaded from Firebase ✓ (${counts})`);
-    else showToast(`Synced ✓`);
+    const counts=`${APP.students.length} students, ${APP.teachers.length} teachers, ${APP.terms.length} terms, ${attCount} attendance records`;
+    showToast(`Synced ✓ — ${counts}`);
+    console.log('[HCS] Load complete:', counts);
+
   }catch(e){
-    console.error('Firebase load error:',e);
+    console.error('[HCS] Firebase load error:',e);
     updateSyncStatus('err','Load failed');
-    showToast(`Load failed: ${e.message||'Check Firebase URL & rules'}`);
+    showToast(`Sync failed: ${e.message||'Check Firebase URL & rules'}`);
   }
 }
 
@@ -1866,8 +2121,8 @@ function trySilentConnect(){
     updateSyncStatus('warn','Unsynced');
     scheduleSyncRetry(2000);
   }else{
-    // Pull latest data silently — ensures this device is always up to date on load
-    loadFromDb(true);
+    // Just update the status badge — DOMContentLoaded handles the actual pull
+    updateSyncStatus('ok','Ready');
   }
 }
 
@@ -1922,27 +2177,31 @@ function initApp(){
 window.addEventListener('DOMContentLoaded',()=>{
   initSetupDots();
   const has=loadLocal();
+  // Always read fbUrl AFTER loadLocal() so the hardcoded default is available
   const fbUrl=APP.settings.firebaseUrl;
+  console.log('[HCS] Startup — has local save:', has, '| setupDone:', APP.setupDone, '| fbUrl:', fbUrl?'set':'none');
+
   if(has&&APP.setupDone){
+    // Returning visit — render with cached data immediately, then sync from Firebase
     document.getElementById('setupOverlay').style.display='none';
     initApp();
-    // Always pull from Firebase on load to get the latest data from any device
     if(fbUrl){
-      loadFromDb(true);
-    }
-  } else {
-    // No local save (or incomplete setup) — pull from Firebase if URL is known
-    if(fbUrl){
-      APP.setupDone=true;
-      saveLocal();
-      document.getElementById('setupOverlay').style.display='none';
-      initApp();
-      showToast('Fetching data from Firebase…');
+      console.log('[HCS] Returning device — pulling latest from Firebase');
       loadFromDb(false);
-    } else {
-      // Truly no Firebase configured — load demo data
-      quickStart();
     }
+  } else if(fbUrl){
+    // Fresh device but Firebase URL is known — skip setup, pull everything from Firebase
+    console.log('[HCS] Fresh device with Firebase URL — pulling all data');
+    APP.setupDone=true;
+    APP.demoMode=false;
+    saveLocal();
+    document.getElementById('setupOverlay').style.display='none';
+    initApp();
+    loadFromDb(false);
+  } else {
+    // No Firebase at all — show demo data
+    console.log('[HCS] No Firebase URL — loading demo data');
+    quickStart();
   }
 });
 </script>
