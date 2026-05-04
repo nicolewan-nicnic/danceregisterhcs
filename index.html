@@ -161,6 +161,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .instruction-step{counter-increment:step;display:flex;gap:10px;margin-bottom:10px;font-size:13px;line-height:1.5}
 .instruction-step::before{content:counter(step);background:var(--crimson);color:white;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px}
 @media(min-width:640px){.main{max-width:640px;margin:0 auto}.bottom-nav{max-width:640px;left:50%;transform:translateX(-50%)}}
+/* DRAG REORDER */
+.drag-handle{cursor:grab;color:var(--ink-muted);padding:0 8px;font-size:18px;line-height:1;flex-shrink:0;touch-action:none}
+.drag-handle:active{cursor:grabbing}
+.register-table tr.dragging{opacity:.4}
+.register-table tr.drag-over td{border-top:2px solid var(--salmon)!important}
+/* YEAR VIEW TABLE */
+.year-cal-table{width:100%;border-collapse:collapse;font-size:13px;background:white;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.year-cal-table th{background:var(--navy);color:white;padding:8px 10px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;border-right:1px solid rgba(255,255,255,.1)}
+.year-cal-table th:last-child{border-right:none}
+.year-cal-table td{padding:5px 8px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle}
+.year-cal-table td:last-child{border-right:none}
+.year-cal-table tr:last-child td{border-bottom:none}
+.yterm-label{font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--navy);white-space:nowrap;background:var(--paper-warm);padding:6px 10px;border-right:1px solid var(--border)}
+.ymonth-cell{font-size:12px;font-weight:500;color:var(--ink-soft);background:var(--paper-warm);padding:5px 10px;border-right:1px solid var(--border);white-space:nowrap;min-width:78px}
+.ydate-cell{text-align:center;min-width:36px;padding:3px 2px;border-right:1px solid #ece8e0}
+.ydate-num{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;margin:0 auto;font-size:15px;cursor:pointer;user-select:none;font-family:'Cormorant Garamond',serif;font-weight:600;transition:all .12s}
+.ydate-num.lesson{color:var(--ink)}.ydate-num.lesson:hover{background:var(--paper-warm)}
+.ydate-num.closed{background:var(--teal)!important;color:white!important}
+.ydate-num.performance{background:var(--salmon)!important;color:white!important}
+.ydate-num.junior-cancelled{background:var(--salmon-light);color:var(--ink-soft)}
+.ynotes-cell{font-size:11px;color:var(--ink-soft);padding:5px 10px;min-width:140px;line-height:1.5}
+.year-term-divider td{background:var(--navy-mid)!important;padding:5px 10px;color:rgba(255,255,255,.7);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
 /* DATES VIEW */
 .term-block-header{display:flex;align-items:center;justify-content:space-between;padding:10px 0 8px;}
 .term-block-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--navy);}
@@ -241,16 +263,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
     <div class="register-controls">
       <select class="term-select" id="termSelector" onchange="loadRegister()"></select>
       <button class="btn btn-sm btn-ghost" onclick="jumpToToday()">Today</button>
+      <button class="btn btn-sm btn-ghost" id="reorderBtn" onclick="toggleReorderMode()" style="display:none;">⇅ Reorder</button>
     </div>
     <div class="scroll-hint">← scroll dates →</div>
     <div class="register-wrapper" id="registerWrapper"><div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No register yet</h3><p>Set up terms and dates to begin</p></div></div>
   </div>
   <div class="page" id="pageDates">
-    <div class="section-header"><div><div class="section-title">Term Dates</div><div class="section-sub">Tap any date to change its type</div></div><button class="btn btn-sm btn-primary" onclick="showAddTermModal()">+ Add Term</button></div>
+    <div class="section-header"><div><div class="section-title">Term Dates</div><div class="section-sub">Tap a date to edit · Year or Term view</div></div><button class="btn btn-sm btn-primary" onclick="showAddYearModal()">+ Add Year</button></div>
     <div class="register-controls" style="justify-content:space-between;">
       <div style="display:flex;gap:6px;">
-        <button class="btn btn-sm btn-ghost" id="viewToggleYear" onclick="setDatesView('year')" style="font-size:11px;">Year</button>
-        <button class="btn btn-sm btn-navy" id="viewToggleTerm" onclick="setDatesView('term')" style="font-size:11px;">Term</button>
+        <button class="btn btn-sm btn-ghost" id="viewToggleYear" onclick="setDatesView('year')" style="font-size:11px;">Year view</button>
+        <button class="btn btn-sm btn-navy" id="viewToggleTerm" onclick="setDatesView('term')" style="font-size:11px;">Term view</button>
       </div>
       <select class="term-select" id="termSelectorDates" onchange="loadDatesPage()" style="display:none;max-width:200px;flex:unset;"></select>
       <select class="term-select" id="yearSelectorDates" onchange="loadDatesPage()" style="max-width:200px;flex:unset;"></select>
@@ -467,7 +490,7 @@ let APP={
   teachers:[],students:[],terms:[],attendance:{},
   // invoiceTracker: {teacherId: {invoicedToTermId, status:'none'|'sent'|'paid'|'overdue', dateSent}}
   invoiceTracker:{},
-  demoMode:false,setupDone:false
+  studentOrder:[],demoMode:false,setupDone:false
 };
 
 function saveLocal(){try{localStorage.setItem('hcs_v4',JSON.stringify(APP));}catch(e){}}
@@ -483,6 +506,7 @@ function loadLocal(){
       // Only fall back to the default URL if no URL was ever saved — do NOT overwrite a user-entered URL
       if(APP.settings.firebaseUrl===undefined)APP.settings.firebaseUrl='';
       if(APP.settings.firebaseToken===undefined)APP.settings.firebaseToken='';
+      if(!APP.studentOrder)APP.studentOrder=[];
       return true;
     }
   }catch(e){}
@@ -686,15 +710,43 @@ let datesViewMode='year'; // 'year' or 'term'
 
 function setDatesView(mode){
   datesViewMode=mode;
-  document.getElementById('viewToggleYear').className='btn btn-sm '+(mode==='year'?'btn-navy':'btn-ghost')+' ';
-  document.getElementById('viewToggleTerm').className='btn btn-sm '+(mode==='term'?'btn-navy':'btn-ghost')+' ';
-  document.getElementById('viewToggleYear').style.fontSize='11px';
-  document.getElementById('viewToggleTerm').style.fontSize='11px';
+  const yBtn=document.getElementById('viewToggleYear');const tBtn=document.getElementById('viewToggleTerm');
+  if(yBtn){yBtn.className='btn btn-sm '+(mode==='year'?'btn-navy':'btn-ghost');yBtn.style.fontSize='11px';}
+  if(tBtn){tBtn.className='btn btn-sm '+(mode==='term'?'btn-navy':'btn-ghost');tBtn.style.fontSize='11px';}
   document.getElementById('termSelectorDates').style.display=mode==='term'?'':'none';
   document.getElementById('yearSelectorDates').style.display=mode==='year'?'':'none';
   loadDatesPage();
 }
 
+// Compute half-term split: find the single mid-term holiday block (not opening holidays)
+function getHalfTermSplit(sorted){
+  // Find contiguous 'closed' groups
+  const groups=[];let gi=-1;
+  sorted.forEach((d,i)=>{
+    if(d.type==='closed'){if(gi<0||groups[gi].end!==i-1){groups.push({start:i,end:i});}else{groups[gi].end=i;}gi=groups.length-1;}
+    else{gi=-1;}
+  });
+  if(!groups.length)return null;
+  // Prefer a group that has lessons on BOTH sides — that's the half-term
+  for(const g of groups){
+    const before=sorted.slice(0,g.start).filter(d=>d.type==='lesson').length;
+    const after=sorted.slice(g.end+1).filter(d=>d.type==='lesson').length;
+    if(before>0&&after>0)return{splitAfter:g.end};
+  }
+  // Fall back to last closed group
+  const last=groups[groups.length-1];
+  return{splitAfter:last.end};
+}
+function calcLessonCounts(term){
+  if(!term||!term.dates||!term.dates.length)return{total:0,ht1:0,ht2:0,hasHalfTerm:false};
+  const sorted=[...term.dates].sort((a,b)=>a.date.localeCompare(b.date));
+  const split=getHalfTermSplit(sorted);
+  const total=sorted.filter(d=>d.type==='lesson').length;
+  if(!split)return{total,ht1:total,ht2:0,hasHalfTerm:false};
+  const ht1=sorted.slice(0,split.splitAfter+1).filter(d=>d.type==='lesson').length;
+  const ht2=sorted.slice(split.splitAfter+1).filter(d=>d.type==='lesson').length;
+  return{total,ht1,ht2,hasHalfTerm:true};
+}
 function buildTermCalBlock(term){
   // Returns HTML for one term's calendar grid with lesson count
   if(!term||!term.dates||!term.dates.length)return'';
@@ -706,20 +758,10 @@ function buildTermCalBlock(term){
     if(!byMonth[key])byMonth[key]={month:dt.toLocaleString('en-GB',{month:'long'}),dates:[]};
     byMonth[key].dates.push(d);
   });
-  // Compute half-term lesson counts: split at first 'closed' date
-  const allSorted=sorted;
-  const closedIdx=allSorted.findIndex(d=>d.type==='closed');
-  let ht1Lessons=0,ht2Lessons=0;
-  if(closedIdx<0){
-    ht1Lessons=allSorted.filter(d=>d.type==='lesson').length;
-  } else {
-    ht1Lessons=allSorted.slice(0,closedIdx).filter(d=>d.type==='lesson').length;
-    ht2Lessons=allSorted.slice(closedIdx+1).filter(d=>d.type==='lesson').length;
-  }
-  const totalLessons=sorted.filter(d=>d.type==='lesson').length;
-  const halfTermHtml=closedIdx>=0
-    ?`<span style="margin-left:10px;font-size:11px;color:var(--ink-muted);">${ht1Lessons} + ${ht2Lessons} lessons (half term split)</span>`
-    :`<span style="margin-left:10px;font-size:11px;color:var(--ink-muted);">${totalLessons} lessons</span>`;
+  const lc=calcLessonCounts(term);
+  const halfTermHtml=lc.hasHalfTerm
+    ?`<span style="margin-left:10px;font-size:11px;color:var(--ink-muted);">${lc.ht1} + ${lc.ht2} lessons</span>`
+    :`<span style="margin-left:10px;font-size:11px;color:var(--ink-muted);">${lc.total} lessons</span>`;
 
   let rows='';let rowIdx=0;
   const maxCols=Math.max(5,...Object.values(byMonth).map(({dates})=>dates.length));
@@ -755,18 +797,84 @@ function buildTermCalBlock(term){
   </div>`;
 }
 
+function buildYearViewTable(terms){
+  // Compact year-overview table matching the reference design
+  // Columns: Term | Month | date1..dateN | Notes
+  const rows=[];
+  terms.forEach((term,ti)=>{
+    if(!term.dates||!term.dates.length)return;
+    const sorted=[...term.dates].sort((a,b)=>a.date.localeCompare(b.date));
+    const byMonth={};
+    sorted.forEach(d=>{
+      const dt=new Date(d.date+'T12:00:00');
+      const key=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+      if(!byMonth[key])byMonth[key]={month:dt.toLocaleString('en-GB',{month:'long'}),year:dt.getFullYear(),dates:[]};
+      byMonth[key].dates.push(d);
+    });
+    const lc=calcLessonCounts(term);
+    const countTxt=lc.hasHalfTerm?`${lc.ht1} + ${lc.ht2} lessons`:`${lc.total} lessons`;
+    const termName=term.label.split(' ')[0]; // "Autumn", "Spring", "Summer"
+    const termYear=term.label.split(' ').slice(1).join(' '); // "2025-26" etc
+    const monthEntries=Object.values(byMonth);
+    const maxDates=Math.max(4,...monthEntries.map(m=>m.dates.length));
+    monthEntries.forEach((me,mi)=>{
+      const isFirstMonth=mi===0;
+      const isLastMonth=mi===monthEntries.length-1;
+      // Term label cell spans all months of this term
+      const termCell=isFirstMonth?`<td class="yterm-label" rowspan="${monthEntries.length}" style="vertical-align:top;padding-top:8px;"><div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--navy);">${termName}</div><div style="font-size:11px;color:var(--ink-muted);font-family:'DM Sans',sans-serif;">${termYear}</div><div style="font-size:10px;color:var(--ink-muted);margin-top:4px;">${countTxt}</div></td>`:'';
+      // Date cells
+      const dateCells=[];
+      for(let i=0;i<maxDates;i++){
+        const d=me.dates[i];
+        if(!d){dateCells.push('<td class="ydate-cell"></td>');continue;}
+        const dt=new Date(d.date+'T12:00:00');
+        const day=dt.getDate();
+        const star=d.type==='junior-cancelled'||d.type==='performance'?'*':'';
+        dateCells.push(`<td class="ydate-cell"><div class="ydate-num ${d.type}" onclick="openCellPopup(event,'${term.id}','${d.id}')">${day}${star}</div></td>`);
+      }
+      // Notes
+      const notes=[];
+      me.dates.forEach(d=>{
+        const dt=new Date(d.date+'T12:00:00');const day=dt.getDate();const mon=dt.toLocaleString('en-GB',{month:'short'});
+        if(d.type==='closed')notes.push(`<span style="color:var(--ink-soft);">${ordinal(day)} ${mon} – ${d.label||'Closed'}</span>`);
+        if(d.type==='performance')notes.push(`<span style="color:var(--crimson);font-style:italic;">*${ordinal(day)} ${mon} – ${d.label||'Performance'}</span>`);
+        if(d.type==='junior-cancelled')notes.push(`<span style="color:var(--ink-soft);">*${ordinal(day)} ${mon} – Senior only</span>`);
+      });
+      const altBg=ti%2===1?'background:#fdf5f3;':'';
+      rows.push(`<tr style="${altBg}">${termCell}<td class="ymonth-cell" style="${altBg}">${me.month}</td>${dateCells.join('')}<td class="ynotes-cell" style="${altBg}">${notes.join('<br>')}</td></tr>`);
+    });
+    // Add divider between terms (except after last)
+    if(ti<terms.length-1){
+      rows.push(`<tr class="year-term-divider"><td colspan="${maxDates+3}" style="height:2px;padding:0;background:var(--border);"></td></tr>`);
+    }
+  });
+  if(!rows.length)return'<div class="empty-state"><h3>No dates in this year</h3><p>Tap + Add Year to get started</p></div>';
+  const maxDates=Math.max(4,...terms.flatMap(t=>{
+    if(!t.dates)return[0];
+    const byM={};t.dates.forEach(d=>{const k=d.date.slice(0,7);byM[k]=(byM[k]||0)+1;});
+    return Object.values(byM);
+  }));
+  const dateCols=Array.from({length:maxDates},(_,i)=>`<th style="min-width:38px;text-align:center;"></th>`).join('');
+  return`<div style="margin:0 16px 16px;overflow-x:auto;">
+    <table class="year-cal-table">
+      <thead><tr><th style="min-width:90px;">Term</th><th style="min-width:80px;">Month</th>${dateCols}<th>School closed / Special dates</th></tr></thead>
+      <tbody>${rows.join('')}</tbody>
+    </table>
+  </div>`;
+}
+
 function loadDatesPage(){
   const wrapper=document.getElementById('calWrapper');
-  if(!APP.terms.length){wrapper.innerHTML=`<div class="empty-state"><h3>No terms yet</h3><p>Tap + Add Term to get started</p></div>`;return;}
+  if(!APP.terms.length){wrapper.innerHTML=`<div class="empty-state"><h3>No terms yet</h3><p>Tap + Add Year to get started</p></div>`;return;}
   if(datesViewMode==='year'){
     const ysel=document.getElementById('yearSelectorDates');
     const acYear=ysel?ysel.value:'';
     const terms=acYear?getTermsForYear(acYear):[];
-    if(!terms.length){wrapper.innerHTML=`<div class="empty-state"><h3>No terms for this year</h3><p>Tap + Add Term to add Autumn, Spring or Summer terms</p></div>`;return;}
-    wrapper.innerHTML=terms.map(t=>buildTermCalBlock(t)).join('');
+    if(!terms.length){wrapper.innerHTML=`<div class="empty-state"><h3>No terms for this year</h3><p>Tap + Add Year to add terms</p></div>`;return;}
+    wrapper.innerHTML=buildYearViewTable(terms);
   } else {
     const term=getActiveTerm('termSelectorDates');
-    if(!term||!term.dates||!term.dates.length){wrapper.innerHTML=`<div class="empty-state"><h3>No dates in this term</h3><p>Tap + Add Term or + Date to add dates</p></div>`;return;}
+    if(!term||!term.dates||!term.dates.length){wrapper.innerHTML=`<div class="empty-state"><h3>No dates in this term</h3><p>Tap + Add Year or + Date to add dates</p></div>`;return;}
     wrapper.innerHTML=buildTermCalBlock(term);
   }
 }
@@ -821,91 +929,138 @@ function saveNewDate(){
   const id='D'+date.replace(/-/g,'');if(term.dates.find(x=>x.id===id)){showToast('Date already exists');return;}
   term.dates.push({id,date,type,label});saveLocal();closeModal();loadDatesPage();showToast('Date added ✓');markDirty();
 }
-// Smart term generator — picks correct Saturdays for the chosen season
-function showAddTermModal(){
-  // Build year options: current year and next 2
-  const mo=new Date().getMonth()+1;
-  const yr=new Date().getFullYear();
-  const y1=mo>=9?yr:yr-1;
-  const years=[y1-1,y1,y1+1].map(y=>`${y}-${String(y+1).slice(-2)}`);
-  openModal(`<div class="modal-title">Add Term</div>
-    <div class="form-group"><label class="form-label">Academic Year</label>
-      <select class="form-input" id="ntAcYear">${years.map((y,i)=>`<option value="${y}" ${i===1?'selected':''}>${y}</option>`).join('')}</select>
-    </div>
-    <div class="form-group"><label class="form-label">Season</label>
-      <div class="pill-row">
-        <div class="pill active" id="ntAutumn" onclick="selAddTerm('autumn')">Autumn</div>
-        <div class="pill" id="ntSpring" onclick="selAddTerm('spring')">Spring</div>
-        <div class="pill" id="ntSummer" onclick="selAddTerm('summer')">Summer</div>
-      </div>
-      <input type="hidden" id="ntSeason" value="autumn">
-    </div>
-    <div style="font-size:12px;color:var(--ink-muted);margin-bottom:14px;line-height:1.6;">
-      Autumn = Sep–Dec · Spring = Jan–Mar · Summer = Apr–Jul<br>
-      All Saturdays for those months will be generated as lessons. Tap any date afterwards to mark it as Closed, Performance, etc.
-    </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="doAddTerm()">Create Term</button></div>`);
-}
-function selAddTerm(s){
-  document.getElementById('ntSeason').value=s;
-  ['Autumn','Spring','Summer'].forEach(x=>{const el=document.getElementById('nt'+x);if(el)el.classList.toggle('active',x.toLowerCase()===s);});
-}
-function doAddTerm(){
-  const acYear=document.getElementById('ntAcYear').value.trim();
-  const season=document.getElementById('ntSeason').value;
+// Generates Saturdays for a season of an academic year
+function genTermDates(acYear,season){
   const parts=acYear.split('-');
   const y1=parseInt(parts[0]);
-  if(!y1){showToast('Invalid year');return;}
+  if(!y1)return[];
   const y2=y1+1;
-  // Determine date range based on season
-  const ranges={
-    autumn:{year:y1,startMo:'09',endMo:'12'},
-    spring:{year:y2,startMo:'01',endMo:'03'},
-    summer:{year:y2,startMo:'04',endMo:'07'}
-  };
+  const ranges={autumn:{year:y1,startMo:9,endMo:12},spring:{year:y2,startMo:1,endMo:3},summer:{year:y2,startMo:4,endMo:7}};
   const r=ranges[season];
-  // Generate all Saturdays in those months, stopping after 3 in July
   const dates=[];
-  let d=new Date(`${r.year}-${r.startMo}-01T12:00:00`);
+  let d=new Date(r.year,r.startMo-1,1,12,0,0);
   while(d.getDay()!==6)d.setDate(d.getDate()+1);
-  const endY=r.year,endMo=parseInt(r.endMo);
   let julCount=0;
-  while(d.getFullYear()===endY&&d.getMonth()+1<=endMo){
+  while(d.getFullYear()===r.year&&d.getMonth()+1<=r.endMo){
     const ds=d.toISOString().slice(0,10);
-    if(d.getMonth()===6){julCount++;if(julCount>3)break;} // max 3 in July
+    if(d.getMonth()===6){julCount++;if(julCount>3)break;}
     dates.push({id:'D'+ds.replace(/-/g,''),date:ds,type:'lesson',label:''});
     d.setDate(d.getDate()+7);
   }
-  const seasonLabel=season.charAt(0).toUpperCase()+season.slice(1);
-  const label=`${seasonLabel} ${acYear}`;
-  // Check for duplicate
-  if(APP.terms.find(t=>t.label===label)){showToast(`${label} already exists`);return;}
-  const yrKey=acYear.replace('-','_');
+  return dates;
+}
+function getNextAcYear(){
+  // Find the latest academic year in APP.terms, then suggest the next one
+  const years=getAcademicYears();
+  if(!years.length){
+    const mo=new Date().getMonth()+1;const yr=new Date().getFullYear();
+    const y1=mo>=9?yr:yr-1;return`${y1}-${String(y1+1).slice(-2)}`;
+  }
+  const latest=years[years.length-1];
+  const y1=parseInt(latest.split('-')[0])+1;
+  return`${y1}-${String(y1+1).slice(-2)}`;
+}
+function showAddYearModal(){
+  const nextYear=getNextAcYear();
+  openModal(`<div class="modal-title">Add Academic Year</div>
+    <div class="form-group">
+      <label class="form-label">Academic Year</label>
+      <input type="text" class="form-input" id="ntAcYear" value="${nextYear}" placeholder="e.g. 2026-27" style="font-size:18px;font-weight:600;text-align:center;">
+      <div style="font-size:11px;color:var(--ink-muted);margin-top:5px;text-align:center;">Autumn = Sep–Dec · Spring = Jan–Mar · Summer = Apr–Jul</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Terms to create</label>
+      <div class="pill-row">
+        <div class="pill active" id="ntAutumn" onclick="toggleYearTermPill('autumn')">Autumn</div>
+        <div class="pill active" id="ntSpring" onclick="toggleYearTermPill('spring')">Spring</div>
+        <div class="pill active" id="ntSummer" onclick="toggleYearTermPill('summer')">Summer</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--ink-muted);margin-bottom:4px;line-height:1.6;">
+      All Saturdays for each term will be pre-filled as lessons.<br>Tap any date afterwards to mark it as Closed, Performance, etc.
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="doAddYear()">Create Terms →</button></div>`);
+}
+function toggleYearTermPill(season){
+  const el=document.getElementById('nt'+season.charAt(0).toUpperCase()+season.slice(1));
+  if(el)el.classList.toggle('active');
+}
+function doAddYear(){
+  const rawYear=document.getElementById('ntAcYear').value.trim();
+  // Accept bare year like "2026" and auto-format
+  let acYear=rawYear;
+  if(/^\d{4}$/.test(acYear)){const y=parseInt(acYear);acYear=`${y}-${String(y+1).slice(-2)}`;}
+  const parts=acYear.split('-');
+  const y1=parseInt(parts[0]);
+  if(!y1||isNaN(y1)){showToast('Enter a valid year, e.g. 2026-27');return;}
+  const seasons=['autumn','spring','summer'];
+  const selected=seasons.filter(s=>{
+    const el=document.getElementById('nt'+s.charAt(0).toUpperCase()+s.slice(1));
+    return el&&el.classList.contains('active');
+  });
+  if(!selected.length){showToast('Select at least one term');return;}
+  let created=0,skipped=0;
   const seqMap={autumn:'T1',spring:'T2',summer:'T3'};
-  const id=`${yrKey}_${seqMap[season]}_${Date.now().toString(36)}`;
-  APP.terms.push({id,name:seasonLabel,label,dates,season});
+  selected.forEach(season=>{
+    const seasonLabel=season.charAt(0).toUpperCase()+season.slice(1);
+    const label=`${seasonLabel} ${acYear}`;
+    if(APP.terms.find(t=>t.label===label)){skipped++;return;}
+    const dates=genTermDates(acYear,season);
+    const yrKey=acYear.replace('-','_');
+    const id=`${yrKey}_${seqMap[season]}_${Date.now().toString(36)}`;
+    APP.terms.push({id,name:seasonLabel,label,dates,season});
+    created++;
+  });
   APP.terms.sort((a,b)=>(a.dates[0]?.date||'9999').localeCompare(b.dates[0]?.date||'9999'));
   saveLocal();populateTermSelectors();
-  // Switch to year view and show this year
   const ysel=document.getElementById('yearSelectorDates');if(ysel)ysel.value=acYear;
   if(datesViewMode!=='year')setDatesView('year');
-  closeModal();loadDatesPage();showToast(`${label} created — ${dates.length} Saturdays`);markDirty();
+  else loadDatesPage();
+  closeModal();
+  const msg=created?`${created} term${created>1?'s':''} created for ${acYear}${skipped?` (${skipped} already existed)`:''}`:`All terms for ${acYear} already exist`;
+  showToast(msg);
+  if(created)markDirty();
 }
 
 // ── REGISTER ──
 const CYCLES={present:'absent',absent:'na',na:'empty',empty:'present'};
 const SYMS={present:'✓',absent:'✗',na:'N/A',empty:''};
 const today=new Date().toISOString().slice(0,10);
+let _reorderMode=false;
+
+// Returns students sorted by custom order (APP.studentOrder) falling back to array order
+function getSortedStudents(students){
+  if(!APP.studentOrder||!APP.studentOrder.length)return students;
+  const orderMap={};APP.studentOrder.forEach((id,i)=>orderMap[id]=i);
+  return [...students].sort((a,b)=>{
+    const ai=orderMap[a.id]??9999;const bi=orderMap[b.id]??9999;
+    return ai-bi;
+  });
+}
+
+function toggleReorderMode(){
+  _reorderMode=!_reorderMode;
+  const btn=document.getElementById('reorderBtn');
+  if(btn)btn.textContent=_reorderMode?'✓ Done':'⇅ Reorder';
+  if(btn)btn.style.background=_reorderMode?'var(--teal)':'';
+  if(btn)btn.style.color=_reorderMode?'white':'';
+  loadRegister();
+}
+
 function loadRegister(){
   const term=getActiveTerm('termSelector');if(!term)return;
   const vis=[...term.dates].filter(d=>d.type!=='closed').sort((a,b)=>a.date.localeCompare(b.date));
+  const rBtn=document.getElementById('reorderBtn');
+  const allStudents=APP.students.filter(s=>!s.archived);
+  if(rBtn)rBtn.style.display=allStudents.length?'':'none';
   if(!vis.length){document.getElementById('registerWrapper').innerHTML=`<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No active dates</h3><p>Add lesson or performance dates</p></div>`;return;}
   document.getElementById('registerSub').textContent=term.label;
   const teachers=APP.teachers.filter(t=>!t.archived);
-  const senior=APP.students.filter(s=>!s.archived&&s.classStatus==='senior');
-  const trans=APP.students.filter(s=>!s.archived&&s.classStatus==='both');
-  const junior=APP.students.filter(s=>!s.archived&&s.classStatus==='junior');
-  let html=`<table class="register-table"><thead><tr><th class="name-header name-col">Name</th>`;
+  const allStu=getSortedStudents(allStudents);
+  const senior=allStu.filter(s=>s.classStatus==='senior');
+  const trans=allStu.filter(s=>s.classStatus==='both');
+  const junior=allStu.filter(s=>s.classStatus==='junior');
+  let html=`<table class="register-table" id="registerTable"><thead><tr><th class="name-header name-col">${_reorderMode?'<span style="font-size:10px;opacity:.6;">drag to reorder</span>':'Name'}</th>`;
   vis.forEach(d=>{
     const isPast=d.date<=today,isPerf=d.type==='performance';
     const cls=isPerf?'date-header performance':(isPast?'date-header past':'date-header');
@@ -913,21 +1068,26 @@ function loadRegister(){
     html+=`<th class="${cls}"><div>${dt.getDate()}</div><div style="font-weight:300;opacity:.7;font-size:9px;">${dt.toLocaleString('en-GB',{month:'short'})}</div><div style="font-size:8px;opacity:.5;">${isPerf?'P':'L'}</div></th>`;
   });
   html+=`</tr></thead><tbody>`;
-  html+=sR('Teachers',vis.length);teachers.forEach(p=>{html+=pR(p,'teacher',term,vis);});
-  html+=sR('Senior (高班)',vis.length);senior.forEach(p=>{html+=pR(p,'student',term,vis);});
-  if(trans.length){html+=sR('Transitioning',vis.length);trans.forEach(p=>{html+=pR(p,'student',term,vis);});}
-  html+=sR('Junior (初班)',vis.length);junior.forEach(p=>{html+=pR(p,'student',term,vis);});
+  html+=sR('Teachers',vis.length);
+  teachers.forEach(p=>{html+=pR(p,'teacher',term,vis,false);});
+  html+=sR('Senior (高班)',vis.length);
+  senior.forEach(p=>{html+=pR(p,'student',term,vis,_reorderMode);});
+  if(trans.length){html+=sR('Transitioning',vis.length);trans.forEach(p=>{html+=pR(p,'student',term,vis,_reorderMode);});}
+  html+=sR('Junior (初班)',vis.length);
+  junior.forEach(p=>{html+=pR(p,'student',term,vis,_reorderMode);});
   html+=`</tbody></table>`;
   document.getElementById('registerWrapper').innerHTML=html;
+  if(_reorderMode)initDragReorder();
 }
 function sR(l,c){return`<tr class="section-row"><td class="sticky-name">${l}</td>${'<td></td>'.repeat(c)}</tr>`;}
-function pR(p,type,term,dates){
-  let r=`<tr><td class="name-col">${p.name}${p.classStatus==='both'?' <span class="class-badge badge-both" style="font-size:9px;">T</span>':''}</td>`;
+function pR(p,type,term,dates,draggable){
+  const handle=draggable?`<td class="name-col" data-pid="${p.id}"><div style="display:flex;align-items:center;gap:6px;"><span class="drag-handle" draggable="false">⋮⋮</span>${p.name}${p.classStatus==='both'?' <span class="class-badge badge-both" style="font-size:9px;">T</span>':''}</div></td>`:`<td class="name-col">${p.name}${p.classStatus==='both'?' <span class="class-badge badge-both" style="font-size:9px;">T</span>':''}</td>`;
+  let r=`<tr data-pid="${p.id}" data-draggable="${draggable}">${handle}`;
   dates.forEach(d=>{
     const key=`${term.id}|${d.id}|${p.id}`;const att=APP.attendance[key]||'empty';
     const jCancel=d.type==='junior-cancelled'&&type==='student'&&p.classStatus==='junior';
     if(jCancel){r+=`<td class="att-cell cancelled">–</td>`;}
-    else{r+=`<td class="att-cell ${att}" onclick="toggleAtt('${key}')" data-key="${key}">${SYMS[att]||''}</td>`;}
+    else{r+=draggable?`<td class="att-cell ${att}">${SYMS[att]||''}</td>`:`<td class="att-cell ${att}" onclick="toggleAtt('${key}')" data-key="${key}">${SYMS[att]||''}</td>`;}
   });
   return r+'</tr>';
 }
@@ -936,6 +1096,80 @@ function toggleAtt(key){
   const cur=APP.attendance[key]||'empty';const next=CYCLES[cur];
   next==='empty'?delete APP.attendance[key]:(APP.attendance[key]=next);
   el.className='att-cell '+(next==='empty'?'empty':next);el.textContent=SYMS[next]||'';saveLocal();markDirty();
+}
+
+// ── DRAG REORDER ──
+function initDragReorder(){
+  const tbody=document.querySelector('#registerTable tbody');
+  if(!tbody)return;
+  let dragRow=null,dragPid=null;
+  const draggableRows=()=>[...tbody.querySelectorAll('tr[data-draggable="true"]')];
+  tbody.addEventListener('dragstart',e=>{
+    const row=e.target.closest('tr[data-draggable="true"]');
+    if(!row)return;
+    dragRow=row;dragPid=row.dataset.pid;
+    setTimeout(()=>row.classList.add('dragging'),0);
+    e.dataTransfer.effectAllowed='move';
+  });
+  tbody.addEventListener('dragend',e=>{
+    const row=e.target.closest('tr');
+    if(row)row.classList.remove('dragging');
+    tbody.querySelectorAll('.drag-over').forEach(r=>r.classList.remove('drag-over'));
+    // Save new order
+    const newOrder=draggableRows().map(r=>r.dataset.pid).filter(Boolean);
+    // Merge with existing order: keep non-draggable order entries, overwrite draggable section
+    const nonDrag=APP.studentOrder.filter(id=>!newOrder.includes(id));
+    APP.studentOrder=[...nonDrag,...newOrder];
+    saveLocal();markDirty();
+    dragRow=null;dragPid=null;
+  });
+  tbody.addEventListener('dragover',e=>{
+    e.preventDefault();
+    const row=e.target.closest('tr[data-draggable="true"]');
+    if(!row||row===dragRow)return;
+    tbody.querySelectorAll('.drag-over').forEach(r=>r.classList.remove('drag-over'));
+    row.classList.add('drag-over');
+    const rect=row.getBoundingClientRect();
+    const mid=rect.top+rect.height/2;
+    if(e.clientY<mid)tbody.insertBefore(dragRow,row);
+    else tbody.insertBefore(dragRow,row.nextSibling);
+  });
+  // Also handle touch for mobile
+  let touchRow=null,touchY=0,touchClone=null;
+  tbody.addEventListener('touchstart',e=>{
+    const row=e.target.closest('tr[data-draggable="true"]');
+    if(!row)return;
+    const handle=e.target.closest('.drag-handle');if(!handle)return;
+    e.preventDefault();
+    touchRow=row;dragPid=row.dataset.pid;
+    touchY=e.touches[0].clientY;
+    row.classList.add('dragging');
+  },{passive:false});
+  tbody.addEventListener('touchmove',e=>{
+    if(!touchRow)return;e.preventDefault();
+    const y=e.touches[0].clientY;
+    const els=document.elementsFromPoint(e.touches[0].clientX,y);
+    const target=els.find(el=>el.matches&&el.matches('tr[data-draggable="true"]')&&el!==touchRow);
+    if(target){
+      tbody.querySelectorAll('.drag-over').forEach(r=>r.classList.remove('drag-over'));
+      target.classList.add('drag-over');
+      const rect=target.getBoundingClientRect();
+      if(y<rect.top+rect.height/2)tbody.insertBefore(touchRow,target);
+      else tbody.insertBefore(touchRow,target.nextSibling);
+    }
+  },{passive:false});
+  tbody.addEventListener('touchend',e=>{
+    if(!touchRow)return;
+    touchRow.classList.remove('dragging');
+    tbody.querySelectorAll('.drag-over').forEach(r=>r.classList.remove('drag-over'));
+    const newOrder=draggableRows().map(r=>r.dataset.pid).filter(Boolean);
+    const nonDrag=APP.studentOrder.filter(id=>!newOrder.includes(id));
+    APP.studentOrder=[...nonDrag,...newOrder];
+    saveLocal();markDirty();
+    touchRow=null;dragPid=null;
+  });
+  // Make rows draggable attribute for desktop
+  draggableRows().forEach(row=>{row.setAttribute('draggable','true');});
 }
 function jumpToToday(){
   const w=document.getElementById('registerWrapper'),term=getActiveTerm();if(!term)return;
@@ -1363,6 +1597,8 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').repla
 
 function initApp(){
   populateTermSelectors();loadRegister();loadSettingsPage();
+  // Show reorder button if students exist
+  const rBtn=document.getElementById('reorderBtn');if(rBtn&&APP.students.filter(s=>!s.archived).length)rBtn.style.display='';
   // Initialise dates view toggle state
   setDatesView('year');
   // Show pending-sync state if we have unsaved changes from a previous offline session
