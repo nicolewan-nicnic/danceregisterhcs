@@ -1188,8 +1188,7 @@ function genCombinedPDF(payee,calc){
   const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=18;let y=M;
   doc.setFillColor(26,35,64);doc.rect(0,0,W,34,'F');
   doc.setFontSize(18);doc.setFont('helvetica','bold');doc.setTextColor(232,160,144);doc.text('Harrow Chinese School',M,13);
-  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(255,255,255);doc.text(APP.settings.schoolAddress.replace(/
-/g,', '),M,21);
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(255,255,255);doc.text(APP.settings.schoolAddress.replace(/\n/g,', '),M,21);
   const issueDate=new Date().toLocaleDateString('en-GB');
   const invNum=`${payee.invoicePrefix||'INV'}-${APP.settings.academicYear}-CMB`;
   doc.setFontSize(8);doc.text(`Invoice: ${invNum}`,W-M,13,{align:'right'});doc.text(`Date: ${issueDate}`,W-M,20,{align:'right'});doc.text(`Year: ${APP.settings.academicYear}`,W-M,27,{align:'right'});
@@ -1198,12 +1197,10 @@ function genCombinedPDF(payee,calc){
   doc.setFontSize(7);doc.setTextColor(144,152,168);doc.text('FROM (TEACHER)',M+4,y+5);doc.text('TO (SCHOOL)',M+bw+12,y+5);
   doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(26,35,64);doc.text(payee.name,M+4,y+12);
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(74,74,90);
-  (payee.address||'').split('
-').slice(0,3).forEach((l,i)=>doc.text(l,M+4,y+18+i*5));
+  (payee.address||'').split('\n').slice(0,3).forEach((l,i)=>doc.text(l,M+4,y+18+i*5));
   doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(26,35,64);doc.text(APP.settings.schoolName,M+bw+12,y+12);
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(74,74,90);
-  APP.settings.schoolAddress.split('
-').slice(0,3).forEach((l,i)=>doc.text(l,M+bw+12,y+18+i*5));
+  APP.settings.schoolAddress.split('\n').slice(0,3).forEach((l,i)=>doc.text(l,M+bw+12,y+18+i*5));
   y+=36;
   const cols=[M,M+70,M+140];
   doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,8,'F');doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
