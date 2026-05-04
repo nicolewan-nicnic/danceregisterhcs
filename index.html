@@ -2539,29 +2539,22 @@ window.addEventListener('DOMContentLoaded',()=>{
   initSetupDots();
   const has=loadLocal();
   const fbUrl=APP.settings.firebaseUrl;
-  console.log('[HCS] Startup — has local save:', has, '| setupDone:', APP.setupDone, '| fbUrl:', fbUrl?'set':'none');
 
-  if(has && APP.setupDone){
-    // Returning visit — render immediately with cached data, then sync
-    document.getElementById('setupOverlay').style.display='none';
-    initApp();
-    if(fbUrl){
-      console.log('[HCS] Returning device — syncing from Firebase');
-      loadFromDb(false);
-    }
-  } else if(!has && fbUrl){
-    // Fresh device, no local save, but Firebase URL is baked in — pull everything
-    console.log('[HCS] Fresh device, known Firebase URL — pulling from Firebase');
+  if(fbUrl){
+    // Firebase URL is known — always boot straight into the app and sync.
+    // Never show the welcome screen when we have a URL to connect to.
     APP.setupDone=true;
     APP.demoMode=false;
     saveLocal();
     document.getElementById('setupOverlay').style.display='none';
     initApp();
     loadFromDb(false);
+  } else if(has && APP.setupDone){
+    // No Firebase, but returning visit with completed local setup
+    document.getElementById('setupOverlay').style.display='none';
+    initApp();
   } else {
-    // No local save and no confirmed setup — show the welcome screen
-    // Pre-fill the Firebase URL input so the user can see it / confirm it
-    console.log('[HCS] Showing setup screen');
+    // Truly fresh with no Firebase URL — show welcome screen
     const urlInput=document.getElementById('setupFirebaseUrl');
     if(urlInput && fbUrl) urlInput.value=fbUrl;
   }
