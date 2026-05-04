@@ -1564,12 +1564,55 @@ function setPeopleView(v){
   if(v==='roster')renderRoster();
 }
 function setUnit(u){
+  const prev=APP.measurementUnit||'metric';
+  if(prev===u)return;
+  // If the Measurements tab is open, read displayed values, convert them in-place
+  const measTabVisible=document.getElementById('ptcMeas')&&document.getElementById('ptcMeas').style.display!=='none';
+  if(measTabVisible){
+    MEAS_FIELDS.forEach(mf=>{
+      const el=document.getElementById('mi_'+mf.id);
+      if(!el||el.value==='')return;
+      const v=parseFloat(el.value);
+      if(isNaN(v))return;
+      let converted;
+      if(prev==='metric'&&u==='imperial'){
+        // metric → imperial
+        converted=mf.field==='weight'?Math.round(v*2.2046*10)/10:Math.round(v*0.3937*10)/10;
+      } else {
+        // imperial → metric
+        converted=mf.field==='weight'?Math.round(v/2.2046*10)/10:Math.round(v/0.3937*10)/10;
+      }
+      el.value=converted;
+    });
+  }
   APP.measurementUnit=u;
   document.getElementById('unitCm').className=u==='metric'?'active':'';
   document.getElementById('unitIn').className=u==='imperial'?'active':'';
+  // Update unit labels next to inputs without re-rendering
+  document.querySelectorAll('.meas-unit').forEach(el=>{
+    const row=el.closest('.meas-row');
+    if(!row)return;
+    const input=row.querySelector('.meas-input');
+    if(!input)return;
+    const field=input.id.replace('mi_','');
+    const mf=MEAS_FIELDS.find(m=>m.id===field);
+    if(mf)el.textContent=dispUnit(mf.field);
+  });
   saveLocal();markDirty();
   if(_peopleView==='roster')renderRoster();
-  else if(_activeProfId)openProfile(_activeProfId);
+  else if(_activeProfId&&!measTabVisible)openProfile(_activeProfId);
+  else if(_activeProfId){
+    // Just re-render details and history tabs quietly, keep meas tab as-is
+    const p=getPersonById(_activeProfId);
+    if(p){
+      const type=getPersonType(_activeProfId);
+      const latest=getLatestMeasurements(p);
+      const dtc=document.getElementById('ptcDetails');
+      if(dtc)dtc.innerHTML=renderDetailsTab(p,type,latest);
+      const htc=document.getElementById('ptcHistory');
+      if(htc)htc.innerHTML=renderHistoryTab(p);
+    }
+  }
 }
 function dispVal(valCm,field){
   if(valCm===null||valCm===undefined||valCm==='')return '';
