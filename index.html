@@ -229,6 +229,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .lesson-count-badge{font-size:11px;color:var(--ink-muted);margin-left:8px;font-family:'DM Sans',sans-serif;font-weight:400;}
 /* PROFILES / MEASUREMENTS */
 .profile-shell{display:flex;height:calc(100vh - 120px);min-height:400px;overflow:hidden;}
+.sidebar-toggle{display:none;}
+@media(max-width:640px){
+  .sidebar-toggle{display:flex;align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--paper-warm);font-size:12px;font-weight:600;color:var(--navy);cursor:pointer;width:100%;border:none;text-align:left;}
+  .profile-shell{flex-direction:column;height:auto;}
+  .profile-sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);max-height:none;transition:max-height .25s ease,opacity .2s;}
+  .profile-sidebar.collapsed{max-height:0!important;overflow:hidden;opacity:0;border-bottom:none;}
+  .profile-sidebar.collapsed+.profile-main .sidebar-toggle-btn-icon{transform:rotate(0deg);}
+  .sidebar-toggle-icon{transition:transform .2s;display:inline-block;}
+  .sidebar-toggle.open .sidebar-toggle-icon{transform:rotate(180deg);}
+  .profile-main{flex:1;}
+  .prof-tab-content{padding:12px 14px;}
+  .profile-header{padding:10px 14px 8px;}
+}
 .profile-sidebar{width:200px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;background:var(--paper-warm);}
 .prof-sb-section{padding:8px 12px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-muted);border-top:1px solid var(--border);}
 .prof-sb-section:first-child{border-top:none;}
@@ -247,12 +260,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .prof-tab{padding:9px 14px;font-size:12px;font-weight:600;color:var(--ink-muted);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1px;transition:color .12s;}
 .prof-tab.active{color:var(--navy);border-bottom-color:var(--navy);}
 .prof-tab-content{flex:1;overflow-y:auto;padding:16px 20px;}
-.meas-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.meas-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);}
 .meas-row:last-child{border-bottom:none;}
-.meas-label{flex:1;font-size:13px;color:var(--ink);}
-.meas-input{width:72px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-weight:600;text-align:right;background:var(--paper-warm);color:var(--navy);}
+.meas-label{flex:1;font-size:12px;color:var(--ink-soft);}
+.meas-input{width:58px;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-weight:600;text-align:right;background:var(--paper-warm);color:var(--navy);}
 .meas-input:focus{outline:none;border-color:var(--navy);background:white;}
-.meas-unit{font-size:11px;color:var(--ink-muted);min-width:24px;}
+.meas-unit{font-size:10px;color:var(--ink-muted);min-width:20px;}
 .field-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
 .field-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;}
 .info-field{background:var(--paper-warm);border-radius:6px;padding:10px 12px;border:1px solid var(--border);}
@@ -1608,6 +1621,10 @@ function openProfile(id){
   const meta=type==='teacher'?'Teacher'+(p.birthYear?' · b. '+p.birthYear:''):
     (p.classStatus==='junior'?'Junior (初班)':p.classStatus==='senior'?'Senior (高班)':'Both')+(p.birthYear?' · b. '+p.birthYear:'')+(p.chineseName?' · '+p.chineseName:'');
   document.getElementById('profileMain').innerHTML=`
+    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleProfileSidebar()">
+      <span class="sidebar-toggle-icon" id="sidebarToggleIcon">▲</span>
+      <span id="sidebarToggleLabel">Hide people list</span>
+    </button>
     <div class="profile-header">
       <div class="prof-hd-av" style="background:${type==='teacher'?'var(--navy)':'var(--teal)'};">${ini(p.name)}</div>
       <div style="flex:1;">
@@ -1626,6 +1643,18 @@ function openProfile(id){
     <div class="prof-tab-content" id="ptcMeas" style="display:none;">${renderMeasTab(p,latest)}</div>
     <div class="prof-tab-content" id="ptcHistory" style="display:none;">${renderHistoryTab(p)}</div>`;
 }
+function toggleProfileSidebar(){
+  const sb=document.getElementById('profileSidebar');
+  const btn=document.getElementById('sidebarToggle');
+  const icon=document.getElementById('sidebarToggleIcon');
+  const label=document.getElementById('sidebarToggleLabel');
+  if(!sb||!btn)return;
+  const isCollapsed=sb.classList.contains('collapsed');
+  sb.classList.toggle('collapsed',!isCollapsed);
+  btn.classList.toggle('open',isCollapsed);
+  if(icon)icon.textContent=isCollapsed?'▲':'▼';
+  if(label)label.textContent=isCollapsed?'Hide people list':'Show people list';
+}
 function switchProfTab(tab){
   ['Details','Meas','History'].forEach(t=>{
     const el=document.getElementById('ptc'+t);if(el)el.style.display=t.toLowerCase()===tab?'block':'none';
@@ -1643,9 +1672,6 @@ function renderDetailsTab(p,type,latest){
     html+=`<div class="info-field"><div class="info-field-label">Chinese name</div><div class="info-field-val${p.chineseName?'':' empty'}">${p.chineseName||'—'}</div></div>
     <div class="info-field"><div class="info-field-label">Class</div><div class="info-field-val">${p.classStatus==='junior'?'Junior (初班)':p.classStatus==='senior'?'Senior (高班)':'Both'}</div></div>`;
     if(p.hcsStudent)html+=`<div class="info-field" style="grid-column:span 2;"><div class="info-field-label">HCS Student</div><div class="info-field-val">Yes — Harrow Chinese School</div></div>`;
-  } else {
-    html+=`<div class="info-field"><div class="info-field-label">Bank</div><div class="info-field-val${p.bankName?'':' empty'}">${p.bankName||'—'}</div></div>
-    <div class="info-field"><div class="info-field-label">Sort code</div><div class="info-field-val${p.sortCode?'':' empty'}">${p.sortCode||'—'}</div></div>`;
   }
   html+='</div>';
   const hasMeas=MEAS_FIELDS.some(mf=>latest[mf.field]!==null&&latest[mf.field]!==undefined&&latest[mf.field]!=='');
@@ -1663,9 +1689,12 @@ function renderDetailsTab(p,type,latest){
   return html;
 }
 function renderMeasTab(p,latest){
-  return`<p style="font-size:12px;color:var(--ink-muted);margin-bottom:14px;line-height:1.5;">Enter current measurements — all in ${dispUnit('height')} (or kg for weight). Each save is dated and stored in History.</p>
-  ${MEAS_FIELDS.map(mf=>`<div class="meas-row"><span class="meas-label">${mf.label}</span><input class="meas-input" type="number" step="0.1" id="mi_${mf.id}" value="${dispVal(latest[mf.field],mf.field)}" placeholder="—"><span class="meas-unit">${dispUnit(mf.field)}</span></div>`).join('')}
-  <button class="btn btn-primary btn-full" style="margin-top:14px;" onclick="saveMeasurements('${p.id}')">Save measurements</button>`;
+  return`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <span style="font-size:11px;color:var(--ink-muted);">All in ${dispUnit('height')}${dispUnit('weight')!==dispUnit('height')?' / '+dispUnit('weight'):' / kg'}. Saves dated to History.</span>
+    <button class="btn btn-sm btn-primary" onclick="saveMeasurements('${p.id}')">Save</button>
+  </div>
+  ${MEAS_FIELDS.map(mf=>`<div class="meas-row"><span class="meas-label">${mf.label}</span><input class="meas-input" type="number" step="1" id="mi_${mf.id}" value="${dispVal(latest[mf.field],mf.field)}" placeholder="—"><span class="meas-unit">${dispUnit(mf.field)}</span></div>`).join('')}
+  <button class="btn btn-primary btn-full" style="margin-top:10px;" onclick="saveMeasurements('${p.id}')">Save measurements</button>`;
 }
 function renderHistoryTab(p){
   if(!p.measurements||!p.measurements.length)return'<div style="font-size:13px;color:var(--ink-muted);padding:10px 0;">No history yet.</div>';
