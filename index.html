@@ -183,6 +183,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .ydate-num.junior-cancelled{background:var(--salmon-light);color:var(--ink-soft)}
 .ynotes-cell{font-size:11px;color:var(--ink-soft);padding:5px 10px;min-width:140px;line-height:1.5}
 .year-term-divider td{background:var(--navy-mid)!important;padding:5px 10px;color:rgba(255,255,255,.7);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+/* REMOVED DATES */
+.date-num.removed,.ydate-num.removed{color:var(--border)!important;background:none!important;text-decoration:line-through;cursor:pointer;}
+.date-num.removed:hover,.ydate-num.removed:hover{background:var(--paper-warm)!important;color:var(--ink-muted)!important;}
+/* UNDO BUTTON */
+.undo-btn{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:600;cursor:pointer;border:none;background:rgba(255,255,255,.15);color:rgba(255,255,255,.7);display:none;white-space:nowrap;transition:all .2s;}
+.undo-btn:hover{background:rgba(255,255,255,.25);color:white;}
+.undo-btn.visible{display:inline-flex;align-items:center;gap:4px;}
 /* DATES VIEW */
 .term-block-header{display:flex;align-items:center;justify-content:space-between;padding:10px 0 8px;}
 .term-block-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--navy);}
@@ -197,11 +204,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 <body>
 <div class="toast" id="toast"></div>
 <div class="cell-popup" id="cellPopup" style="display:none;">
-  <div class="cell-popup-item" onclick="setCellState('lesson')"><div class="cell-popup-dot" style="border:2px solid #ccc;"></div>Lesson</div>
-  <div class="cell-popup-item" onclick="setCellState('junior-cancelled')"><div class="cell-popup-dot" style="background:var(--salmon-light);border:1px solid var(--salmon);"></div>Junior cancelled</div>
-  <div class="cell-popup-item" onclick="setCellState('performance')"><div class="cell-popup-dot" style="background:var(--salmon);"></div>Performance</div>
-  <div class="cell-popup-item" onclick="setCellState('closed')"><div class="cell-popup-dot" style="background:var(--teal);"></div>Closed / Holiday</div>
-  <div class="cell-popup-item" onclick="setCellState('remove')" style="color:var(--crimson);"><div class="cell-popup-dot" style="background:var(--crimson);"></div>Remove date</div>
+  <div class="cell-popup-item" id="cpLesson" onclick="setCellState('lesson')"><div class="cell-popup-dot" style="border:2px solid #ccc;"></div>Lesson</div>
+  <div class="cell-popup-item" id="cpJunior" onclick="setCellState('junior-cancelled')"><div class="cell-popup-dot" style="background:var(--salmon-light);border:1px solid var(--salmon);"></div>Junior cancelled</div>
+  <div class="cell-popup-item" id="cpPerf" onclick="setCellState('performance')"><div class="cell-popup-dot" style="background:var(--salmon);"></div>Performance</div>
+  <div class="cell-popup-item" id="cpClosed" onclick="setCellState('closed')"><div class="cell-popup-dot" style="background:var(--teal);"></div>Closed / Holiday</div>
+  <div class="cell-popup-item" id="cpRemove" onclick="setCellState('remove')" style="color:var(--crimson);"><div class="cell-popup-dot" style="background:var(--crimson);"></div>Hide date</div>
+  <div class="cell-popup-item" id="cpRestore" onclick="setCellState('lesson')" style="color:var(--teal);display:none;"><div class="cell-popup-dot" style="background:var(--teal);"></div>Restore date</div>
   <div class="cell-popup-item" onclick="closeCellPopup()" style="color:var(--ink-muted);">✕ Cancel</div>
 </div>
 <div class="setup-overlay" id="setupOverlay">
@@ -255,6 +263,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 </div>
 <header class="app-header">
   <div class="app-title-block"><div class="app-title">Harrow Chinese School Dance Group</div><div class="app-subtitle">Register & Invoice System</div></div>
+  <button class="undo-btn" id="undoBtn" onclick="performUndo()" title="Undo last action">↩ Undo</button>
   <div class="sync-status sync-none" id="syncStatus" onclick="syncNow()">Offline</div>
 </header>
 <main class="main">
@@ -701,7 +710,48 @@ function saveInvTracker(){
     const dateSent=document.getElementById('itrk_date_'+t.id)?.value||'';
     APP.invoiceTracker[t.id]={invoicedToTermId:termId||null,status,dateSent};
   });
-  saveLocal();closeModal();renderInvTracker();showToast('Invoice tracker updated ✓');markDirty();
+  pushUndoSnapshot();saveLocal();closeModal();renderInvTracker();showToast('Invoice tracker updated ✓');markDirty();
+}
+
+// ── UNDO SYSTEM ──
+const _undoStack=[];
+const MAX_UNDO=20;
+function pushUndoSnapshot(){
+  // Deep-clone the mutable parts of APP
+  _undoStack.push(JSON.stringify({
+    terms:APP.terms,
+    attendance:APP.attendance,
+    students:APP.students,
+    teachers:APP.teachers,
+    studentOrder:APP.studentOrder,
+    invoiceTracker:APP.invoiceTracker
+  }));
+  if(_undoStack.length>MAX_UNDO)_undoStack.shift();
+  showUndoBtn(true);
+}
+function performUndo(){
+  if(!_undoStack.length){showToast('Nothing to undo');return;}
+  const snap=JSON.parse(_undoStack.pop());
+  APP.terms=snap.terms;
+  APP.attendance=snap.attendance;
+  APP.students=snap.students;
+  APP.teachers=snap.teachers;
+  APP.studentOrder=snap.studentOrder||[];
+  APP.invoiceTracker=snap.invoiceTracker||{};
+  saveLocal();markDirty();
+  // Refresh whichever page is active
+  const activePage=document.querySelector('.page.active')?.id;
+  if(activePage==='pageRegister')loadRegister();
+  if(activePage==='pageDates'){populateTermSelectors();loadDatesPage();}
+  if(activePage==='pagePeople')loadPeoplePage();
+  if(activePage==='pageSettings'){loadSettingsPage();populateTermSelectors();}
+  populateTermSelectors();
+  showUndoBtn(_undoStack.length>0);
+  showToast('Undone ✓');
+}
+function showUndoBtn(visible){
+  const btn=document.getElementById('undoBtn');
+  if(btn)btn.className='undo-btn'+(visible?' visible':'');
 }
 
 // ── CALENDAR ──
@@ -729,8 +779,8 @@ function getHalfTermSplit(sorted){
   if(!groups.length)return null;
   // Prefer a group that has lessons on BOTH sides — that's the half-term
   for(const g of groups){
-    const before=sorted.slice(0,g.start).filter(d=>d.type==='lesson').length;
-    const after=sorted.slice(g.end+1).filter(d=>d.type==='lesson').length;
+    const before=sorted.slice(0,g.start).filter(d=>d.type==='lesson'||d.type==='junior-cancelled'||d.type==='performance').length;
+    const after=sorted.slice(g.end+1).filter(d=>d.type==='lesson'||d.type==='junior-cancelled'||d.type==='performance').length;
     if(before>0&&after>0)return{splitAfter:g.end};
   }
   // Fall back to last closed group
@@ -739,7 +789,8 @@ function getHalfTermSplit(sorted){
 }
 function calcLessonCounts(term){
   if(!term||!term.dates||!term.dates.length)return{total:0,ht1:0,ht2:0,hasHalfTerm:false};
-  const sorted=[...term.dates].sort((a,b)=>a.date.localeCompare(b.date));
+  // Exclude 'removed' dates entirely from lesson count calculations
+  const sorted=[...term.dates].filter(d=>d.type!=='removed').sort((a,b)=>a.date.localeCompare(b.date));
   const split=getHalfTermSplit(sorted);
   const total=sorted.filter(d=>d.type==='lesson').length;
   if(!split)return{total,ht1:total,ht2:0,hasHalfTerm:false};
@@ -768,6 +819,7 @@ function buildTermCalBlock(term){
   Object.values(byMonth).forEach(({month,dates})=>{
     const notes=[];
     dates.forEach(d=>{
+      if(d.type==='removed')return; // hidden dates don't show in notes
       const dt=new Date(d.date+'T12:00:00');const day=dt.getDate();const mon=dt.toLocaleString('en-GB',{month:'short'});
       if(d.type==='closed')notes.push({txt:`${ordinal(day)} ${mon} – ${d.label||'Closed'}`,perf:false});
       if(d.type==='performance')notes.push({txt:`${ordinal(day)} ${mon} – ${d.label||'Performance'}`,perf:true});
@@ -835,6 +887,7 @@ function buildYearViewTable(terms){
       // Notes
       const notes=[];
       me.dates.forEach(d=>{
+        if(d.type==='removed')return; // hidden dates don't show in notes
         const dt=new Date(d.date+'T12:00:00');const day=dt.getDate();const mon=dt.toLocaleString('en-GB',{month:'short'});
         if(d.type==='closed')notes.push(`<span style="color:var(--ink-soft);">${ordinal(day)} ${mon} – ${d.label||'Closed'}</span>`);
         if(d.type==='performance')notes.push(`<span style="color:var(--crimson);font-style:italic;">*${ordinal(day)} ${mon} – ${d.label||'Performance'}</span>`);
@@ -882,26 +935,35 @@ function ordinal(n){const s=['th','st','nd','rd'],v=n%100;return n+(s[(v-20)%10]
 
 function openCellPopup(e,termId,dateId){
   e.stopPropagation();activeCellPopup={termId,dateId};
+  const term=APP.terms.find(t=>t.id===termId);
+  const d=term?term.dates.find(x=>x.id===dateId):null;
+  const isRemoved=d&&d.type==='removed';
+  // Show restore or remove depending on state
+  const removeEl=document.getElementById('cpRemove');
+  const restoreEl=document.getElementById('cpRestore');
+  const otherEls=['cpLesson','cpJunior','cpPerf','cpClosed'];
+  if(removeEl)removeEl.style.display=isRemoved?'none':'';
+  if(restoreEl)restoreEl.style.display=isRemoved?'':'none';
+  otherEls.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isRemoved?'none':'';});
   const popup=document.getElementById('cellPopup');popup.style.display='block';
   const rect=e.target.getBoundingClientRect();let top=rect.bottom+4,left=rect.left;
   if(left+195>window.innerWidth)left=window.innerWidth-200;
-  if(top+200>window.innerHeight)top=rect.top-200;
+  if(top+220>window.innerHeight)top=rect.top-220;
   popup.style.top=top+'px';popup.style.left=left+'px';
 }
 function setCellState(nt){
   if(!activeCellPopup)return;
   const{termId,dateId}=activeCellPopup;
   const term=APP.terms.find(t=>t.id===termId);if(!term)return;
+  const d=term.dates.find(x=>x.id===dateId);if(!d)return;
+  pushUndoSnapshot();
   if(nt==='remove'){
-    const hasAtt=Object.keys(APP.attendance).some(k=>k.includes('|'+dateId+'|'));
-    if(hasAtt&&!confirm('Attendance data exists for this date. Remove anyway?')){closeCellPopup();return;}
-    if(hasAtt)Object.keys(APP.attendance).forEach(k=>{if(k.includes('|'+dateId+'|'))delete APP.attendance[k];});
-    term.dates=term.dates.filter(d=>d.id!==dateId);
+    // Soft-remove: mark as 'removed' so it stays visible but faded, and can be undone
+    d.type='removed';
   }else{
-    const d=term.dates.find(x=>x.id===dateId);if(!d)return;
     d.type=nt;
   }
-  saveLocal();closeCellPopup();loadDatesPage();showToast('Updated ✓');markDirty();
+  saveLocal();closeCellPopup();loadDatesPage();showToast(nt==='remove'?'Date hidden — tap Undo to restore':'Updated ✓');markDirty();
 }
 function closeCellPopup(){document.getElementById('cellPopup').style.display='none';activeCellPopup=null;}
 document.addEventListener('click',e=>{if(!document.getElementById('cellPopup').contains(e.target))closeCellPopup();});
@@ -927,7 +989,7 @@ function saveNewDate(){
   const date=document.getElementById('mdDate').value;const type=document.getElementById('mdType').value;const label=document.getElementById('mdLabel').value.trim();
   if(!date){showToast('Pick a date');return;}
   const id='D'+date.replace(/-/g,'');if(term.dates.find(x=>x.id===id)){showToast('Date already exists');return;}
-  term.dates.push({id,date,type,label});saveLocal();closeModal();loadDatesPage();showToast('Date added ✓');markDirty();
+  pushUndoSnapshot();term.dates.push({id,date,type,label});saveLocal();closeModal();loadDatesPage();showToast('Date added ✓');markDirty();
 }
 // Generates Saturdays for a season of an academic year
 function genTermDates(acYear,season){
@@ -1001,14 +1063,19 @@ function doAddYear(){
   if(!selected.length){showToast('Select at least one term');return;}
   let created=0,skipped=0;
   const seqMap={autumn:'T1',spring:'T2',summer:'T3'};
+  // Autumn is in y1 (e.g. 2025), Spring/Summer are in y2 (e.g. 2026)
+  const y2=y1+1;
+  const seasonYear={autumn:y1,spring:y2,summer:y2};
+  pushUndoSnapshot();
   selected.forEach(season=>{
     const seasonLabel=season.charAt(0).toUpperCase()+season.slice(1);
-    const label=`${seasonLabel} ${acYear}`;
+    const calYear=seasonYear[season]; // actual calendar year the term starts in
+    const label=`${seasonLabel} ${calYear}`;
     if(APP.terms.find(t=>t.label===label)){skipped++;return;}
     const dates=genTermDates(acYear,season);
     const yrKey=acYear.replace('-','_');
     const id=`${yrKey}_${seqMap[season]}_${Date.now().toString(36)}`;
-    APP.terms.push({id,name:seasonLabel,label,dates,season});
+    APP.terms.push({id,name:seasonLabel,label,dates,season,acYear});
     created++;
   });
   APP.terms.sort((a,b)=>(a.dates[0]?.date||'9999').localeCompare(b.dates[0]?.date||'9999'));
@@ -1017,7 +1084,7 @@ function doAddYear(){
   if(datesViewMode!=='year')setDatesView('year');
   else loadDatesPage();
   closeModal();
-  const msg=created?`${created} term${created>1?'s':''} created for ${acYear}${skipped?` (${skipped} already existed)`:''}`:`All terms for ${acYear} already exist`;
+  const msg=created?`${created} term${created>1?'s':''} added for ${acYear}${skipped?` (${skipped} already existed)`:''}`:`All terms for ${acYear} already exist`;
   showToast(msg);
   if(created)markDirty();
 }
@@ -1049,7 +1116,7 @@ function toggleReorderMode(){
 
 function loadRegister(){
   const term=getActiveTerm('termSelector');if(!term)return;
-  const vis=[...term.dates].filter(d=>d.type!=='closed').sort((a,b)=>a.date.localeCompare(b.date));
+  const vis=[...term.dates].filter(d=>d.type!=='closed'&&d.type!=='removed').sort((a,b)=>a.date.localeCompare(b.date));
   const rBtn=document.getElementById('reorderBtn');
   const allStudents=APP.students.filter(s=>!s.archived);
   if(rBtn)rBtn.style.display=allStudents.length?'':'none';
@@ -1108,6 +1175,7 @@ function initDragReorder(){
     const row=e.target.closest('tr[data-draggable="true"]');
     if(!row)return;
     dragRow=row;dragPid=row.dataset.pid;
+    pushUndoSnapshot();
     setTimeout(()=>row.classList.add('dragging'),0);
     e.dataTransfer.effectAllowed='move';
   });
@@ -1120,7 +1188,7 @@ function initDragReorder(){
     // Merge with existing order: keep non-draggable order entries, overwrite draggable section
     const nonDrag=APP.studentOrder.filter(id=>!newOrder.includes(id));
     APP.studentOrder=[...nonDrag,...newOrder];
-    saveLocal();markDirty();
+    saveLocal();markDirty();showUndoBtn(true);
     dragRow=null;dragPid=null;
   });
   tbody.addEventListener('dragover',e=>{
@@ -1142,6 +1210,7 @@ function initDragReorder(){
     const handle=e.target.closest('.drag-handle');if(!handle)return;
     e.preventDefault();
     touchRow=row;dragPid=row.dataset.pid;
+    pushUndoSnapshot();
     touchY=e.touches[0].clientY;
     row.classList.add('dragging');
   },{passive:false});
@@ -1174,7 +1243,7 @@ function initDragReorder(){
 function jumpToToday(){
   const w=document.getElementById('registerWrapper'),term=getActiveTerm();if(!term)return;
   // Must filter identically to loadRegister: exclude closed dates only
-  const dates=[...term.dates].filter(d=>d.type!=='closed').sort((a,b)=>a.date.localeCompare(b.date));
+  const dates=[...term.dates].filter(d=>d.type!=='closed'&&d.type!=='removed').sort((a,b)=>a.date.localeCompare(b.date));
   // Find first date that is today or in the future
   const idx=dates.findIndex(d=>d.date>=today);
   if(idx<0)return;
@@ -1241,7 +1310,7 @@ function doImportCSV(){
     APP.students.push({id:'S'+Date.now()+'_'+(++idCounter)+'_'+Math.random().toString(36).slice(2,5),name:s.name,chineseName:s.chineseName||'',dob:s.dob||'',classStatus:s.classStatus,hcsStudent:s.hcsStudent,archived:false});
     added++;
   });
-  saveLocal();closeModal();loadPeoplePage();
+  if(added>0)pushUndoSnapshot();saveLocal();closeModal();loadPeoplePage();
   showToast(`Imported ${added} student${added!==1?'s':''} (${skipped} already existed)`);
   if(added>0)markDirty();
 }
@@ -1296,11 +1365,11 @@ function savePerson(type,id){
       APP.students.push({id:'S'+Date.now(),name,chineseName:chinese,classStatus:cls,hcsStudent:hcs,archived:false});
     }
   }
-  saveLocal();closeModal();loadPeoplePage();showToast('Saved ✓');
+  pushUndoSnapshot();saveLocal();closeModal();loadPeoplePage();showToast('Saved ✓');
   markDirty();
 }
 function archivePerson(type,id){openModal(`<div class="modal-title">Archive?</div><p style="color:var(--ink-soft);font-size:14px;margin-bottom:16px;">Hidden from register. Historical data preserved.</p><div class="modal-footer"><button class="btn btn-ghost" style="flex:1;" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="doArchive('${type}','${id}')">Archive</button></div>`);}
-function doArchive(type,id){const l=type==='teacher'?APP.teachers:APP.students;const p=l.find(x=>x.id===id);if(p)p.archived=true;saveLocal();closeModal();loadPeoplePage();showToast('Archived');markDirty();}
+function doArchive(type,id){const l=type==='teacher'?APP.teachers:APP.students;const p=l.find(x=>x.id===id);if(p){pushUndoSnapshot();p.archived=true;}saveLocal();closeModal();loadPeoplePage();showToast('Archived');markDirty();}
 
 // ── INVOICES ──
 function loadInvoicesPage(){
@@ -1571,7 +1640,7 @@ function saveFirebaseSettings(){
 
 function saveTeacherDetails(id){const t=APP.teachers.find(x=>x.id===id);if(!t)return;t.address=document.getElementById(`ts_addr_${id}`)?.value||'';t.bankName=document.getElementById(`ts_bank_${id}`)?.value||'';t.sortCode=document.getElementById(`ts_sort_${id}`)?.value||'';t.accountNo=document.getElementById(`ts_acc_${id}`)?.value||'';t.invoicePrefix=document.getElementById(`ts_pfx_${id}`)?.value||'';saveLocal();showToast(`${t.name.split(' ')[0]}'s details saved ✓`);markDirty();}
 function showEditTermModal(termId){const term=APP.terms.find(t=>t.id===termId);if(!term)return;openModal(`<div class="modal-title">Edit Term</div><div class="form-group"><label class="form-label">Label</label><input type="text" class="form-input" id="etLabel" value="${term.label}"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveTermEdit('${termId}')">Save</button></div>`);}
-function saveTermEdit(id){const term=APP.terms.find(t=>t.id===id);if(!term)return;term.label=document.getElementById('etLabel').value;saveLocal();closeModal();loadSettingsPage();populateTermSelectors();showToast('Saved ✓');markDirty();}
+function saveTermEdit(id){const term=APP.terms.find(t=>t.id===id);if(!term)return;pushUndoSnapshot();term.label=document.getElementById('etLabel').value;saveLocal();closeModal();loadSettingsPage();populateTermSelectors();showToast('Saved ✓');markDirty();}
 function confirmDeleteTerm(termId){
   const term=APP.terms.find(t=>t.id===termId);if(!term)return;
   const hasAtt=Object.keys(APP.attendance).some(k=>k.startsWith(termId+'|'));
@@ -1581,7 +1650,7 @@ function doDeleteTerm(termId){
   if(Object.keys(APP.attendance).some(k=>k.startsWith(termId+'|'))){
     Object.keys(APP.attendance).forEach(k=>{if(k.startsWith(termId+'|'))delete APP.attendance[k];});
   }
-  APP.terms=APP.terms.filter(t=>t.id!==termId);
+  pushUndoSnapshot();APP.terms=APP.terms.filter(t=>t.id!==termId);
   saveLocal();closeModal();loadSettingsPage();populateTermSelectors();showToast('Term deleted');markDirty();
 }
 
