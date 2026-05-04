@@ -414,8 +414,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
       <div style="font-size:11px;color:var(--ink-muted);margin-bottom:10px;">Create a free project at console.firebase.google.com → Realtime Database → copy the URL above.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-teal" style="flex:1;" onclick="syncToDb()">⬆ Push to Firebase</button>
-        <button class="btn btn-ghost" style="flex:1;" onclick="loadFromDb()">⬇ Pull from Firebase</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="loadFromDb(false)">⬇ Pull from Firebase</button>
       </div>
+      <div style="font-size:11px;color:var(--ink-muted);margin-top:8px;">Pull replaces all local data with what's in Firebase. Push sends your current data to Firebase.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
         <button class="btn btn-navy" style="flex:1;" onclick="saveFirebaseSettings()">Save Settings</button>
       </div>
@@ -1738,9 +1739,17 @@ async function syncToDb(){
   _isSyncing=true;
   updateSyncStatus('warn','Syncing…');
   try{
-    // Strip device-local settings before pushing so they don't overwrite other devices
+    // Build a clean payload — exclude device-local and ephemeral fields
     const {firebaseUrl,firebaseToken,...sharedSettings}=APP.settings;
-    const payload=JSON.stringify({...APP,settings:sharedSettings});
+    const payload=JSON.stringify({
+      terms: APP.terms,
+      students: APP.students,
+      teachers: APP.teachers,
+      attendance: APP.attendance,
+      invoiceTracker: APP.invoiceTracker,
+      studentOrder: APP.studentOrder,
+      settings: sharedSettings
+    });
     const resp=await fetch(url,{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
@@ -1772,20 +1781,38 @@ async function loadFromDb(silent=false){
   updateSyncStatus('warn','Loading…');
   try{
     const resp=await fetch(url);
-    if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
-    const data=await resp.json();
-    if(!data){
-      if(!silent)showToast('No data in Firebase — pushing current data');
-      syncToDb();return;
+    if(!resp.ok){
+      const errText=await resp.text().catch(()=>'');
+      throw new Error(`HTTP ${resp.status}${errText?' — '+errText.slice(0,80):''}`);
     }
-    // Preserve device-local settings (Firebase URL, token) — merge everything else
-    const localSettings={firebaseUrl:APP.settings.firebaseUrl,firebaseToken:APP.settings.firebaseToken};
-    Object.assign(APP,data);
-    APP.settings={...APP.settings,...localSettings};
-    if(!APP.studentOrder)APP.studentOrder=[];
+    const data=await resp.json();
+    if(!data||typeof data!=='object'){
+      if(!silent)showToast('Firebase is empty — push data from the source device first');
+      updateSyncStatus('warn','Empty');
+      return;
+    }
+    // Explicitly pull each field — never let Firebase overwrite device-local fields
+    if(Array.isArray(data.terms))       APP.terms        = data.terms;
+    if(Array.isArray(data.students))    APP.students     = data.students;
+    if(Array.isArray(data.teachers))    APP.teachers     = data.teachers;
+    if(data.attendance&&typeof data.attendance==='object') APP.attendance = data.attendance;
+    if(data.invoiceTracker&&typeof data.invoiceTracker==='object') APP.invoiceTracker = data.invoiceTracker;
+    if(Array.isArray(data.studentOrder)) APP.studentOrder = data.studentOrder;
+    if(data.settings&&typeof data.settings==='object'){
+      // Merge remote settings but keep this device's Firebase credentials
+      APP.settings={
+        ...APP.settings,
+        ...data.settings,
+        firebaseUrl: APP.settings.firebaseUrl,
+        firebaseToken: APP.settings.firebaseToken
+      };
+    }
+    // Ensure required fields exist
+    if(!APP.studentOrder)  APP.studentOrder=[];
     if(!APP.invoiceTracker)APP.invoiceTracker={};
-    if(!APP.attendance)APP.attendance={};
+    if(!APP.attendance)    APP.attendance={};
     APP.setupDone=true;
+    APP.demoMode=false;
     saveLocal();
     // Full UI refresh
     populateTermSelectors();
@@ -1798,19 +1825,25 @@ async function loadFromDb(silent=false){
     _fbConnected=true;
     markClean();
     updateSyncStatus('ok','Synced');
-    if(!silent)showToast('Loaded from Firebase ✓');
-    else showToast('Up to date ✓');
+    const counts=`${data.students?.length||0} students, ${data.teachers?.length||0} teachers, ${data.terms?.length||0} terms`;
+    if(!silent)showToast(`Loaded from Firebase ✓ (${counts})`);
+    else showToast(`Synced ✓`);
   }catch(e){
     console.error('Firebase load error:',e);
     updateSyncStatus('err','Load failed');
-    showToast('Could not load from Firebase');
+    showToast(`Load failed: ${e.message||'Check Firebase URL & rules'}`);
   }
 }
 
 function syncNow(){
   const url=getFbUrl();
   if(!url){showToast('Add Firebase URL in Settings to sync');return;}
-  syncToDb();
+  if(isDirty()){
+    syncToDb();
+  } else {
+    // Nothing dirty — pull latest from Firebase
+    loadFromDb(false);
+  }
 }
 
 function trySilentConnect(){
@@ -1874,28 +1907,27 @@ function initApp(){
 }
 
 window.addEventListener('DOMContentLoaded',()=>{
-  initSetupDots();const has=loadLocal();
+  initSetupDots();
+  const has=loadLocal();
+  const fbUrl=APP.settings.firebaseUrl;
   if(has&&APP.setupDone){
     document.getElementById('setupOverlay').style.display='none';
     initApp();
-    // If Firebase URL is configured and we have clean local data, silently pull latest
-    if(APP.settings.firebaseUrl&&!isDirty()){
-      loadFromDb(true); // silent=true — don't toast on success, just update
+    // Always pull from Firebase on load to get the latest data from any device
+    if(fbUrl){
+      loadFromDb(true);
     }
   } else {
-    // First ever load on this device — if Firebase URL is pre-configured, pull from it
-    // Otherwise fall back to the preloaded demo data
-    const fbUrl=APP.settings.firebaseUrl;
+    // No local save (or incomplete setup) — pull from Firebase if URL is known
     if(fbUrl){
-      // Bootstrap enough state so the UI can render while we fetch
       APP.setupDone=true;
       saveLocal();
       document.getElementById('setupOverlay').style.display='none';
       initApp();
-      updateSyncStatus('warn','Syncing…');
       showToast('Fetching data from Firebase…');
       loadFromDb(false);
     } else {
+      // Truly no Firebase configured — load demo data
       quickStart();
     }
   }
