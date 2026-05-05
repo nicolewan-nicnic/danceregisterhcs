@@ -6,7 +6,7 @@
 <title>HCS Dance Group</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
   --navy:#1a2340;--navy-mid:#243060;--crimson:#8b1a2e;--crimson-light:#a82038;
   --teal:#1d5c4a;--salmon:#e8a090;--salmon-light:#f5d5cc;
@@ -15,7 +15,7 @@
   --shadow:0 2px 16px rgba(26,35,64,.10);--radius:10px;--radius-sm:6px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:Futura,'Jost','DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-size:15px;line-height:1.5}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-size:15px;line-height:1.5}
 .app-header{background:var(--navy);color:white;padding:14px 20px 12px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(26,35,64,.3);min-height:56px}
 .app-title-block{flex:1}
 .app-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;letter-spacing:.03em;color:white;line-height:1.1}
@@ -24,7 +24,7 @@ body{font-family:Futura,'Jost','DM Sans',sans-serif;background:var(--paper);colo
 .sync-ok{background:var(--teal);color:white}.sync-warn{background:#b8860b;color:white}
 .sync-err{background:var(--crimson);color:white}.sync-none{background:rgba(255,255,255,.12);color:rgba(255,255,255,.6)}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--navy);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);border-top:1px solid rgba(255,255,255,.08)}
-.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;color:rgba(255,255,255,.35);border:none;background:none;cursor:pointer;font-size:10px;font-family:Futura,'Jost','DM Sans',sans-serif;font-weight:500;letter-spacing:.04em;text-transform:uppercase;gap:4px;transition:color .2s}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;color:rgba(255,255,255,.35);border:none;background:none;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif;font-weight:500;letter-spacing:.04em;text-transform:uppercase;gap:4px;transition:color .2s}
 .nav-btn.active{color:var(--salmon)}.nav-btn svg{width:22px;height:22px}
 .main{padding-bottom:calc(68px + env(safe-area-inset-bottom))}.page{display:none}.page.active{display:block}
 .section-header{padding:20px 20px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
@@ -34,14 +34,14 @@ body{font-family:Futura,'Jost','DM Sans',sans-serif;background:var(--paper);colo
 .card-header{padding:12px 16px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--paper-warm)}
 .card-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft)}
 .card-body{padding:14px 16px}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--radius-sm);font-family:Futura,'Jost','DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;white-space:nowrap}
 .btn-primary{background:var(--crimson);color:white}.btn-primary:active{background:var(--crimson-light)}
 .btn-navy{background:var(--navy);color:white}.btn-teal{background:var(--teal);color:white}
 .btn-ghost{background:var(--paper-warm);color:var(--ink);border:1px solid var(--border)}.btn-ghost:active{background:var(--border)}
 .btn-sm{padding:6px 12px;font-size:12px}.btn-full{width:100%;justify-content:center}
 .form-group{margin-bottom:14px}
 .form-label{display:block;font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
-.form-input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:Futura,'Jost','DM Sans',sans-serif;font-size:14px;color:var(--ink);background:white;transition:border-color .15s;-webkit-appearance:none}
+.form-input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);background:white;transition:border-color .15s;-webkit-appearance:none}
 .form-input:focus{outline:none;border-color:var(--navy)}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 /* INVOICE TRACKER */
 .inv-tracker{margin:0 16px 12px;background:white;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
@@ -59,10 +59,10 @@ body{font-family:Futura,'Jost','DM Sans',sans-serif;background:var(--paper);colo
 /* CALENDAR */
 .cal-wrapper{overflow-x:auto;padding:0 16px 16px}
 .cal-table{width:100%;border-collapse:collapse;min-width:520px;background:white;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.cal-table th{background:var(--paper-warm);padding:10px 12px;text-align:left;font-family:Futura,'Jost','DM Sans',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);border-bottom:2px solid var(--border);white-space:nowrap}
+.cal-table th{background:var(--paper-warm);padding:10px 12px;text-align:left;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);border-bottom:2px solid var(--border);white-space:nowrap}
 .cal-table td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
 .cal-table tr:last-child td{border-bottom:none}
-.cal-month{font-family:Futura,'Jost','DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;min-width:68px;border-right:1px solid var(--border);background:var(--paper-warm);padding:8px 10px}
+.cal-month{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;min-width:68px;border-right:1px solid var(--border);background:var(--paper-warm);padding:8px 10px}
 .cal-date-cell{min-width:40px;text-align:center;padding:4px 2px;border-right:1px solid #ece8e0}
 .date-num{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;margin:0 auto;font-size:17px;transition:all .15s;cursor:pointer;user-select:none;font-family:'Cormorant Garamond',serif;font-weight:600}
 .date-num.lesson{color:var(--ink)}.date-num.lesson:hover{background:var(--paper-warm)}
@@ -70,18 +70,18 @@ body{font-family:Futura,'Jost','DM Sans',sans-serif;background:var(--paper);colo
 .date-num.performance{background:var(--salmon)!important;color:white!important}
 .date-num.junior-cancelled{background:var(--salmon-light);color:var(--ink-soft)}
 .cal-row-special td{background:#fdf5f3!important}
-.cal-notes{font-family:Futura,'Jost','DM Sans',sans-serif;font-size:11px;color:var(--ink-soft);padding:6px 10px;min-width:160px;line-height:1.5}
+.cal-notes{font-family:'DM Sans',sans-serif;font-size:11px;color:var(--ink-soft);padding:6px 10px;min-width:160px;line-height:1.5}
 .note-red{color:var(--crimson)}.note-perf{color:var(--crimson);font-style:italic}
 .cal-legend{display:flex;flex-wrap:wrap;gap:12px;padding:8px 16px 10px;font-size:12px;color:var(--ink-soft);align-items:center}
 .leg-item{display:flex;align-items:center;gap:5px}
 .leg-dot{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
 /* REGISTER */
 .register-controls{padding:0 16px 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.term-select{flex:1;min-width:160px;padding:9px 30px 9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:Futura,'Jost','DM Sans',sans-serif;font-size:14px;background:white;color:var(--ink);-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%235a6070' d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.term-select{flex:1;min-width:160px;padding:9px 30px 9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;background:white;color:var(--ink);-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%235a6070' d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
 .register-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 0 8px}
 .register-table{border-collapse:collapse;min-width:100%}
 .register-table th,.register-table td{border:1px solid var(--border);padding:0}
-.register-table th{background:var(--navy);color:white;font-size:10px;font-weight:500;text-align:center;white-space:nowrap;padding:6px 6px;font-family:Futura,'Jost','DM Sans',sans-serif}
+.register-table th{background:var(--navy);color:white;font-size:10px;font-weight:500;text-align:center;white-space:nowrap;padding:6px 6px;font-family:'DM Sans',sans-serif}
 .register-table .name-col{background:var(--paper-warm);text-align:left;padding:8px 12px;font-size:13px;font-weight:500;white-space:nowrap;position:sticky;left:0;z-index:2;min-width:128px;border-right:2px solid var(--border)}
 .register-table .name-header{position:sticky;left:0;z-index:3;background:var(--navy)}
 .register-table .date-header{min-width:42px;font-size:10px;line-height:1.3}
@@ -226,7 +226,7 @@ body{font-family:Futura,'Jost','DM Sans',sans-serif;background:var(--paper);colo
 /* DATES VIEW */
 .term-block-header{display:flex;align-items:center;justify-content:space-between;padding:10px 0 8px;}
 .term-block-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;color:var(--navy);}
-.lesson-count-badge{font-size:11px;color:var(--ink-muted);margin-left:8px;font-family:Futura,'Jost','DM Sans',sans-serif;font-weight:400;}
+.lesson-count-badge{font-size:11px;color:var(--ink-muted);margin-left:8px;font-family:'DM Sans',sans-serif;font-weight:400;}
 /* INVOICE LOG */
 .inv-log-row{display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px;}
 .inv-log-row:last-child{border-bottom:none;}
@@ -422,7 +422,7 @@ body{font-family:Futura,'Jost','DM Sans',sans-serif;background:var(--paper);colo
   <div class="modal"><div class="modal-handle"></div><div id="modalBody"></div></div>
 </div>
 <header class="app-header">
-  <div class="app-title-block"><div class="app-title">Harrow Chinese School Dance Group</div><div class="app-subtitle">Register & Invoice System · v3.2</div></div>
+  <div class="app-title-block"><div class="app-title">Harrow Chinese School Dance Group</div><div class="app-subtitle">Register & Invoice System · v3.3</div></div>
   <button class="undo-btn" id="undoBtn" onclick="performUndo()" title="Undo last action">↩ Undo</button>
   <div class="sync-status sync-none" id="syncStatus" onclick="syncNow()">Offline</div>
 </header>
@@ -434,7 +434,7 @@ body{font-family:Futura,'Jost','DM Sans',sans-serif;background:var(--paper);colo
       <div style="display:flex;align-items:center;gap:0;">
         <button class="btn btn-sm btn-ghost" onclick="stepRegisterYear(-1)" style="border-radius:var(--radius-sm) 0 0 var(--radius-sm);border-right:none;padding:7px 11px;font-size:16px;" title="Previous year">‹</button>
         <div style="position:relative;flex:1;">
-          <button id="regYearBtn" onclick="toggleYearDropdown()" style="width:100%;padding:7px 12px;border:1.5px solid var(--border);border-radius:0;background:white;font-family:Futura,'Jost','DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--navy);cursor:pointer;text-align:center;display:block;">—</button>
+          <button id="regYearBtn" onclick="toggleYearDropdown()" style="width:100%;padding:7px 12px;border:1.5px solid var(--border);border-radius:0;background:white;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--navy);cursor:pointer;text-align:center;display:block;">—</button>
           <div id="regYearDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);z-index:50;max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(26,35,64,.12);" id="regYearDropdown"></div>
         </div>
         <button class="btn btn-sm btn-ghost" onclick="stepRegisterYear(1)" style="border-radius:0 var(--radius-sm) var(--radius-sm) 0;border-left:none;padding:7px 11px;font-size:16px;" title="Next year">›</button>
@@ -564,6 +564,7 @@ body{font-family:Futura,'Jost','DM Sans',sans-serif;background:var(--paper);colo
       </div>
     </div></div>
     <div class="card fade-in"><div class="card-header"><span class="card-title">Term Management</span><span style="font-size:11px;color:var(--ink-muted);">Add terms from the Dates tab</span></div><div class="card-body"><div id="termManageList"></div></div></div>
+    <div class="card fade-in"><div class="card-header"><span class="card-title">Invoice Weighting</span><span style="font-size:11px;color:var(--ink-muted);">Parts → live %</span></div><div class="card-body"><p style="font-size:12px;color:var(--ink-muted);margin-bottom:12px;line-height:1.5;">Each teacher gets a share of the lesson fee proportional to their weight in parts. The percentage shown is calculated from the total weight of all teachers present. Default is 1 part each (equal split).</p><div id="weightingList"></div><button class="btn btn-primary" style="margin-top:12px;" onclick="saveWeightings()">Save Weightings</button></div></div>
     <div class="card fade-in" id="teacherSettingsCard"><div class="card-header"><span class="card-title">Teacher Invoice Details</span></div><div id="teacherSettingsBody"></div></div>
     <div style="height:24px;"></div>
   </div>
@@ -730,6 +731,8 @@ function loadLocal(){
       if(!APP.measurementUnit)APP.measurementUnit='metric';
       if(!APP.combinedInvoices)APP.combinedInvoices=[];
       if(!APP.invoiceLog)APP.invoiceLog=[];
+      // Migration: ensure every teacher has an invoiceWeight (default 1 part)
+      APP.teachers.forEach(t=>{if(t.invoiceWeight===undefined||t.invoiceWeight===null||t.invoiceWeight==='')t.invoiceWeight=1;});
       // If we have real data, always treat as set up — prevents welcome screen on cached devices
       if(!APP.setupDone && (APP.terms.length||APP.teachers.length||APP.students.length)){
         APP.setupDone=true;
@@ -1411,7 +1414,7 @@ function buildYearViewTable(terms){
       const isFirstMonth=mi===0;
       const isLastMonth=mi===monthEntries.length-1;
       // Term label cell spans all months of this term
-      const termCell=isFirstMonth?`<td class="yterm-label" rowspan="${monthEntries.length}" style="vertical-align:top;padding-top:8px;"><div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--navy);">${termName}</div><div style="font-size:11px;color:var(--ink-muted);font-family:Futura,'Jost','DM Sans',sans-serif;">${termYear}</div><div style="font-size:10px;color:var(--ink-muted);margin-top:4px;">${countTxt}</div></td>`:'';
+      const termCell=isFirstMonth?`<td class="yterm-label" rowspan="${monthEntries.length}" style="vertical-align:top;padding-top:8px;"><div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--navy);">${termName}</div><div style="font-size:11px;color:var(--ink-muted);font-family:'DM Sans',sans-serif;">${termYear}</div><div style="font-size:10px;color:var(--ink-muted);margin-top:4px;">${countTxt}</div></td>`:'';
       // Date cells
       const dateCells=[];
       for(let i=0;i<maxDates;i++){
@@ -1980,7 +1983,7 @@ function openProfile(id){
       </button>
       <div class="prof-hd-av" style="background:${type==='teacher'?'var(--navy)':'var(--teal)'};">${ini(p.name)}</div>
       <div style="flex:1;">
-        <div class="prof-hd-name">${p.name}${age?` <span style="font-size:13px;font-weight:400;color:var(--ink-muted);font-family:Futura,'Jost','DM Sans',sans-serif;">${age}</span>`:''}</div>
+        <div class="prof-hd-name">${p.name}${age?` <span style="font-size:13px;font-weight:400;color:var(--ink-muted);font-family:'DM Sans',sans-serif;">${age}</span>`:''}</div>
         <div class="prof-hd-meta">${meta}</div>
       </div>
       <button class="btn btn-sm btn-ghost" onclick="showEditPersonModal('${type}','${id}')">Edit</button>
@@ -2180,20 +2183,25 @@ function loadInvoicesPage(){
 function calcPay(teacherId,fromId,toId){
   const fi=APP.terms.findIndex(t=>t.id===fromId),ti=APP.terms.findIndex(t=>t.id===toId);
   if(fi<0||ti<0)return null;
+  const myTeacher=APP.teachers.find(t=>t.id===teacherId);
+  if(!myTeacher)return null;
+  const myWeight=parseFloat(myTeacher.invoiceWeight)||1;
   let total=0;const breakdown=[];
   APP.terms.slice(fi,ti+1).forEach(term=>{
     const lessons=term.dates.filter(d=>d.type==='lesson').sort((a,b)=>a.date.localeCompare(b.date));
     let termPay=0,attended=0;const sessions=[];
     lessons.forEach(d=>{
-      const pc=APP.teachers.filter(t=>!t.archived&&APP.attendance[`${term.id}|${d.id}|${t.id}`]==='present').length;
+      // Sum the weights of all present teachers for this lesson
+      const presentTeachers=APP.teachers.filter(t=>!t.archived&&APP.attendance[`${term.id}|${d.id}|${t.id}`]==='present');
+      const weightSum=presentTeachers.reduce((s,t)=>s+(parseFloat(t.invoiceWeight)||1),0);
       const ip=APP.attendance[`${term.id}|${d.id}|${teacherId}`]==='present';
-      if(ip&&pc>0){
-        // Round share to nearest penny to avoid floating point accumulation (e.g. 70/3 = 23.333...)
-        const share=Math.round((APP.settings.lessonValue/pc)*100)/100;
-        termPay+=share;attended++;sessions.push({date:d.date,teacherCount:pc,share});
+      if(ip&&weightSum>0){
+        // Weighted share: this teacher's weight / total weight of all present teachers
+        const share=Math.round((APP.settings.lessonValue*myWeight/weightSum)*100)/100;
+        termPay+=share;attended++;
+        sessions.push({date:d.date,teacherCount:presentTeachers.length,weightSum,share});
       }
     });
-    // Round termPay to 2dp to eliminate any residual float error
     termPay=Math.round(termPay*100)/100;
     breakdown.push({term,sessions,termPay,attended,total:lessons.length});total+=termPay;
   });
@@ -2210,8 +2218,8 @@ function previewInvoice(){
   const issueDate=customDate?new Date(customDate+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   const invNum=`${teacher.invoicePrefix||'INV'}-${APP.settings.academicYear}-001`;
   const rows=calc.breakdown.filter(b=>b.sessions.length>0).map(b=>{
-    const groups={};b.sessions.forEach(s=>{if(!groups[s.teacherCount])groups[s.teacherCount]={count:0,share:s.share};groups[s.teacherCount].count++;});
-    const detail=Object.entries(groups).map(([n,g])=>`${g.count}×£${g.share.toFixed(2)}`).join(', ');
+    const groups={};b.sessions.forEach(s=>{const k=s.share.toFixed(2);if(!groups[k])groups[k]={count:0,share:s.share};groups[k].count++;});
+    const detail=Object.values(groups).map(g=>`${g.count}×£${g.share.toFixed(2)}`).join(', ');
     return`<tr><td>${b.term.label}</td><td style="text-align:center;">${b.attended} / ${b.total}</td><td style="font-size:11px;color:var(--ink-soft);">${detail}</td><td style="text-align:right;font-weight:600;">£${b.termPay.toFixed(2)}</td></tr>`;
   }).join('');
   document.getElementById('invoicePreviewArea').innerHTML=`<div class="invoice-preview fade-in">
@@ -2268,8 +2276,8 @@ function genPDF(teacherId,fromId,toId,customDate){
   doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,8,'F');doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
   ['Term','Lessons Attended','Breakdown','Amount'].forEach((h,i)=>doc.text(h,cols[i]+2,y+5.5));y+=8;
   calc.breakdown.filter(b=>b.sessions.length>0).forEach((b,ri)=>{
-    const groups={};b.sessions.forEach(s=>{if(!groups[s.teacherCount])groups[s.teacherCount]={count:0,share:s.share};groups[s.teacherCount].count++;});
-    const detail=Object.entries(groups).map(([n,g])=>`${g.count}x£${g.share.toFixed(2)}`).join(', ');
+    const groups={};b.sessions.forEach(s=>{const k=s.share.toFixed(2);if(!groups[k])groups[k]={count:0,share:s.share};groups[k].count++;});
+    const detail=Object.values(groups).map(g=>`${g.count}x£${g.share.toFixed(2)}`).join(', ');
     doc.setFillColor(...(ri%2===0?[255,255,255]:[244,240,234]));doc.rect(M,y,W-M*2,8,'F');
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(26,35,64);doc.text(b.term.label,cols[0]+2,y+5.5);
     doc.text(`${b.attended} / ${b.total}`,cols[1]+2,y+5.5);
@@ -2302,6 +2310,55 @@ function loadSettingsPage(){
   document.getElementById('termManageList').innerHTML=APP.terms.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:600;font-size:14px;">${t.label}</div><div style="font-size:12px;color:var(--ink-muted);">${t.dates.filter(d=>d.type==='lesson').length} lessons · ${t.dates.filter(d=>d.type==='performance').length} performances</div></div><div style="display:flex;gap:6px;"><button class="btn btn-sm btn-ghost" onclick="showEditTermModal('${t.id}')">Edit</button><button class="btn btn-sm" style="background:var(--salmon-light);color:var(--crimson);" onclick="confirmDeleteTerm('${t.id}')">Delete</button></div></div>`).join('');
   const teachers=APP.teachers.filter(t=>!t.archived);
   document.getElementById('teacherSettingsBody').innerHTML=teachers.length?teachers.map(t=>`<div style="padding:14px 16px;border-bottom:1px solid var(--border);"><div style="font-weight:700;font-size:14px;margin-bottom:10px;">${t.name}</div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="ts_addr_${t.id}" rows="3">${t.address||''}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="ts_bank_${t.id}" value="${t.bankName||''}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="ts_sort_${t.id}" value="${t.sortCode||''}"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="ts_acc_${t.id}" value="${t.accountNo||''}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="ts_pfx_${t.id}" value="${t.invoicePrefix||''}"></div></div><button class="btn btn-sm btn-ghost" onclick="saveTeacherDetails('${t.id}')">Save ${t.name.split(' ')[0]}'s Details</button></div>`).join(''):`<div style="padding:14px 16px;color:var(--ink-muted);font-size:13px;">No teachers added yet.</div>`;
+  renderWeightingList();
+}
+function renderWeightingList(){
+  const teachers=APP.teachers.filter(t=>!t.archived);
+  const list=document.getElementById('weightingList');
+  if(!list)return;
+  if(!teachers.length){list.innerHTML='<div style="font-size:13px;color:var(--ink-muted);">No teachers added yet.</div>';return;}
+  list.innerHTML=teachers.map(t=>{
+    const w=parseFloat(t.invoiceWeight)||1;
+    return`<div class="weight-row" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="flex:1;font-size:14px;font-weight:600;color:var(--navy);">${t.name}</span>
+      <input type="number" min="0" step="0.5" class="form-input weight-input" id="wt_${t.id}" data-tid="${t.id}" value="${w}" style="width:70px;text-align:right;padding:6px 8px;font-size:14px;font-weight:600;" oninput="updateWeightPercents()">
+      <span style="font-size:11px;color:var(--ink-muted);">part${w!==1?'s':''}</span>
+      <span class="weight-pct" id="wt_pct_${t.id}" style="min-width:54px;text-align:right;font-size:13px;font-weight:600;color:var(--teal);">—</span>
+    </div>`;
+  }).join('');
+  updateWeightPercents();
+}
+function updateWeightPercents(){
+  const teachers=APP.teachers.filter(t=>!t.archived);
+  let total=0;
+  const weights={};
+  teachers.forEach(t=>{
+    const el=document.getElementById('wt_'+t.id);
+    const w=el?parseFloat(el.value)||0:(parseFloat(t.invoiceWeight)||1);
+    weights[t.id]=w;total+=w;
+  });
+  teachers.forEach(t=>{
+    const pctEl=document.getElementById('wt_pct_'+t.id);
+    if(!pctEl)return;
+    if(total>0){
+      const pct=(weights[t.id]/total)*100;
+      pctEl.textContent=pct.toFixed(1)+'%';
+      pctEl.style.color=weights[t.id]===0?'var(--ink-muted)':'var(--teal)';
+    } else {
+      pctEl.textContent='—';
+    }
+  });
+}
+function saveWeightings(){
+  pushUndoSnapshot();
+  APP.teachers.filter(t=>!t.archived).forEach(t=>{
+    const el=document.getElementById('wt_'+t.id);
+    if(el){
+      const v=parseFloat(el.value);
+      t.invoiceWeight=isNaN(v)?1:v;
+    }
+  });
+  saveLocal();markDirty();showToast('Weightings saved ✓');
 }
 function saveSettings(){APP.settings.schoolName=document.getElementById('settSchoolName').value;APP.settings.schoolAddress=document.getElementById('settSchoolAddress').value;APP.settings.lessonValue=parseFloat(document.getElementById('settLessonValue').value)||70;APP.settings.academicYear=document.getElementById('settAcYear').value;saveLocal();showToast('Saved ✓');markDirty();}
 function saveGoogleSettings(){} // stub — replaced by Firebase
