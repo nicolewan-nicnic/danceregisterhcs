@@ -422,7 +422,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
   <div class="modal"><div class="modal-handle"></div><div id="modalBody"></div></div>
 </div>
 <header class="app-header">
-  <div class="app-title-block"><div class="app-title">Harrow Chinese School Dance Group</div><div class="app-subtitle">Register & Invoice System · v3.3</div></div>
+  <div class="app-title-block"><div class="app-title">Harrow Chinese School Dance Group</div><div class="app-subtitle">Register & Invoice System · v3.5</div></div>
   <button class="undo-btn" id="undoBtn" onclick="performUndo()" title="Undo last action">↩ Undo</button>
   <div class="sync-status sync-none" id="syncStatus" onclick="syncNow()">Offline</div>
 </header>
@@ -981,14 +981,14 @@ function renderInvoiceLog(){
   const statusLabel={sent:'Sent',paid:'Paid',overdue:'Overdue',none:'Pending'};
   el.innerHTML=log.map(e=>{
     const teacher=APP.teachers.find(t=>t.id===e.teacherId);
-    const tLabel=teacher?teacher.name:(e.teacherName||'Unknown');
+    const tLabel=esc(teacher?teacher.name:(e.teacherName||'Unknown'));
     const toTerm=e.toTermId?APP.terms.find(t=>t.id===e.toTermId):null;
     const s=e.status||'sent';
     return`<div class="inv-log-row">
       <div class="inv-log-dot ${s}"></div>
       <div class="inv-log-body">
         <div class="inv-log-teacher">${tLabel}${e.combined?' <span style="font-size:10px;background:#d0d8f0;color:var(--navy);padding:1px 6px;border-radius:20px;">combined</span>':''}</div>
-        <div class="inv-log-detail">${e.date}${toTerm?' · up to '+toTerm.label:''}${e.notes?' · '+e.notes:''}</div>
+        <div class="inv-log-detail">${esc(e.date)}${toTerm?' · up to '+esc(toTerm.label):''}${e.notes?' · '+esc(e.notes):''}</div>
       </div>
       <span class="inv-log-status ${s}">${statusLabel[s]||s}</span>
       <div class="inv-log-actions">
@@ -1006,7 +1006,7 @@ function showAddLogEntry(prefillTeacherId,prefillCombined){
     <p style="font-size:12px;color:var(--ink-muted);margin-bottom:14px;">Record that an invoice has been sent. This is independent of PDF generation.</p>
     <div class="form-group"><label class="form-label">Teacher / Payee</label>
       <select class="form-input" id="log_teacher">
-        ${teachers.map(t=>`<option value="${t.id}" ${t.id===prefillTeacherId?'selected':''}>${t.name}</option>`).join('')}
+        ${teachers.map(t=>`<option value="${t.id}" ${t.id===prefillTeacherId?'selected':''}>${esc(t.name)}</option>`).join('')}
       </select>
     </div>
     <div class="form-row">
@@ -1041,7 +1041,7 @@ function editLogEntry(id){
   openModal(`<div class="modal-title">Edit Log Entry</div>
     <div class="form-group"><label class="form-label">Teacher / Payee</label>
       <select class="form-input" id="log_teacher">
-        ${APP.teachers.filter(t=>!t.archived).map(t=>`<option value="${t.id}" ${t.id===e.teacherId?'selected':''}>${t.name}</option>`).join('')}
+        ${APP.teachers.filter(t=>!t.archived).map(t=>`<option value="${t.id}" ${t.id===e.teacherId?'selected':''}>${esc(t.name)}</option>`).join('')}
       </select>
     </div>
     <div class="form-row">
@@ -1106,13 +1106,13 @@ function showCombinedInvoiceModal(){
     <p style="font-size:12px;color:var(--ink-muted);margin-bottom:14px;">The combined invoice is issued in the payee's name, with all selected teachers' lessons merged into one total. Saves as the default combination.</p>
     <div class="form-group"><label class="form-label">Invoice payee (whose name &amp; bank details appear)</label>
       <select class="form-input" id="comb_payee">
-        ${teachers.map(t=>`<option value="${t.id}" ${t.id===saved.payeeId?'selected':''}>${t.name}</option>`).join('')}
+        ${teachers.map(t=>`<option value="${t.id}" ${t.id===saved.payeeId?'selected':''}>${esc(t.name)}</option>`).join('')}
       </select>
     </div>
     <div class="form-group"><label class="form-label">Include lessons from</label>
       ${teachers.map(t=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px;">
         <input type="checkbox" id="comb_inc_${t.id}" ${(saved.includeIds||[]).includes(t.id)?'checked':''} style="width:16px;height:16px;">
-        ${t.name}
+        ${esc(t.name)}
       </label>`).join('')}
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveCombinedConfig()">Save &amp; Preview</button></div>`);
@@ -1144,7 +1144,7 @@ function renderCombinedSummary(){
     <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:4px;">Payee</div>
     <div style="font-weight:700;font-size:14px;color:var(--navy);margin-bottom:8px;">${payee.name}</div>
     <div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:4px;">Combining lessons from</div>
-    <div style="font-size:13px;color:var(--ink);">${included.map(t=>`<span style="display:inline-block;background:var(--paper-warm);border:1px solid var(--border);border-radius:20px;padding:2px 10px;margin:2px;font-size:12px;">${t.name}</span>`).join('')}</div>
+    <div style="font-size:13px;color:var(--ink);">${included.map(t=>`<span style="display:inline-block;background:var(--paper-warm);border:1px solid var(--border);border-radius:20px;padding:2px 10px;margin:2px;font-size:12px;">${esc(t.name)}</span>`).join('')}</div>
   </div>`;
   if(act){act.style.display='block';}
 }
@@ -1182,17 +1182,40 @@ function downloadCombinedInvoice(){
   // Auto-log as sent for the payee and all included teachers
   const today=new Date().toISOString().slice(0,10);
   pushUndoSnapshot();
-  conf.includeIds.forEach(tid=>{
-    APP.invoiceLog.push({id:'LOG'+Date.now()+'_'+tid,teacherId:tid,status:'sent',date:today,toTermId:toId||null,notes:'Combined invoice',combined:true});
+  const logBase=Date.now();
+  conf.includeIds.forEach((tid,idx)=>{
+    APP.invoiceLog.push({id:'LOG'+(logBase+idx)+'_'+tid,teacherId:tid,status:'sent',date:today,toTermId:toId||null,notes:'Combined invoice',combined:true});
   });
   saveLocal();markDirty();renderInvoiceLog();
   showToast('Downloading combined PDF…');
 }
 
+// Draw the navy footer strip on EVERY page of the doc (call after all content drawn).
+// Fixes Bug 3: footer was previously only on the final page.
+function drawFooterOnAllPages(doc,W,academicYear,issueDate){
+  const total=doc.getNumberOfPages();
+  for(let p=1;p<=total;p++){
+    doc.setPage(p);
+    doc.setFillColor(26,35,64);doc.rect(0,284,W,13,'F');
+    doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(200,200,200);
+    doc.text(`Harrow Chinese School Dance Group · ${academicYear} · ${issueDate}`,W/2,292,{align:'center'});
+    // Page number when there are multiple pages
+    if(total>1){
+      doc.text(`Page ${p} of ${total}`,W-18,292,{align:'right'});
+    }
+  }
+}
+function nextInvoiceNumber(teacherId){
+  // Count how many non-combined invoice log entries exist for this teacher
+  // to derive the next sequential number (e.g. AB-2024-25-003)
+  const count=(APP.invoiceLog||[]).filter(e=>e.teacherId===teacherId&&!e.combined).length;
+  return String(count+1).padStart(3,'0');
+}
 function fmtInvoiceDate(iso){
-  if(!iso)return new Date().toLocaleDateString('en-GB');
+  const opts={day:'numeric',month:'long',year:'numeric'};
+  if(!iso)return new Date().toLocaleDateString('en-GB',opts);
   const d=new Date(iso+'T12:00:00');
-  return d.toLocaleDateString('en-GB');
+  return d.toLocaleDateString('en-GB',opts);
 }
 function genCombinedPDF(payee,calc,customDate){
   const{jsPDF}=window.jspdf;
@@ -1228,14 +1251,27 @@ function genCombinedPDF(payee,calc,customDate){
   const cols=[M,M+70,M+140];
   doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,8,'F');doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
   ['Term','Lessons','Amount'].forEach((h,i)=>doc.text(h,cols[i]+2,y+5.5));y+=8;
-  calc.breakdown.filter(b=>b.termPay>0).forEach((b,ri)=>{
-    doc.setFillColor(...(ri%2===0?[255,255,255]:[244,240,234]));doc.rect(M,y,W-M*2,8,'F');
+  let cmbRowIdx=0;
+  const cmbRows=calc.breakdown.filter(b=>b.termPay>0);
+  cmbRows.forEach((b,idx)=>{
+    // Smart page break: ensures total row never sits alone on a new page
+    const isLast=idx===cmbRows.length-1;
+    const needed=isLast?(8+10+18+13):(8+13);
+    if(y+needed>297){
+      doc.addPage();
+      y=18;
+      doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,8,'F');doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+      ['Term','Lessons','Amount'].forEach((h,i)=>doc.text(h,cols[i]+2,y+5.5));y+=8;
+      cmbRowIdx=0;
+    }
+    doc.setFillColor(...(cmbRowIdx%2===0?[255,255,255]:[244,240,234]));doc.rect(M,y,W-M*2,8,'F');
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(26,35,64);
     doc.text(b.term.label,cols[0]+2,y+5.5);
     doc.text(`${b.attended}`,cols[1]+2,y+5.5);
     doc.setFont('helvetica','bold');doc.text(`£${b.termPay.toFixed(2)}`,W-M-2,y+5.5,{align:'right'});
-    doc.setFont('helvetica','normal');y+=8;
+    doc.setFont('helvetica','normal');y+=8;cmbRowIdx++;
   });
+  // Total row — guaranteed to fit via smart page-break above
   doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,10,'F');doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(255,255,255);doc.text('TOTAL DUE',cols[0]+2,y+7);doc.setTextColor(232,160,144);doc.text(`£${calc.total.toFixed(2)}`,W-M-2,y+7,{align:'right'});y+=16;
   // Payment details — Name (was Bank), Sort Code, Account
   if(payee.accountNo||payee.sortCode){
@@ -1244,9 +1280,8 @@ function genCombinedPDF(payee,calc,customDate){
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(26,35,64);
     doc.text(`Name: ${payee.name}   Sort Code: ${payee.sortCode||'—'}   Account: ${payee.accountNo||'—'}`,M+4,y+12);
   }
-  // Footer (kept as small navy strip)
-  doc.setFillColor(26,35,64);doc.rect(0,284,W,13,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(200,200,200);
-  doc.text(`Harrow Chinese School Dance Group · ${APP.settings.academicYear} · ${issueDate}`,W/2,292,{align:'center'});
+  // Footer drawn on every page (so multi-page invoices are consistent)
+  drawFooterOnAllPages(doc,W,APP.settings.academicYear,issueDate);
   doc.save(`${payee.name.replace(/ /g,'_')}_Combined_Invoice_${APP.settings.academicYear}.pdf`);
 }
 
@@ -1280,11 +1315,12 @@ function performUndo(){
   APP.combinedInvoices=snap.combinedInvoices||[];
   APP.invoiceLog=snap.invoiceLog||[];
   saveLocal();markDirty();
-  // Refresh whichever page is active
+  // Refresh whichever page is active (Bug 7: Invoices page was missing)
   const activePage=document.querySelector('.page.active')?.id;
   if(activePage==='pageRegister')loadRegister();
   if(activePage==='pageDates'){populateTermSelectors();loadDatesPage();}
   if(activePage==='pagePeople')loadPeoplePage();
+  if(activePage==='pageInvoices'){loadInvoicesPage();renderInvoiceLog();renderInvTracker();}
   if(activePage==='pageSettings'){loadSettingsPage();populateTermSelectors();}
   populateTermSelectors();
   showUndoBtn(_undoStack.length>0);
@@ -1727,7 +1763,7 @@ function loadRegister(){
 }
 function sR(l,c){return`<tr class="section-row"><td class="sticky-name">${l}</td>${'<td></td>'.repeat(c)}</tr>`;}
 function pR(p,type,term,dates,draggable){
-  const handle=draggable?`<td class="name-col" data-pid="${p.id}"><div style="display:flex;align-items:center;gap:6px;"><span class="drag-handle" draggable="false">⋮⋮</span>${p.name}${p.classStatus==='both'?' <span class="class-badge badge-both" style="font-size:9px;">T</span>':''}</div></td>`:`<td class="name-col">${p.name}${p.classStatus==='both'?' <span class="class-badge badge-both" style="font-size:9px;">T</span>':''}</td>`;
+  const handle=draggable?`<td class="name-col" data-pid="${p.id}"><div style="display:flex;align-items:center;gap:6px;"><span class="drag-handle" draggable="false">⋮⋮</span>${esc(p.name)}${p.classStatus==='both'?' <span class="class-badge badge-both" style="font-size:9px;">T</span>':''}</div></td>`:`<td class="name-col">${esc(p.name)}${p.classStatus==='both'?' <span class="class-badge badge-both" style="font-size:9px;">T</span>':''}</td>`;
   let r=`<tr data-pid="${p.id}" data-draggable="${draggable}">${handle}`;
   dates.forEach(d=>{
     const key=`${term.id}|${d.id}|${p.id}`;const att=APP.attendance[key]||'empty';
@@ -1943,8 +1979,8 @@ function loadPeoplePage(){
   renderProfileSidebar();
   setPeopleView(_peopleView);
   // Sync hidden legacy lists
-  document.getElementById('teacherList').innerHTML=APP.teachers.filter(t=>!t.archived).map(t=>`<div>${t.name}</div>`).join('');
-  document.getElementById('studentList').innerHTML=APP.students.filter(s=>!s.archived).map(s=>`<div>${s.name}</div>`).join('');
+  document.getElementById('teacherList').innerHTML=APP.teachers.filter(t=>!t.archived).map(t=>`<div>${esc(t.name)}</div>`).join('');
+  document.getElementById('studentList').innerHTML=APP.students.filter(s=>!s.archived).map(s=>`<div>${esc(s.name)}</div>`).join('');
   const u=APP.measurementUnit||'metric';
   document.getElementById('unitCm').className=u==='metric'?'active':'';
   document.getElementById('unitIn').className=u==='imperial'?'active':'';
@@ -1958,11 +1994,11 @@ function renderProfileSidebar(){
   let html='';
   if(teachers.length){
     html+='<div class="prof-sb-section">Teachers</div>';
-    html+=teachers.map(t=>`<div class="prof-sb-item${_activeProfId===t.id?' active':''}" onclick="openProfile('${t.id}')"><div class="prof-sb-av">${ini(t.name)}</div><div><div class="prof-sb-name">${t.name}</div><div class="prof-sb-meta">Teacher</div></div></div>`).join('');
+    html+=teachers.map(t=>`<div class="prof-sb-item${_activeProfId===t.id?' active':''}" onclick="openProfile('${t.id}')"><div class="prof-sb-av">${ini(t.name)}</div><div><div class="prof-sb-name">${esc(t.name)}</div><div class="prof-sb-meta">Teacher</div></div></div>`).join('');
   }
   if(students.length){
     html+='<div class="prof-sb-section">Students</div>';
-    html+=students.map(s=>`<div class="prof-sb-item${_activeProfId===s.id?' active':''}" onclick="openProfile('${s.id}')"><div class="prof-sb-av" style="background:var(--teal);">${ini(s.name)}</div><div><div class="prof-sb-name">${s.name}</div><div class="prof-sb-meta">${s.classStatus==='junior'?'Junior':s.classStatus==='senior'?'Senior':'Both'}</div></div></div>`).join('');
+    html+=students.map(s=>`<div class="prof-sb-item${_activeProfId===s.id?' active':''}" onclick="openProfile('${s.id}')"><div class="prof-sb-av" style="background:var(--teal);">${ini(s.name)}</div><div><div class="prof-sb-name">${esc(s.name)}</div><div class="prof-sb-meta">${s.classStatus==='junior'?'Junior':s.classStatus==='senior'?'Senior':'Both'}</div></div></div>`).join('');
   }
   document.getElementById('profileSidebar').innerHTML=html||'<div style="padding:16px;font-size:13px;color:var(--ink-muted);">No people yet</div>';
 }
@@ -1983,7 +2019,7 @@ function openProfile(id){
       </button>
       <div class="prof-hd-av" style="background:${type==='teacher'?'var(--navy)':'var(--teal)'};">${ini(p.name)}</div>
       <div style="flex:1;">
-        <div class="prof-hd-name">${p.name}${age?` <span style="font-size:13px;font-weight:400;color:var(--ink-muted);font-family:'DM Sans',sans-serif;">${age}</span>`:''}</div>
+        <div class="prof-hd-name">${esc(p.name)}${age?` <span style="font-size:13px;font-weight:400;color:var(--ink-muted);font-family:'DM Sans',sans-serif;">${age}</span>`:''}</div>
         <div class="prof-hd-meta">${meta}</div>
       </div>
       <button class="btn btn-sm btn-ghost" onclick="showEditPersonModal('${type}','${id}')">Edit</button>
@@ -2107,7 +2143,7 @@ function renderRoster(){
     const latest=getLatestMeasurements(p);
     const age=p.birthYear?` <span style="font-size:10px;color:var(--ink-muted);">(${new Date().getFullYear()-parseInt(p.birthYear)}y)</span>`:'';
     html+=`<tr onclick="openProfile('${p.id}');setPeopleView('profile')" style="cursor:pointer;">
-      <td><strong>${p.name}</strong>${p.chineseName?`<br><span style="font-size:10px;color:var(--ink-muted);">${p.chineseName}</span>`:''}</td>
+      <td><strong>${esc(p.name)}</strong>${p.chineseName?`<br><span style="font-size:10px;color:var(--ink-muted);">${esc(p.chineseName)}</span>`:''}</td>
       <td>${p._type==='teacher'?'Teacher':p.classStatus==='junior'?'Junior':p.classStatus==='senior'?'Senior':'Both'}</td>
       <td>${p.birthYear?p.birthYear+age:'—'}</td>
       ${MEAS_FIELDS.map(mf=>{const dv=dispVal(latest[mf.field],mf.field);return`<td class="${dv===''?'empty-meas':''}">${dv!==''?dv+'<span style="font-size:9px;color:var(--ink-muted);margin-left:1px;">'+dispUnit(mf.field)+'</span>':'—'}</td>`;}).join('')}
@@ -2172,7 +2208,7 @@ function doArchive(type,id){const l=type==='teacher'?APP.teachers:APP.students;c
 // ── INVOICES ──
 function loadInvoicesPage(){
   populateTermSelectors();
-  document.getElementById('invoiceTeacher').innerHTML=APP.teachers.filter(t=>!t.archived).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  document.getElementById('invoiceTeacher').innerHTML=APP.teachers.filter(t=>!t.archived).map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
   // Default invoice date to today if not already set
   const dEl=document.getElementById('invoiceDate');
   if(dEl&&!dEl.value)dEl.value=new Date().toISOString().slice(0,10);
@@ -2189,22 +2225,40 @@ function calcPay(teacherId,fromId,toId){
   let total=0;const breakdown=[];
   APP.terms.slice(fi,ti+1).forEach(term=>{
     const lessons=term.dates.filter(d=>d.type==='lesson').sort((a,b)=>a.date.localeCompare(b.date));
-    let termPay=0,attended=0;const sessions=[];
+    let termPayRaw=0,attended=0;const sessions=[];
     lessons.forEach(d=>{
       // Sum the weights of all present teachers for this lesson
       const presentTeachers=APP.teachers.filter(t=>!t.archived&&APP.attendance[`${term.id}|${d.id}|${t.id}`]==='present');
       const weightSum=presentTeachers.reduce((s,t)=>s+(parseFloat(t.invoiceWeight)||1),0);
       const ip=APP.attendance[`${term.id}|${d.id}|${teacherId}`]==='present';
       if(ip&&weightSum>0){
-        // Weighted share: this teacher's weight / total weight of all present teachers
-        const share=Math.round((APP.settings.lessonValue*myWeight/weightSum)*100)/100;
-        termPay+=share;attended++;
-        sessions.push({date:d.date,teacherCount:presentTeachers.length,weightSum,share});
+        // Compute raw (unrounded) share and accumulate
+        const rawShare=(APP.settings.lessonValue*myWeight/weightSum);
+        termPayRaw+=rawShare;attended++;
+        // Store raw share — we'll round and reconcile below
+        sessions.push({date:d.date,teacherCount:presentTeachers.length,weightSum,rawShare});
       }
     });
-    termPay=Math.round(termPay*100)/100;
+    // Round term total from the raw sum
+    const termPay=Math.round(termPayRaw*100)/100;
+    // Round each session's share, then adjust the last session by the residual
+    // so that the breakdown sums exactly to termPay (avoids "3×£23.33 = £70.00" puzzle)
+    if(sessions.length>0){
+      let roundedSum=0;
+      sessions.forEach(s=>{s.share=Math.round(s.rawShare*100)/100;roundedSum+=s.share;});
+      roundedSum=Math.round(roundedSum*100)/100;
+      const residual=Math.round((termPay-roundedSum)*100)/100;
+      if(residual!==0){
+        // Push the residual into the LAST session so the column maths still works
+        const last=sessions[sessions.length-1];
+        last.share=Math.round((last.share+residual)*100)/100;
+      }
+      // Drop rawShare to keep payload clean
+      sessions.forEach(s=>{delete s.rawShare;});
+    }
     breakdown.push({term,sessions,termPay,attended,total:lessons.length});total+=termPay;
   });
+  // Round grand total once after summing term totals
   total=Math.round(total*100)/100;
   return{total,breakdown};
 }
@@ -2215,8 +2269,8 @@ function previewInvoice(){
   const toId=document.getElementById('invoiceToTerm')?.value||APP.terms[APP.terms.length-1]?.id;
   const calc=calcPay(tid,fromId,toId);if(!calc)return;
   const customDate=document.getElementById('invoiceDate')?.value||'';
-  const issueDate=customDate?new Date(customDate+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-  const invNum=`${teacher.invoicePrefix||'INV'}-${APP.settings.academicYear}-001`;
+  const issueDate=fmtInvoiceDate(customDate);
+  const invNum=`${teacher.invoicePrefix||'INV'}-${APP.settings.academicYear}-${nextInvoiceNumber(tid)}`;
   const rows=calc.breakdown.filter(b=>b.sessions.length>0).map(b=>{
     const groups={};b.sessions.forEach(s=>{const k=s.share.toFixed(2);if(!groups[k])groups[k]={count:0,share:s.share};groups[k].count++;});
     const detail=Object.values(groups).map(g=>`${g.count}×£${g.share.toFixed(2)}`).join(', ');
@@ -2237,9 +2291,9 @@ function previewInvoice(){
         Year: ${APP.settings.academicYear}
       </div>
     </div>
-    <div class="invoice-from-to"><div><div class="invoice-section-label">From (Teacher)</div><div class="invoice-address"><strong>${teacher.name}</strong><br>${(teacher.address||'—').replace(/\n/g,'<br>')}</div></div><div><div class="invoice-section-label">To (School)</div><div class="invoice-address"><strong>Harrow Chinese School Dance Group</strong><br>${APP.settings.schoolAddress.replace(/\n/g,'<br>')}</div></div></div>
+    <div class="invoice-from-to"><div><div class="invoice-section-label">From (Teacher)</div><div class="invoice-address"><strong>${esc(teacher.name)}</strong><br>${esc(teacher.address||'—').replace(/\n/g,'<br>')}</div></div><div><div class="invoice-section-label">To (School)</div><div class="invoice-address"><strong>Harrow Chinese School Dance Group</strong><br>${esc(APP.settings.schoolAddress).replace(/\n/g,'<br>')}</div></div></div>
     <table class="invoice-table"><thead><tr><th>Term</th><th style="text-align:center;">Lessons</th><th>Breakdown</th><th style="text-align:right;">Amount</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="invoice-total-row"><td colspan="3" style="text-align:right;padding-right:12px;">Total Due</td><td style="text-align:right;">£${calc.total.toFixed(2)}</td></tr></tfoot></table>
-    ${(teacher.accountNo||teacher.sortCode)?`<div class="invoice-payment"><div class="invoice-payment-title">Payment Details</div>Name: ${teacher.name} &nbsp;|&nbsp; Sort Code: ${teacher.sortCode||'—'} &nbsp;|&nbsp; Account: ${teacher.accountNo||'—'}</div>`:''}
+    ${(teacher.accountNo||teacher.sortCode)?`<div class="invoice-payment"><div class="invoice-payment-title">Payment Details</div>Name: ${esc(teacher.name)} &nbsp;|&nbsp; Sort Code: ${teacher.sortCode||'—'} &nbsp;|&nbsp; Account: ${teacher.accountNo||'—'}</div>`:''}
   </div>`;
 }
 function genPDF(teacherId,fromId,toId,customDate){
@@ -2255,7 +2309,7 @@ function genPDF(teacherId,fromId,toId,customDate){
   doc.text(APP.settings.schoolAddress.replace(/\n/g,', '),M+26,23);
   // Invoice meta — top right
   const issueDate=fmtInvoiceDate(customDate);
-  const invNum=`${teacher.invoicePrefix||'INV'}-${APP.settings.academicYear}-001`;
+  const invNum=`${teacher.invoicePrefix||'INV'}-${APP.settings.academicYear}-${nextInvoiceNumber(teacherId)}`;
   doc.setFontSize(8);doc.setTextColor(120,128,144);
   doc.text(`Invoice: ${invNum}`,W-M,13,{align:'right'});
   doc.text(`Date: ${issueDate}`,W-M,19,{align:'right'});
@@ -2275,16 +2329,32 @@ function genPDF(teacherId,fromId,toId,customDate){
   const cols=[M,M+52,M+108,M+150];
   doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,8,'F');doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
   ['Term','Lessons Attended','Breakdown','Amount'].forEach((h,i)=>doc.text(h,cols[i]+2,y+5.5));y+=8;
-  calc.breakdown.filter(b=>b.sessions.length>0).forEach((b,ri)=>{
+  let rowIdx=0;
+  const rows=calc.breakdown.filter(b=>b.sessions.length>0);
+  rows.forEach((b,idx)=>{
+    // Smart page break: if this row + total(10) + payment(18) + footer(13) won't fit,
+    // break BEFORE this row so we don't end up with a lone total on a new page.
+    // This is the LAST row check — for non-last rows, just need this row + footer.
+    const isLast=idx===rows.length-1;
+    const needed=isLast?(8+10+18+13):(8+13);
+    if(y+needed>297){
+      doc.addPage();
+      // Redraw column header on new page
+      y=18;
+      doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,8,'F');doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+      ['Term','Lessons Attended','Breakdown','Amount'].forEach((h,i)=>doc.text(h,cols[i]+2,y+5.5));y+=8;
+      rowIdx=0;
+    }
     const groups={};b.sessions.forEach(s=>{const k=s.share.toFixed(2);if(!groups[k])groups[k]={count:0,share:s.share};groups[k].count++;});
     const detail=Object.values(groups).map(g=>`${g.count}x£${g.share.toFixed(2)}`).join(', ');
-    doc.setFillColor(...(ri%2===0?[255,255,255]:[244,240,234]));doc.rect(M,y,W-M*2,8,'F');
+    doc.setFillColor(...(rowIdx%2===0?[255,255,255]:[244,240,234]));doc.rect(M,y,W-M*2,8,'F');
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(26,35,64);doc.text(b.term.label,cols[0]+2,y+5.5);
     doc.text(`${b.attended} / ${b.total}`,cols[1]+2,y+5.5);
     doc.setFontSize(8);doc.setTextColor(90,96,112);doc.text(detail,cols[2]+2,y+5.5);
     doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(26,35,64);doc.text(`£${b.termPay.toFixed(2)}`,W-M-2,y+5.5,{align:'right'});
-    doc.setFont('helvetica','normal');y+=8;
+    doc.setFont('helvetica','normal');y+=8;rowIdx++;
   });
+  // Total row — guaranteed to fit because of the smart page-break in the loop above
   doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,10,'F');doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(255,255,255);doc.text('TOTAL DUE',cols[0]+2,y+7);doc.setTextColor(232,160,144);doc.text(`£${calc.total.toFixed(2)}`,W-M-2,y+7,{align:'right'});y+=16;
   if(teacher.accountNo||teacher.sortCode){
     doc.setFillColor(244,240,234);doc.rect(M,y,W-M*2,18,'F');
@@ -2292,12 +2362,59 @@ function genPDF(teacherId,fromId,toId,customDate){
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(26,35,64);
     doc.text(`Name: ${teacher.name}   Sort Code: ${teacher.sortCode||'—'}   Account: ${teacher.accountNo||'—'}`,M+4,y+12);
   }
-  doc.setFillColor(26,35,64);doc.rect(0,284,W,13,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(200,200,200);
-  doc.text(`Harrow Chinese School Dance Group · ${APP.settings.academicYear} · ${issueDate}`,W/2,292,{align:'center'});
+  // Footer drawn on every page (so multi-page invoices are consistent)
+  drawFooterOnAllPages(doc,W,APP.settings.academicYear,issueDate);
   doc.save(`${teacher.name.replace(/ /g,'_')}_Invoice_${APP.settings.academicYear}.pdf`);
 }
-function downloadSingleInvoice(){const tid=document.getElementById('invoiceTeacher')?.value;const fid=document.getElementById('invoiceFromTerm')?.value||APP.terms[0]?.id;const eid=document.getElementById('invoiceToTerm')?.value||APP.terms[APP.terms.length-1]?.id;const cd=document.getElementById('invoiceDate')?.value||'';if(!tid){showToast('Select a teacher');return;}genPDF(tid,fid,eid,cd);showToast('Downloading…');}
-function downloadAllInvoices(){const fid=document.getElementById('invoiceFromTerm')?.value||APP.terms[0]?.id;const eid=document.getElementById('invoiceToTerm')?.value||APP.terms[APP.terms.length-1]?.id;const cd=document.getElementById('invoiceDate')?.value||'';const t=APP.teachers.filter(x=>!x.archived);if(!t.length){showToast('No teachers');return;}t.forEach((x,i)=>setTimeout(()=>genPDF(x.id,fid,eid,cd),i*700));showToast(`Generating ${t.length} invoices…`);}
+// Auto-log a single invoice download as 'sent' so the next invoice number increments correctly.
+// We use the issue date if provided, otherwise today's date in YYYY-MM-DD.
+function autoLogInvoice(teacherId,toTermId,customDate){
+  const today=customDate||new Date().toISOString().slice(0,10);
+  APP.invoiceLog.push({
+    id:'LOG'+Date.now()+'_'+teacherId,
+    teacherId,
+    status:'sent',
+    date:today,
+    toTermId:toTermId||null,
+    notes:'Auto-logged on download',
+    combined:false
+  });
+}
+function downloadSingleInvoice(){
+  const tid=document.getElementById('invoiceTeacher')?.value;
+  const fid=document.getElementById('invoiceFromTerm')?.value||APP.terms[0]?.id;
+  const eid=document.getElementById('invoiceToTerm')?.value||APP.terms[APP.terms.length-1]?.id;
+  const cd=document.getElementById('invoiceDate')?.value||'';
+  if(!tid){showToast('Select a teacher');return;}
+  pushUndoSnapshot();
+  genPDF(tid,fid,eid,cd);
+  autoLogInvoice(tid,eid,cd);
+  saveLocal();markDirty();renderInvoiceLog();
+  showToast('Downloading & logging…');
+}
+function downloadAllInvoices(){
+  const fid=document.getElementById('invoiceFromTerm')?.value||APP.terms[0]?.id;
+  const eid=document.getElementById('invoiceToTerm')?.value||APP.terms[APP.terms.length-1]?.id;
+  const cd=document.getElementById('invoiceDate')?.value||'';
+  const t=APP.teachers.filter(x=>!x.archived);
+  if(!t.length){showToast('No teachers');return;}
+  pushUndoSnapshot();
+  // Generate PDFs sequentially with stagger; log each as it generates so each
+  // gets a sequentially-increasing invoice number based on the running log count.
+  const logBase=Date.now();
+  t.forEach((x,i)=>setTimeout(()=>{
+    genPDF(x.id,fid,eid,cd);
+    // Use logBase+i to guarantee unique IDs even within the same millisecond
+    const today=cd||new Date().toISOString().slice(0,10);
+    APP.invoiceLog.push({
+      id:'LOG'+(logBase+i)+'_'+x.id,
+      teacherId:x.id,status:'sent',date:today,toTermId:eid||null,
+      notes:'Auto-logged on bulk download',combined:false
+    });
+    if(i===t.length-1){saveLocal();markDirty();renderInvoiceLog();}
+  },i*700));
+  showToast(`Generating ${t.length} invoices…`);
+}
 
 // ── SETTINGS ──
 function loadSettingsPage(){
@@ -2309,7 +2426,7 @@ function loadSettingsPage(){
   const fbTokEl=document.getElementById('settFirebaseToken');if(fbTokEl)fbTokEl.value=APP.settings.firebaseToken||'';
   document.getElementById('termManageList').innerHTML=APP.terms.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:600;font-size:14px;">${t.label}</div><div style="font-size:12px;color:var(--ink-muted);">${t.dates.filter(d=>d.type==='lesson').length} lessons · ${t.dates.filter(d=>d.type==='performance').length} performances</div></div><div style="display:flex;gap:6px;"><button class="btn btn-sm btn-ghost" onclick="showEditTermModal('${t.id}')">Edit</button><button class="btn btn-sm" style="background:var(--salmon-light);color:var(--crimson);" onclick="confirmDeleteTerm('${t.id}')">Delete</button></div></div>`).join('');
   const teachers=APP.teachers.filter(t=>!t.archived);
-  document.getElementById('teacherSettingsBody').innerHTML=teachers.length?teachers.map(t=>`<div style="padding:14px 16px;border-bottom:1px solid var(--border);"><div style="font-weight:700;font-size:14px;margin-bottom:10px;">${t.name}</div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="ts_addr_${t.id}" rows="3">${t.address||''}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="ts_bank_${t.id}" value="${t.bankName||''}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="ts_sort_${t.id}" value="${t.sortCode||''}"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="ts_acc_${t.id}" value="${t.accountNo||''}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="ts_pfx_${t.id}" value="${t.invoicePrefix||''}"></div></div><button class="btn btn-sm btn-ghost" onclick="saveTeacherDetails('${t.id}')">Save ${t.name.split(' ')[0]}'s Details</button></div>`).join(''):`<div style="padding:14px 16px;color:var(--ink-muted);font-size:13px;">No teachers added yet.</div>`;
+  document.getElementById('teacherSettingsBody').innerHTML=teachers.length?teachers.map(t=>`<div style="padding:14px 16px;border-bottom:1px solid var(--border);"><div style="font-weight:700;font-size:14px;margin-bottom:10px;">${esc(t.name)}</div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="ts_addr_${t.id}" rows="3">${esc(t.address||'')}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="ts_bank_${t.id}" value="${esc(t.bankName||'')}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="ts_sort_${t.id}" value="${esc(t.sortCode||'')}"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="ts_acc_${t.id}" value="${esc(t.accountNo||'')}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="ts_pfx_${t.id}" value="${esc(t.invoicePrefix||'')}"></div></div><button class="btn btn-sm btn-ghost" onclick="saveTeacherDetails('${t.id}')">Save ${esc(t.name.split(' ')[0])}'s Details</button></div>`).join(''):`<div style="padding:14px 16px;color:var(--ink-muted);font-size:13px;">No teachers added yet.</div>`;
   renderWeightingList();
 }
 function renderWeightingList(){
@@ -2320,7 +2437,7 @@ function renderWeightingList(){
   list.innerHTML=teachers.map(t=>{
     const w=parseFloat(t.invoiceWeight)||1;
     return`<div class="weight-row" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
-      <span style="flex:1;font-size:14px;font-weight:600;color:var(--navy);">${t.name}</span>
+      <span style="flex:1;font-size:14px;font-weight:600;color:var(--navy);">${esc(t.name)}</span>
       <input type="number" min="0" step="0.5" class="form-input weight-input" id="wt_${t.id}" data-tid="${t.id}" value="${w}" style="width:70px;text-align:right;padding:6px 8px;font-size:14px;font-weight:600;" oninput="updateWeightPercents()">
       <span style="font-size:11px;color:var(--ink-muted);">part${w!==1?'s':''}</span>
       <span class="weight-pct" id="wt_pct_${t.id}" style="min-width:54px;text-align:right;font-size:13px;font-weight:600;color:var(--teal);">—</span>
@@ -2457,7 +2574,13 @@ async function syncToDb(){
       attendance: encodedAttendance,
       invoiceTracker: APP.invoiceTracker,
       studentOrder: APP.studentOrder,
-      settings: sharedSettings
+      settings: sharedSettings,
+      // Bug 5 fix: previously omitted from sync — log entries and combined invoice
+      // configurations were being lost across devices.
+      invoiceLog: APP.invoiceLog||[],
+      combinedInvoices: APP.combinedInvoices||[],
+      // Bug 6 fix: device-shared measurement unit preference
+      measurementUnit: APP.measurementUnit||'metric'
     });
     const resp=await fetch(url,{
       method:'PUT',
@@ -2523,6 +2646,10 @@ async function loadFromDb(silent=false){
     APP.students     = Array.isArray(data.students)    ? data.students    : (APP.students||[]);
     APP.terms        = Array.isArray(data.terms)       ? data.terms       : (APP.terms||[]);
     APP.studentOrder = Array.isArray(data.studentOrder)? data.studentOrder: (APP.studentOrder||[]);
+    // Bug 6 fix: load measurement unit from Firebase so it syncs across devices
+    if(data.measurementUnit==='metric'||data.measurementUnit==='imperial'){
+      APP.measurementUnit=data.measurementUnit;
+    }
 
     // Decode attendance (Firebase forbids | in keys, we encode them as __PIPE__)
     if(data.attendance&&typeof data.attendance==='object'){
@@ -2618,10 +2745,11 @@ function confirmDeleteTerm(termId){
   openModal(`<div class="modal-title">Delete Term</div><p style="color:var(--ink-soft);font-size:14px;margin-bottom:8px;">Delete <strong>${term.label}</strong>?</p>${hasAtt?'<p style="color:var(--crimson);font-size:13px;margin-bottom:16px;">⚠ This term has attendance records which will also be deleted.</p>':'<p style="color:var(--ink-muted);font-size:13px;margin-bottom:16px;">This cannot be undone.</p>'}<div class="modal-footer"><button class="btn btn-ghost" style="flex:1;" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;background:var(--crimson);" onclick="doDeleteTerm('${termId}')">Delete</button></div>`);
 }
 function doDeleteTerm(termId){
+  pushUndoSnapshot();
   if(Object.keys(APP.attendance).some(k=>k.startsWith(termId+'|'))){
     Object.keys(APP.attendance).forEach(k=>{if(k.startsWith(termId+'|'))delete APP.attendance[k];});
   }
-  pushUndoSnapshot();APP.terms=APP.terms.filter(t=>t.id!==termId);
+  APP.terms=APP.terms.filter(t=>t.id!==termId);
   saveLocal();closeModal();loadSettingsPage();populateTermSelectors();showToast('Term deleted');markDirty();
 }
 
