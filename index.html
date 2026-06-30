@@ -200,6 +200,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .year-cal-table td{padding:5px 8px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle}
 .year-cal-table td:last-child{border-right:none}
 .year-cal-table tr:last-child td{border-bottom:none}
+/* Spring term highlight — pink wash across the whole row in year view, 
+   and across the table-wrapper in term view. */
+.year-cal-table tr.spring-row td,
+.year-cal-table tr.spring-row .yterm-label,
+.year-cal-table tr.spring-row .ymonth-cell{background:#fcdcd3!important}
+.cal-table.spring-term tr td.cal-month,
+.cal-table.spring-term tr td.cal-date-cell,
+.cal-table.spring-term tr td.cal-notes{background:#fcdcd3!important}
 .yterm-label{font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:300;color:var(--navy);white-space:nowrap;background:var(--paper-warm);padding:6px 10px;border-right:1px solid var(--border)}
 .ymonth-cell{font-size:12px;font-weight:500;color:var(--ink-soft);background:var(--paper-warm);padding:5px 10px;border-right:1px solid var(--border);white-space:nowrap;min-width:78px}
 .ydate-cell{text-align:center;min-width:36px;padding:3px 2px;border-right:1px solid #ece8e0}
@@ -423,7 +431,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
   <div class="modal"><div class="modal-handle"></div><div id="modalBody"></div></div>
 </div>
 <header class="app-header">
-  <div class="app-title-block"><div class="app-title">Harrow Chinese School Dance Group</div><div class="app-subtitle">Register & Invoice System · v3.6</div></div>
+  <div class="app-title-block"><div class="app-title">Harrow Chinese School Dance Group</div><div class="app-subtitle">Register & Invoice System · v3.7</div></div>
   <button class="undo-btn" id="undoBtn" onclick="performUndo()" title="Undo last action">↩ Undo</button>
   <div class="sync-status sync-none" id="syncStatus" onclick="syncNow()">Offline</div>
 </header>
@@ -1392,6 +1400,9 @@ function buildTermCalBlock(term){
     ?`<span class="lesson-count" style="margin-left:10px;font-size:11px;color:var(--ink-muted);">${lc.ht1} + ${lc.ht2} lessons</span>`
     :`<span class="lesson-count" style="margin-left:10px;font-size:11px;color:var(--ink-muted);">${lc.total} lessons</span>`;
 
+  // Detect Spring so the whole table gets pink wash (vs other terms which use 
+  // the subtle alt-row stripe for monthly readability)
+  const isSpring=term.name==='Spring'||/^Spring\b/.test(term.label);
   let rows='';let rowIdx=0;
   const maxCols=Math.max(5,...Object.values(byMonth).map(({dates})=>dates.length));
   Object.values(byMonth).forEach(({month,dates})=>{
@@ -1403,8 +1414,9 @@ function buildTermCalBlock(term){
       if(d.type==='performance')notes.push({txt:`${ordinal(day)} ${mon} – ${d.label||'Performance'}`,perf:true});
       if(d.type==='junior-cancelled')notes.push({txt:`${ordinal(day)} ${mon}* – Senior class only`,perf:false});
     });
+    // Alt-row stripe only for non-Spring terms — Spring uses its own pink wash via CSS
     const isAlt=rowIdx%2===1;
-    const altBg=isAlt?'background:#fdf5f3;':'';
+    const altBg=(!isSpring&&isAlt)?'background:#fdf5f3;':'';
     const cells=[];
     for(let i=0;i<maxCols;i++){
       const d=dates[i];
@@ -1418,12 +1430,13 @@ function buildTermCalBlock(term){
     rowIdx++;
   });
   const colHeaders=Array.from({length:maxCols},()=>`<th style="min-width:44px;"></th>`).join('');
+  const tableCls=isSpring?'cal-table spring-term':'cal-table';
   return`<div style="margin:0 16px 16px;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 8px;">
       <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--navy);">${term.label}${halfTermHtml}</div>
       <button class="btn btn-sm btn-ghost" onclick="showAddDateModal('${term.id}')" style="font-size:11px;">+ Date</button>
     </div>
-    <div style="overflow-x:auto;"><table class="cal-table"><thead><tr><th>Month</th>${colHeaders}<th>School closed / Special dates</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div style="overflow-x:auto;"><table class="${tableCls}"><thead><tr><th>Month</th>${colHeaders}<th>School closed / Special dates</th></tr></thead><tbody>${rows}</tbody></table></div>
   </div>`;
 }
 
@@ -1471,8 +1484,11 @@ function buildYearViewTable(terms){
         if(d.type==='performance')notes.push(`<span style="color:var(--crimson);font-style:italic;">*${ordinal(day)} ${mon} – ${d.label||'Performance'}</span>`);
         if(d.type==='junior-cancelled')notes.push(`<span style="color:var(--ink-soft);">*${ordinal(day)} ${mon} – Senior only</span>`);
       });
-      const altBg=ti%2===1?'background:#fdf5f3;':'';
-      rows.push(`<tr style="${altBg}">${termCell}<td class="ymonth-cell" style="${altBg}">${me.month}</td>${dateCells.join('')}<td class="ynotes-cell" style="${altBg}">${notes.join('<br>')}</td></tr>`);
+      // Spring term gets a clearly-visible pink wash (CSS class). Other terms
+      // are left transparent so the table reads cleanly against the page.
+      const isSpring=term.name==='Spring'||/^Spring\b/.test(term.label);
+      const rowCls=isSpring?'spring-row':'';
+      rows.push(`<tr class="${rowCls}">${termCell}<td class="ymonth-cell">${me.month}</td>${dateCells.join('')}<td class="ynotes-cell">${notes.join('<br>')}</td></tr>`);
     });
     // Add divider between terms (except after last)
     if(ti<terms.length-1){
@@ -1494,11 +1510,12 @@ function buildYearViewTable(terms){
   </div>`;
 }
 
-// Export the dates table + legend as a transparent PNG.
-// We clone the live nodes into an off-screen container so the user's view isn't
-// disturbed, strip out controls / lesson counts / "+ Date" buttons, then rasterise
-// with html2canvas. Output is downscaled and re-encoded as a moderately-compressed
-// PNG to keep file size reasonable.
+// Export the dates table + legend as a transparent, high-resolution PNG.
+// We clone the live nodes into an off-screen container, strip out controls /
+// lesson counts / "+ Date" buttons, inject larger fonts scoped to the export
+// stage, then rasterise with html2canvas at a high pixel-ratio. Spring term
+// retains its pink wash (other alt-row stripes are removed so transparency
+// shows through everywhere else).
 async function exportDatesImage(){
   if(typeof html2canvas==='undefined'){
     showToast('Image library not loaded — check your connection');
@@ -1510,18 +1527,47 @@ async function exportDatesImage(){
     showToast('Nothing to export yet');
     return;
   }
-  showToast('Preparing image…');
+  showToast('Preparing high-resolution image…');
 
   // Build an off-screen export container. Positioned far off-screen but still
   // rendered (not display:none) so html2canvas can measure it.
   const stage=document.createElement('div');
-  stage.style.cssText='position:fixed;left:-99999px;top:0;background:transparent;padding:16px;font-family:\'DM Sans\',sans-serif;';
-  // Width hint helps html2canvas size things correctly
-  stage.style.width=Math.max(wrapper.scrollWidth,720)+'px';
+  stage.id='hcsExportStage';
+  stage.style.cssText='position:fixed;left:-99999px;top:0;background:transparent;padding:24px;font-family:\'DM Sans\',sans-serif;';
+  // Width hint helps html2canvas size things correctly. We bump it up so the
+  // larger fonts have room to breathe.
+  stage.style.width=Math.max(wrapper.scrollWidth*1.2,960)+'px';
 
-  // Clone the legend, untouched
+  // Inject scoped CSS that bumps every relevant font size + ensures Spring
+  // pink shows through. !important so we override the inline styles on the
+  // cloned nodes. Scoped to #hcsExportStage so the live UI is unaffected.
+  const styleTag=document.createElement('style');
+  styleTag.textContent=`
+    #hcsExportStage .cal-legend{font-size:16px!important;gap:18px!important;padding:0 0 18px!important}
+    #hcsExportStage .cal-legend .leg-dot{width:24px!important;height:24px!important;font-size:12px!important}
+    #hcsExportStage .cal-table{font-size:15px!important}
+    #hcsExportStage .cal-table th{font-size:13px!important;padding:12px 14px!important}
+    #hcsExportStage .cal-table td{padding:8px 10px!important}
+    #hcsExportStage .cal-table .cal-month{font-size:16px!important;font-weight:600!important}
+    #hcsExportStage .cal-table .cal-notes{font-size:13px!important;line-height:1.6!important}
+    #hcsExportStage .date-num{width:38px!important;height:38px!important;font-size:18px!important}
+    #hcsExportStage .year-cal-table{font-size:15px!important}
+    #hcsExportStage .year-cal-table th{font-size:12px!important;padding:10px 12px!important}
+    #hcsExportStage .year-cal-table td{padding:8px 10px!important}
+    #hcsExportStage .yterm-label{font-size:18px!important;padding:10px 14px!important}
+    #hcsExportStage .yterm-label div{font-size:inherit!important}
+    #hcsExportStage .yterm-label div:first-child{font-size:22px!important}
+    #hcsExportStage .yterm-label div:nth-child(2){font-size:13px!important}
+    #hcsExportStage .ymonth-cell{font-size:15px!important;padding:8px 12px!important}
+    #hcsExportStage .ydate-cell{padding:5px 4px!important;min-width:42px!important}
+    #hcsExportStage .ydate-num{width:38px!important;height:38px!important;font-size:18px!important}
+    #hcsExportStage .ynotes-cell{font-size:13px!important;padding:8px 12px!important;line-height:1.6!important}
+    #hcsExportStage .note-red,#hcsExportStage .note-perf{font-size:13px!important}
+  `;
+  stage.appendChild(styleTag);
+
+  // Clone the legend
   const legendClone=legend.cloneNode(true);
-  legendClone.style.padding='8px 0 12px';
   stage.appendChild(legendClone);
 
   // Clone the wrapper content
@@ -1537,8 +1583,12 @@ async function exportDatesImage(){
     if(el.querySelector('.cal-table'))return; // safety: don't remove the table wrapper
     el.remove();
   });
-  // Remove inline backgrounds that would defeat transparency (alt-row stripes etc).
+  // Remove inline alt-row stripes (#fdf5f3) so transparency shows through —
+  // but ONLY on non-Spring rows. Spring keeps its pink via the .spring-row /
+  // .spring-term CSS class (which uses #fcdcd3 and survives this filter).
   wrapperClone.querySelectorAll('[style*="background:#fdf5f3"]').forEach(el=>{
+    // Skip if this element is inside a Spring container
+    if(el.closest('.spring-row,.spring-term'))return;
     el.style.background='transparent';
   });
   // Strip click-handlers visual cursor on cells (no-op visually but cleans output)
@@ -1549,18 +1599,20 @@ async function exportDatesImage(){
   document.body.appendChild(stage);
 
   try{
-    // Render. backgroundColor:null => transparent. scale:1.5 gives decent
-    // resolution without bloat (2 would be sharper but ~2x file size).
+    // Render at high pixel ratio for crisp output. scale:3 is roughly the
+    // density of retina + high-DPI printing. Combined with the larger font
+    // sizes above, text remains sharp on screens and prints.
     const canvas=await html2canvas(stage,{
       backgroundColor:null,
-      scale:1.5,
+      scale:3,
       useCORS:true,
-      logging:false
+      logging:false,
+      // imageTimeout default is 15s — keep it
     });
 
-    // Re-encode at a lower resolution if very wide, to compress further.
-    // We resize to max 1600px wide while preserving alpha.
-    const MAX_W=1600;
+    // Cap maximum width at 3000px to keep file size sane on very wide tables
+    // (year view with many lessons). Resample with high-quality smoothing.
+    const MAX_W=3000;
     let outCanvas=canvas;
     if(canvas.width>MAX_W){
       const ratio=MAX_W/canvas.width;
@@ -1573,8 +1625,7 @@ async function exportDatesImage(){
       ctx.drawImage(canvas,0,0,outCanvas.width,outCanvas.height);
     }
 
-    // PNG preserves transparency. We use toBlob (not toDataURL) — Blob URLs are
-    // smaller in memory and skip the base64 overhead.
+    // PNG preserves transparency. toBlob is more memory-efficient than toDataURL.
     outCanvas.toBlob(blob=>{
       if(!blob){showToast('Export failed');return;}
       const ysel=document.getElementById('yearSelectorDates');
@@ -1589,7 +1640,9 @@ async function exportDatesImage(){
       document.body.appendChild(a);a.click();
       setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},100);
       const kb=Math.round(blob.size/1024);
-      showToast(`Saved ${filename} (${kb} KB)`);
+      const mb=(blob.size/1024/1024).toFixed(2);
+      const sizeStr=blob.size>1024*1024?`${mb} MB`:`${kb} KB`;
+      showToast(`Saved ${filename} (${sizeStr})`);
     },'image/png');
   }catch(err){
     console.error('Export image error:',err);
