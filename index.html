@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>HCS Dance Group</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
@@ -422,7 +423,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
   <div class="modal"><div class="modal-handle"></div><div id="modalBody"></div></div>
 </div>
 <header class="app-header">
-  <div class="app-title-block"><div class="app-title">Harrow Chinese School Dance Group</div><div class="app-subtitle">Register & Invoice System · v3.5</div></div>
+  <div class="app-title-block"><div class="app-title">Harrow Chinese School Dance Group</div><div class="app-subtitle">Register & Invoice System · v3.6</div></div>
   <button class="undo-btn" id="undoBtn" onclick="performUndo()" title="Undo last action">↩ Undo</button>
   <div class="sync-status sync-none" id="syncStatus" onclick="syncNow()">Offline</div>
 </header>
@@ -451,7 +452,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
     <div class="register-wrapper" id="registerWrapper"><div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No register yet</h3><p>Set up terms and dates to begin</p></div></div>
   </div>
   <div class="page" id="pageDates">
-    <div class="section-header"><div><div class="section-title">Term Dates</div><div class="section-sub">Tap a date to edit · Year or Term view</div></div><button class="btn btn-sm btn-primary" onclick="showAddYearModal()">+ Add Year</button></div>
+    <div class="section-header"><div><div class="section-title">Term Dates</div><div class="section-sub">Tap a date to edit · Year or Term view</div></div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><button class="btn btn-sm btn-ghost" onclick="exportDatesImage()" title="Export the table + legend as a transparent PNG">📷 Export image</button><button class="btn btn-sm btn-primary" onclick="showAddYearModal()">+ Add Year</button></div></div>
     <div class="register-controls" style="justify-content:space-between;">
       <div style="display:flex;gap:6px;">
         <button class="btn btn-sm btn-ghost" id="viewToggleYear" onclick="setDatesView('year')" style="font-size:11px;">Year view</button>
@@ -1388,8 +1389,8 @@ function buildTermCalBlock(term){
   });
   const lc=calcLessonCounts(term);
   const halfTermHtml=lc.hasHalfTerm
-    ?`<span style="margin-left:10px;font-size:11px;color:var(--ink-muted);">${lc.ht1} + ${lc.ht2} lessons</span>`
-    :`<span style="margin-left:10px;font-size:11px;color:var(--ink-muted);">${lc.total} lessons</span>`;
+    ?`<span class="lesson-count" style="margin-left:10px;font-size:11px;color:var(--ink-muted);">${lc.ht1} + ${lc.ht2} lessons</span>`
+    :`<span class="lesson-count" style="margin-left:10px;font-size:11px;color:var(--ink-muted);">${lc.total} lessons</span>`;
 
   let rows='';let rowIdx=0;
   const maxCols=Math.max(5,...Object.values(byMonth).map(({dates})=>dates.length));
@@ -1450,7 +1451,7 @@ function buildYearViewTable(terms){
       const isFirstMonth=mi===0;
       const isLastMonth=mi===monthEntries.length-1;
       // Term label cell spans all months of this term
-      const termCell=isFirstMonth?`<td class="yterm-label" rowspan="${monthEntries.length}" style="vertical-align:top;padding-top:8px;"><div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--navy);">${termName}</div><div style="font-size:11px;color:var(--ink-muted);font-family:'DM Sans',sans-serif;">${termYear}</div><div style="font-size:10px;color:var(--ink-muted);margin-top:4px;">${countTxt}</div></td>`:'';
+      const termCell=isFirstMonth?`<td class="yterm-label" rowspan="${monthEntries.length}" style="vertical-align:top;padding-top:8px;"><div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--navy);">${termName}</div><div style="font-size:11px;color:var(--ink-muted);font-family:'DM Sans',sans-serif;">${termYear}</div><div class="lesson-count" style="font-size:10px;color:var(--ink-muted);margin-top:4px;">${countTxt}</div></td>`:'';
       // Date cells
       const dateCells=[];
       for(let i=0;i<maxDates;i++){
@@ -1491,6 +1492,111 @@ function buildYearViewTable(terms){
       <tbody>${rows.join('')}</tbody>
     </table>
   </div>`;
+}
+
+// Export the dates table + legend as a transparent PNG.
+// We clone the live nodes into an off-screen container so the user's view isn't
+// disturbed, strip out controls / lesson counts / "+ Date" buttons, then rasterise
+// with html2canvas. Output is downscaled and re-encoded as a moderately-compressed
+// PNG to keep file size reasonable.
+async function exportDatesImage(){
+  if(typeof html2canvas==='undefined'){
+    showToast('Image library not loaded — check your connection');
+    return;
+  }
+  const legend=document.querySelector('.cal-legend');
+  const wrapper=document.getElementById('calWrapper');
+  if(!legend||!wrapper||!wrapper.querySelector('table')){
+    showToast('Nothing to export yet');
+    return;
+  }
+  showToast('Preparing image…');
+
+  // Build an off-screen export container. Positioned far off-screen but still
+  // rendered (not display:none) so html2canvas can measure it.
+  const stage=document.createElement('div');
+  stage.style.cssText='position:fixed;left:-99999px;top:0;background:transparent;padding:16px;font-family:\'DM Sans\',sans-serif;';
+  // Width hint helps html2canvas size things correctly
+  stage.style.width=Math.max(wrapper.scrollWidth,720)+'px';
+
+  // Clone the legend, untouched
+  const legendClone=legend.cloneNode(true);
+  legendClone.style.padding='8px 0 12px';
+  stage.appendChild(legendClone);
+
+  // Clone the wrapper content
+  const wrapperClone=wrapper.cloneNode(true);
+  wrapperClone.style.margin='0';
+  // Strip the per-term "title row" that holds "+ Date" button (term view only)
+  wrapperClone.querySelectorAll('button').forEach(b=>b.remove());
+  // Hide the "X + X lessons" labels
+  wrapperClone.querySelectorAll('.lesson-count').forEach(el=>el.remove());
+  // Strip the per-term title row entirely in term view (the flex row containing the
+  // term label + + Date button). In year view there's no such row.
+  wrapperClone.querySelectorAll('div[style*="justify-content:space-between"]').forEach(el=>{
+    if(el.querySelector('.cal-table'))return; // safety: don't remove the table wrapper
+    el.remove();
+  });
+  // Remove inline backgrounds that would defeat transparency (alt-row stripes etc).
+  wrapperClone.querySelectorAll('[style*="background:#fdf5f3"]').forEach(el=>{
+    el.style.background='transparent';
+  });
+  // Strip click-handlers visual cursor on cells (no-op visually but cleans output)
+  wrapperClone.querySelectorAll('.date-num,.ydate-num').forEach(el=>{
+    el.style.cursor='default';
+  });
+  stage.appendChild(wrapperClone);
+  document.body.appendChild(stage);
+
+  try{
+    // Render. backgroundColor:null => transparent. scale:1.5 gives decent
+    // resolution without bloat (2 would be sharper but ~2x file size).
+    const canvas=await html2canvas(stage,{
+      backgroundColor:null,
+      scale:1.5,
+      useCORS:true,
+      logging:false
+    });
+
+    // Re-encode at a lower resolution if very wide, to compress further.
+    // We resize to max 1600px wide while preserving alpha.
+    const MAX_W=1600;
+    let outCanvas=canvas;
+    if(canvas.width>MAX_W){
+      const ratio=MAX_W/canvas.width;
+      outCanvas=document.createElement('canvas');
+      outCanvas.width=MAX_W;
+      outCanvas.height=Math.round(canvas.height*ratio);
+      const ctx=outCanvas.getContext('2d');
+      ctx.imageSmoothingEnabled=true;
+      ctx.imageSmoothingQuality='high';
+      ctx.drawImage(canvas,0,0,outCanvas.width,outCanvas.height);
+    }
+
+    // PNG preserves transparency. We use toBlob (not toDataURL) — Blob URLs are
+    // smaller in memory and skip the base64 overhead.
+    outCanvas.toBlob(blob=>{
+      if(!blob){showToast('Export failed');return;}
+      const ysel=document.getElementById('yearSelectorDates');
+      const tsel=document.getElementById('termSelectorDates');
+      const label=datesViewMode==='year'
+        ?(ysel?.value||'year')
+        :((APP.terms.find(t=>t.id===tsel?.value)?.label)||'term').replace(/ /g,'_');
+      const filename=`HCS_Term_Dates_${label}.png`;
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;a.download=filename;
+      document.body.appendChild(a);a.click();
+      setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},100);
+      const kb=Math.round(blob.size/1024);
+      showToast(`Saved ${filename} (${kb} KB)`);
+    },'image/png');
+  }catch(err){
+    console.error('Export image error:',err);
+    showToast('Export failed — see console');
+  }finally{
+    stage.remove();
+  }
 }
 
 function loadDatesPage(){
