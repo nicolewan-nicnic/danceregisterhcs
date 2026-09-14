@@ -31,10 +31,29 @@ write, no matter what they do in the console.
 
 ### Lock behaviour
 
-- **Auto-lock** after 30 minutes with no click, keypress or touch.
-- **Lock now** button in the header.
+- **Stay signed in on this device** (ticked by default) keeps the device open
+  across reloads, so the passcode is asked for once rather than every visit.
+- **Auto-lock** after 30 minutes idle — only when the device is *not* being
+  remembered, since remembering it is a deliberate choice to stay signed in.
+- **Lock now** button in the header. This also forgets the saved sign-in, so
+  locking really locks.
 - **Backoff** after 5 wrong attempts, doubling up to 60 seconds, which makes
   brute forcing impractical against a reasonable passcode.
+
+### How "stay signed in" is stored
+
+The derived key is kept as a `CryptoKey` object in IndexedDB, not in
+localStorage. Because `deriveKey()` creates it as **non-extractable**, script
+cannot read the raw key bytes back out — a page can use it to decrypt, but
+cannot export it. The passcode itself is never stored in any form.
+
+The saved sign-in expires after 60 days. If the vault is later rebuilt under a
+different passcode, the stored key stops matching, and it is discarded and the
+lock screen shown rather than failing in place.
+
+**The trade-off, plainly:** while a device is remembered, anyone who can open
+that browser can open the app. That is what the option is for. Untick it on a
+shared or borrowed device, and use **Lock now** when stepping away.
 
 ### First run on each device
 

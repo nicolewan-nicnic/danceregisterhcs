@@ -162,6 +162,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .lock-icon{font-size:32px;margin-bottom:10px}
 .lock-input{width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:17px;text-align:center;letter-spacing:.14em;background:white;color:var(--ink);-webkit-appearance:none}
 .lock-input:focus{outline:none;border-color:var(--navy)}
+.lock-remember{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:14px;font-size:12px;color:var(--ink-soft);cursor:pointer;user-select:none}
+.lock-remember input{width:15px;height:15px;cursor:pointer}
 .lock-err{color:var(--crimson);font-size:12px;margin-top:10px;min-height:16px;font-weight:500}
 .lock-hint{font-size:11px;color:var(--ink-muted);margin-top:16px;line-height:1.5}
 .lock-btn{margin-top:14px}
@@ -412,6 +414,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
     <div class="lock-brand">Harrow <span>Chinese School</span> Dance Group</div>
     <div class="lock-sub" id="lockSub">Enter your passcode to unlock</div>
     <div id="lockFields"></div>
+    <label class="lock-remember" for="lockRemember">
+      <input type="checkbox" id="lockRemember" checked> Stay signed in on this device
+    </label>
     <div class="lock-err" id="lockErr"></div>
     <button class="btn btn-primary btn-full lock-btn" id="lockBtn" onclick="submitLock()">Unlock</button>
     <div class="lock-hint" id="lockHint"></div>
@@ -469,7 +474,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 <header class="app-header">
   <div class="app-title-block"><div class="app-title">Harrow Chinese School Dance Group</div><div class="app-subtitle">Register & Invoice System · v3.8</div></div>
   <button class="undo-btn" id="undoBtn" onclick="performUndo()" title="Undo last action">↩ Undo</button>
-  <button class="lock-now" id="lockNowBtn" onclick="secLock()" title="Lock this device now">🔒 Lock</button>
+  <button class="lock-now" id="lockNowBtn" onclick="secLock()" title="Lock now and forget the saved sign-in on this device">🔒 Lock</button>
   <div class="sync-status sync-none" id="syncStatus" onclick="syncNow()">Offline</div>
 </header>
 <main class="main">
@@ -863,7 +868,87 @@ async function secUnlock(pass){
     return true;
   }catch(e){return false;}
 }
+// ── REMEMBERED SESSION ─────────────────────────────────────────────────────
+// Signing in on every reload is too much friction for a device you own, so the
+// derived key can be kept for next time. It is stored as a CryptoKey object in
+// IndexedDB, and because deriveKey() marks it non-extractable the raw bytes
+// cannot be read back out by script — a page can use it to decrypt, but cannot
+// export it. That is meaningfully safer than parking the passcode or the
+// decrypted secrets in localStorage.
+// 'Lock now' deletes it, so locking really locks.
+const IDB_NAME='hcs_session', IDB_STORE='keys', IDB_ID='current';
+const REMEMBER_DAYS=60;
+let _remembered=false;
+
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    let r;
+    try{ r=indexedDB.open(IDB_NAME,1); }catch(e){ return rej(e); }
+    r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains(IDB_STORE))r.result.createObjectStore(IDB_STORE); };
+    r.onsuccess=()=>res(r.result);
+    r.onerror=()=>rej(r.error);
+  });
+}
+async function idbPut(val){
+  const db=await idbOpen();
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).put(val,IDB_ID);
+    tx.oncomplete=()=>res(true); tx.onerror=()=>rej(tx.error);
+  });
+}
+async function idbGet(){
+  const db=await idbOpen();
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(IDB_STORE,'readonly');
+    const q=tx.objectStore(IDB_STORE).get(IDB_ID);
+    q.onsuccess=()=>res(q.result||null); q.onerror=()=>rej(q.error);
+  });
+}
+async function idbDel(){
+  try{
+    const db=await idbOpen();
+    return new Promise(res=>{
+      const tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).delete(IDB_ID);
+      tx.oncomplete=()=>res(true); tx.onerror=()=>res(false);
+    });
+  }catch(e){ return false; }
+}
+// Keep this device signed in.
+async function rememberSession(){
+  if(!_cryptoKey||!_salt)return false;
+  try{ await idbPut({key:_cryptoKey,salt:_salt,savedAt:Date.now()}); _remembered=true; return true; }
+  catch(e){ console.warn('[HCS] Could not remember this session:',e); return false; }
+}
+async function forgetSession(){ _remembered=false; return idbDel(); }
+// Try to open the vault with a previously remembered key, skipping the passcode.
+async function tryRememberedUnlock(){
+  if(!secBlobExists())return false;
+  let rec=null;
+  try{ rec=await idbGet(); }catch(e){ return false; }
+  if(!rec||!rec.key)return false;
+  if(Date.now()-(rec.savedAt||0) > REMEMBER_DAYS*86400000){ await forgetSession(); return false; }
+  try{
+    const raw=JSON.parse(localStorage.getItem(SEC_KEY));
+    // The blob's IV changes on every write, so always read the current one.
+    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:_unb64(raw.iv)},rec.key,_unb64(raw.ct));
+    _cryptoKey=rec.key;
+    _salt=_unb64(raw.salt);
+    _SECRETS=JSON.parse(new TextDecoder().decode(pt));
+    if(!_SECRETS.bank)_SECRETS.bank={};
+    if(typeof _SECRETS.firebaseToken!=='string')_SECRETS.firebaseToken='';
+    _remembered=true;
+    return true;
+  }catch(e){
+    // Key no longer matches the vault (passcode changed, vault rebuilt) — drop it.
+    await forgetSession();
+    return false;
+  }
+}
+
 function secLock(){
+  forgetSession();               // locking must really lock
   _SECRETS=null;_cryptoKey=null;_salt=null;
   document.getElementById('lockOverlay').style.display='flex';
   const f=document.getElementById('lockPass');if(f){f.value='';}
@@ -3492,6 +3577,8 @@ async function submitLock(){
       return;
     }
     _failCount=0;
+    if(document.getElementById('lockRemember')?.checked)await rememberSession();
+    else await forgetSession();
     finishUnlock();
     return;
   }
@@ -3510,11 +3597,20 @@ async function submitLock(){
   // Fold any plaintext bank details from the older build into the new vault
   let legacyBank={};
   try{legacyBank=JSON.parse(localStorage.getItem(LEGACY_VAULT_KEY)||'{}');}catch(e){}
-  await secCreate(pass,{firebaseToken:token,bank:legacyBank});
-  // Remove every plaintext copy now that the encrypted one exists
+  const stored=await secCreate(pass,{firebaseToken:token,bank:legacyBank});
+  if(!stored){
+    // The vault could not be written — storage full, or blocked in a private
+    // window. Leave every plaintext copy exactly where it is: wiping them here
+    // would lock the user out with nothing to recover from.
+    btn.disabled=false;btn.textContent='Protect this device →';
+    lockError('Could not save to this device. Nothing was changed — check private browsing or storage settings.');
+    return;
+  }
+  // Safe to remove the plaintext copies now that the encrypted one exists
   try{localStorage.removeItem(LEGACY_VAULT_KEY);}catch(e){}
   APP.settings.firebaseToken='';
   saveLocal();
+  if(document.getElementById('lockRemember')?.checked)await rememberSession();
   btn.disabled=false;
   showToast(token?'This device is protected 🔒':'Locked 🔒 — add the database token in Settings when ready');
   finishUnlock();
@@ -3534,7 +3630,8 @@ function finishUnlock(){
 ['click','keydown','touchstart'].forEach(ev=>
   document.addEventListener(ev,()=>{_lastActivity=Date.now();},{passive:true}));
 setInterval(()=>{
-  if(!isLocked()&&Date.now()-_lastActivity>AUTOLOCK_MS){
+  // A remembered device stays signed in — that is the whole point of the tick.
+  if(!_remembered&&!isLocked()&&Date.now()-_lastActivity>AUTOLOCK_MS){
     secLock();showToast('Locked after inactivity');
   }
 },30000);
@@ -3554,7 +3651,7 @@ function initApp(){
   }
 }
 
-window.addEventListener('DOMContentLoaded',()=>{
+window.addEventListener('DOMContentLoaded',async()=>{
   initSetupDots();
   const has=loadLocal();
   const fbUrl=APP.settings.firebaseUrl;
@@ -3568,8 +3665,15 @@ window.addEventListener('DOMContentLoaded',()=>{
     APP.demoMode=false;
     saveLocal();
     document.getElementById('setupOverlay').style.display='none';
-    document.getElementById('lockOverlay').style.display='flex';
-    renderLockScreen();
+    // If this device was left signed in, open the vault from the stored key and
+    // go straight in. Otherwise show the lock screen.
+    if(await tryRememberedUnlock()){
+      document.getElementById('lockOverlay').style.display='none';
+      finishUnlock();
+    }else{
+      document.getElementById('lockOverlay').style.display='flex';
+      renderLockScreen();
+    }
   } else if(has && APP.setupDone){
     // No Firebase, but returning visit with completed local setup
     document.getElementById('setupOverlay').style.display='none';
