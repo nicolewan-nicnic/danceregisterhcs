@@ -122,7 +122,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .invoice-from-to{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
 .invoice-section-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-muted);font-weight:600;margin-bottom:4px}
 .invoice-address{font-size:12px;line-height:1.6;color:var(--ink)}
-.invoice-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+.invoice-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:12px 0}
+.invoice-table{width:100%;border-collapse:collapse;font-size:13px;min-width:580px}
+.invoice-table th{white-space:nowrap}
 .invoice-table th{background:var(--navy);color:white;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
 .invoice-table td{padding:8px 12px;border-bottom:1px solid var(--border)}
 .invoice-table tr:nth-child(even) td{background:var(--paper-warm)}
@@ -1394,7 +1396,6 @@ function genCombinedPDF(payee,calc,customDate){
   doc.setFontSize(8);doc.setTextColor(120,128,144);
   doc.text(`Invoice: ${invNum}`,W-M,13,{align:'right'});
   doc.text(`Date: ${issueDate}`,W-M,19,{align:'right'});
-  doc.text(`Year: ${APP.settings.academicYear}`,W-M,25,{align:'right'});
   // Thin separator
   doc.setDrawColor(220,216,210);doc.setLineWidth(0.3);doc.line(M,34,W-M,34);
   // From / To blocks
@@ -1409,9 +1410,18 @@ function genCombinedPDF(payee,calc,customDate){
   APP.settings.schoolAddress.split('\n').slice(0,3).forEach((l,i)=>doc.text(l,M+bw+12,y+18+i*5));
   y+=36;
   // Table
-  const cols=[M,M+70,M+140];
-  doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,8,'F');doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
-  ['Term','Lessons','Amount'].forEach((h,i)=>doc.text(h,cols[i]+2,y+5.5));y+=8;
+  //   Term 104mm | Lessons 40mm | Amount 30mm
+  const cols=[M,M+104,M+144];
+  const cLES_MID=(cols[1]+cols[2])/2;
+  const drawCmbHead=()=>{
+    doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,8,'F');
+    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+    doc.text('Term',cols[0]+2,y+5.5);
+    doc.text('Lessons',cLES_MID,y+5.5,{align:'center'});
+    doc.text('Amount',W-M-2,y+5.5,{align:'right'});
+    y+=8;
+  };
+  drawCmbHead();
   let cmbRowIdx=0;
   const cmbRows=calc.breakdown.filter(b=>b.termPay>0);
   cmbRows.forEach((b,idx)=>{
@@ -1421,14 +1431,13 @@ function genCombinedPDF(payee,calc,customDate){
     if(y+needed>297){
       doc.addPage();
       y=18;
-      doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,8,'F');doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
-      ['Term','Lessons','Amount'].forEach((h,i)=>doc.text(h,cols[i]+2,y+5.5));y+=8;
+      drawCmbHead();
       cmbRowIdx=0;
     }
     doc.setFillColor(...(cmbRowIdx%2===0?[255,255,255]:[244,240,234]));doc.rect(M,y,W-M*2,8,'F');
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(26,35,64);
     doc.text(b.term.label,cols[0]+2,y+5.5);
-    doc.text(`${b.attended}`,cols[1]+2,y+5.5);
+    doc.text(`${b.attended}`,cLES_MID,y+5.5,{align:'center'});
     doc.setFont('helvetica','bold');doc.text(`£${b.termPay.toFixed(2)}`,W-M-2,y+5.5,{align:'right'});
     doc.setFont('helvetica','normal');y+=8;cmbRowIdx++;
   });
@@ -2565,6 +2574,19 @@ function celebrationsInRange(fromId,toId){
   });
   return out.sort((a,b)=>a.date.localeCompare(b.date));
 }
+// jsPDF's built-in Helvetica can only encode WinAnsi. Labels like
+// 'CNY Celebration (年初四)' would come out as mojibake, so drop anything
+// outside that range and tidy up the punctuation left behind. Screen and HTML
+// output keep the original text — this is only for the PDF.
+function pdfSafe(str){
+  return String(str||'')
+    .replace(/[^\x20-\x7E\xA0-\xFF]/g,'')   // keep Latin-1 printable only
+    .replace(/\(\s*\)/g,'')                  // brackets emptied by the above
+    .replace(/\[\s*\]/g,'')
+    .replace(/\s{2,}/g,' ')
+    .replace(/\s+([;,.])/g,'$1')
+    .trim();
+}
 function fmtShortDate(iso){
   const p=String(iso||'').split('-');
   if(p.length!==3)return iso||'';
@@ -2629,8 +2651,8 @@ function previewInvoice(){
   const invNum=`${teacher.invoicePrefix||'INV'}-${APP.settings.academicYear}-${nextInvoiceNumber(tid)}`;
   const rows=calc.breakdown.filter(b=>b.sessions.length>0).map(b=>{
     const groups={};b.sessions.forEach(s=>{const k=s.share.toFixed(2);if(!groups[k])groups[k]={count:0,share:s.share};groups[k].count++;});
-    const detail=Object.values(groups).map(g=>`${g.count}×£${g.share.toFixed(2)}`).join(', ');
-    return`<tr><td>${b.term.label}</td><td style="text-align:center;">${b.attended} / ${b.total}</td><td style="font-size:11px;color:var(--ink-soft);">${detail}</td><td style="text-align:right;font-weight:600;">£${b.termPay.toFixed(2)}</td></tr>`;
+    const detail=Object.values(groups).map(g=>`${g.count} × £${g.share.toFixed(2)}`).join(',&nbsp; ');
+    return`<tr><td style="white-space:nowrap;">${esc(b.term.label)}</td><td style="text-align:center;white-space:nowrap;">${b.attended} / ${b.total}</td><td style="font-size:11px;color:var(--ink-soft);line-height:1.45;">${detail}</td><td style="text-align:right;font-weight:600;white-space:nowrap;">£${b.termPay.toFixed(2)}</td></tr>`;
   }).join('');
   document.getElementById('invoicePreviewArea').innerHTML=`<div class="invoice-preview fade-in">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:8px 0 16px;border-bottom:1px solid var(--border);margin-bottom:18px;">
@@ -2643,12 +2665,11 @@ function previewInvoice(){
       </div>
       <div style="text-align:right;font-size:11px;color:var(--ink-soft);">
         Invoice: <strong style="color:var(--navy);">${invNum}</strong><br>
-        Date: ${issueDate}<br>
-        Year: ${APP.settings.academicYear}
+        Date: ${issueDate}
       </div>
     </div>
     <div class="invoice-from-to"><div><div class="invoice-section-label">From (Teacher)</div><div class="invoice-address"><strong>${esc(teacher.name)}</strong><br>${esc(teacher.address||'—').replace(/\n/g,'<br>')}</div></div><div><div class="invoice-section-label">To (School)</div><div class="invoice-address"><strong>Harrow Chinese School Dance Group</strong><br>${esc(APP.settings.schoolAddress).replace(/\n/g,'<br>')}</div></div></div>
-    <table class="invoice-table"><thead><tr><th>Term</th><th style="text-align:center;">Lessons</th><th>Breakdown</th><th style="text-align:right;">Amount</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="invoice-total-row"><td colspan="3" style="text-align:right;padding-right:12px;">Total Due</td><td style="text-align:right;">£${calc.total.toFixed(2)}</td></tr></tfoot></table>
+    <div class="invoice-table-wrap"><table class="invoice-table" style="table-layout:fixed;width:100%;"><colgroup><col style="width:20%"><col style="width:13%"><col style="width:50%"><col style="width:17%"></colgroup><thead><tr><th>Term</th><th style="text-align:center;">Lessons</th><th>Breakdown</th><th style="text-align:right;">Amount</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="invoice-total-row"><td colspan="3" style="text-align:right;padding-right:12px;">Total Due</td><td style="text-align:right;">£${calc.total.toFixed(2)}</td></tr></tfoot></table></div>
     ${(()=>{const ce=celebrationsInRange(fromId,toId);
       return ce.length?`<div class="inv-nocharge"><b>Not charged</b>${ce.map(c=>`${esc(c.label)} — ${fmtShortDate(c.date)}`).join(' &nbsp;·&nbsp; ')}</div>`:'';})()}
     ${(()=>{const pd=getPayDetails(tid);
@@ -2674,7 +2695,6 @@ function genPDF(teacherId,fromId,toId,customDate){
   doc.setFontSize(8);doc.setTextColor(120,128,144);
   doc.text(`Invoice: ${invNum}`,W-M,13,{align:'right'});
   doc.text(`Date: ${issueDate}`,W-M,19,{align:'right'});
-  doc.text(`Year: ${APP.settings.academicYear}`,W-M,25,{align:'right'});
   doc.setDrawColor(220,216,210);doc.setLineWidth(0.3);doc.line(M,34,W-M,34);
   // From / To
   y=44;const bw=(W-M*2-8)/2;
@@ -2687,33 +2707,58 @@ function genPDF(teacherId,fromId,toId,customDate){
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(74,74,90);
   APP.settings.schoolAddress.split('\n').slice(0,3).forEach((l,i)=>doc.text(l,M+bw+12,y+18+i*5));
   y+=36;
-  const cols=[M,M+52,M+108,M+150];
-  doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,8,'F');doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
-  ['Term','Lessons Attended','Breakdown','Amount'].forEach((h,i)=>doc.text(h,cols[i]+2,y+5.5));y+=8;
+  // Column geometry. The table spans M..W-M (174mm on A4). Term and Lessons only
+  // need enough for 'Summer 2024' and '12 / 13', so the slack goes to Breakdown,
+  // which carries by far the longest text.
+  //   Term 28mm | Lessons 24mm | Breakdown 92mm | Amount 30mm
+  const cols=[M,M+28,M+52,M+144];
+  const BRK_W=cols[3]-cols[2]-4;        // usable width inside the Breakdown cell
+  const LES_MID=(cols[1]+cols[2])/2;    // centre line of the Lessons column
+  const HEADERS=['Term','Lessons','Breakdown','Amount'];
+  const drawHead=()=>{
+    doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,8,'F');
+    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+    doc.text(HEADERS[0],cols[0]+2,y+5.5);
+    doc.text(HEADERS[1],LES_MID,y+5.5,{align:'center'});
+    doc.text(HEADERS[2],cols[2]+2,y+5.5);
+    doc.text(HEADERS[3],W-M-2,y+5.5,{align:'right'});
+    y+=8;
+  };
+  drawHead();
   let rowIdx=0;
   const rows=calc.breakdown.filter(b=>b.sessions.length>0);
-  rows.forEach((b,idx)=>{
+  // Measure every row first: a long breakdown wraps onto extra lines, and the row
+  // grows to fit rather than running into the Amount column.
+  doc.setFontSize(8);
+  const prepared=rows.map(b=>{
+    const groups={};b.sessions.forEach(x=>{const k=x.share.toFixed(2);if(!groups[k])groups[k]={count:0,share:x.share};groups[k].count++;});
+    const detail=Object.values(groups).map(g=>`${g.count} x £${g.share.toFixed(2)}`).join(',  ');
+    const lines=doc.splitTextToSize(detail,BRK_W);
+    return{b,lines,h:Math.max(8,lines.length*4.4+3.6)};
+  });
+  prepared.forEach((pr,idx)=>{
     // Smart page break: if this row + total(10) + payment(18) + footer(13) won't fit,
     // break BEFORE this row so we don't end up with a lone total on a new page.
-    // This is the LAST row check — for non-last rows, just need this row + footer.
-    const isLast=idx===rows.length-1;
-    const needed=isLast?(8+10+18+13):(8+13);
+    const isLast=idx===prepared.length-1;
+    const needed=isLast?(pr.h+10+18+13):(pr.h+13);
     if(y+needed>297){
       doc.addPage();
-      // Redraw column header on new page
       y=18;
-      doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,8,'F');doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
-      ['Term','Lessons Attended','Breakdown','Amount'].forEach((h,i)=>doc.text(h,cols[i]+2,y+5.5));y+=8;
+      drawHead();
       rowIdx=0;
     }
-    const groups={};b.sessions.forEach(s=>{const k=s.share.toFixed(2);if(!groups[k])groups[k]={count:0,share:s.share};groups[k].count++;});
-    const detail=Object.values(groups).map(g=>`${g.count}x£${g.share.toFixed(2)}`).join(', ');
-    doc.setFillColor(...(rowIdx%2===0?[255,255,255]:[244,240,234]));doc.rect(M,y,W-M*2,8,'F');
-    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(26,35,64);doc.text(b.term.label,cols[0]+2,y+5.5);
-    doc.text(`${b.attended} / ${b.total}`,cols[1]+2,y+5.5);
-    doc.setFontSize(8);doc.setTextColor(90,96,112);doc.text(detail,cols[2]+2,y+5.5);
-    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(26,35,64);doc.text(`£${b.termPay.toFixed(2)}`,W-M-2,y+5.5,{align:'right'});
-    doc.setFont('helvetica','normal');y+=8;rowIdx++;
+    const rowH=pr.h;
+    const midY=y+rowH/2+1.4;            // vertical centre, for the single-line cells
+    doc.setFillColor(...(rowIdx%2===0?[255,255,255]:[244,240,234]));doc.rect(M,y,W-M*2,rowH,'F');
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(26,35,64);
+    doc.text(pdfSafe(pr.b.term.label),cols[0]+2,midY);
+    doc.text(`${pr.b.attended} / ${pr.b.total}`,LES_MID,midY,{align:'center'});
+    doc.setFontSize(8);doc.setTextColor(90,96,112);
+    const startY=y+(rowH-(pr.lines.length-1)*4.4)/2+1.2;
+    pr.lines.forEach((ln,i)=>doc.text(ln,cols[2]+2,startY+i*4.4));
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(26,35,64);
+    doc.text(`£${pr.b.termPay.toFixed(2)}`,W-M-2,midY,{align:'right'});
+    doc.setFont('helvetica','normal');y+=rowH;rowIdx++;
   });
   // Total row — guaranteed to fit because of the smart page-break in the loop above
   doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,10,'F');doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(255,255,255);doc.text('TOTAL DUE',cols[0]+2,y+7);doc.setTextColor(232,160,144);doc.text(`£${calc.total.toFixed(2)}`,W-M-2,y+7,{align:'right'});y+=16;
@@ -2721,7 +2766,7 @@ function genPDF(teacherId,fromId,toId,customDate){
   // see they were deliberately not billed.
   const ceP=celebrationsInRange(fromId,toId);
   if(ceP.length){
-    const lines=doc.splitTextToSize('Not charged: '+ceP.map(c=>`${c.label} (${fmtShortDate(c.date)})`).join('; '),W-M*2-8);
+    const lines=doc.splitTextToSize(pdfSafe('Not charged: '+ceP.map(c=>`${c.label} (${fmtShortDate(c.date)})`).join('; ')),W-M*2-8);
     const boxH=6+lines.length*4;
     if(y+boxH>288){doc.addPage();y=18;}
     doc.setFillColor(238,244,241);doc.rect(M,y,W-M*2,boxH,'F');
@@ -2768,8 +2813,8 @@ function buildInvoiceHTML(teacherId,fromId,toId,customDate){
   const invNum=`${teacher.invoicePrefix||'INV'}-${APP.settings.academicYear}-${nextInvoiceNumber(teacherId)}`;
   const rows=calc.breakdown.filter(b=>b.sessions.length>0).map(b=>{
     const groups={};b.sessions.forEach(x=>{const k=x.share.toFixed(2);if(!groups[k])groups[k]={count:0,share:x.share};groups[k].count++;});
-    const detail=Object.values(groups).map(g=>`${g.count}&times;&pound;${g.share.toFixed(2)}`).join(', ');
-    return`<tr><td>${esc(b.term.label)}</td><td class="c">${b.attended} / ${b.total}</td><td class="muted">${detail}</td><td class="r b">&pound;${b.termPay.toFixed(2)}</td></tr>`;
+    const detail=Object.values(groups).map(g=>`${g.count} &times; &pound;${g.share.toFixed(2)}`).join(',&nbsp; ');
+    return`<tr><td class="nowrap">${esc(b.term.label)}</td><td class="c">${b.attended} / ${b.total}</td><td class="brk">${detail}</td><td class="r b nowrap">&pound;${b.termPay.toFixed(2)}</td></tr>`;
   }).join('');
   const ce=celebrationsInRange(fromId,toId);
   const noChargeBlock=ce.length
@@ -2797,9 +2842,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,san
 .ft{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:20px}
 .lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9098a8;margin-bottom:5px}
 .who{font-size:12.5px;line-height:1.55}
-table{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:13px}
-th{background:#1a2340;color:#fff;padding:9px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
-td{padding:9px 10px;border-bottom:1px solid #eee9e1}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:18px}
+table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;min-width:580px}
+.w-term{width:20%}.w-les{width:13%}.w-brk{width:50%}.w-amt{width:17%}
+td.nowrap,th.r,th.c{white-space:nowrap}
+th{background:#1a2340;color:#fff;padding:9px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid #eee9e1;vertical-align:middle}
+td.brk{font-size:11.5px;color:#5a6070;line-height:1.45}
 tbody tr:nth-child(even){background:#faf9f7}
 .c{text-align:center}.r{text-align:right}.b{font-weight:700}
 .muted{font-size:11.5px;color:#5a6070}
@@ -2810,7 +2859,7 @@ tfoot .amt{color:#e8a090}
 .nocharge b{color:#1d5c4a;text-transform:uppercase;letter-spacing:.06em;font-size:10px;display:block;margin-bottom:3px}
 .pay-t{font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#5a6070;margin-bottom:5px}
 .foot{margin-top:22px;padding-top:12px;border-top:1px solid #ddd8d0;font-size:10.5px;color:#9098a8;display:flex;justify-content:space-between;gap:12px}
-@media print{body{background:#fff;padding:0}.sheet{box-shadow:none;border-radius:0;max-width:none;padding:0}}
+@media print{body{background:#fff;padding:0}.sheet{box-shadow:none;border-radius:0;max-width:none;padding:0}.tablewrap{overflow:visible}table{min-width:0}}
 @media (max-width:640px){.ft{grid-template-columns:1fr}.top{flex-direction:column}.meta{text-align:left}body{padding:12px}.sheet{padding:20px}}
 </style></head><body>
 <div class="sheet">
@@ -2818,15 +2867,16 @@ tfoot .amt{color:#e8a090}
     <div class="brand"><img src="${HCS_LOGO}" alt="">
       <div><div class="school">Harrow Chinese School Dance Group</div>
         <div class="addr">${esc(APP.settings.schoolAddress).replace(/\n/g,', ')}</div></div></div>
-    <div class="meta">Invoice: <strong>${esc(invNum)}</strong><br>Date: ${esc(issueDate)}<br>Year: ${esc(APP.settings.academicYear)}</div>
+    <div class="meta">Invoice: <strong>${esc(invNum)}</strong><br>Date: ${esc(issueDate)}</div>
   </div>
   <div class="ft">
     <div><div class="lbl">From (Teacher)</div><div class="who"><strong>${esc(teacher.name)}</strong><br>${esc(teacher.address||'—').replace(/\n/g,'<br>')}</div></div>
     <div><div class="lbl">To (School)</div><div class="who"><strong>Harrow Chinese School Dance Group</strong><br>${esc(APP.settings.schoolAddress).replace(/\n/g,'<br>')}</div></div>
   </div>
-  <table><thead><tr><th>Term</th><th class="c">Lessons</th><th>Breakdown</th><th class="r">Amount</th></tr></thead>
+  <div class="tablewrap"><table><colgroup><col class="w-term"><col class="w-les"><col class="w-brk"><col class="w-amt"></colgroup>
+  <thead><tr><th>Term</th><th class="c">Lessons</th><th>Breakdown</th><th class="r">Amount</th></tr></thead>
   <tbody>${rows}</tbody>
-  <tfoot><tr><td colspan="3" class="r">TOTAL DUE</td><td class="r amt">&pound;${calc.total.toFixed(2)}</td></tr></tfoot></table>
+  <tfoot><tr><td colspan="3" class="r">TOTAL DUE</td><td class="r amt">&pound;${calc.total.toFixed(2)}</td></tr></tfoot></table></div>
   ${noChargeBlock}
   ${payBlock}
   <div class="foot"><span>Harrow Chinese School Dance Group &middot; ${esc(APP.settings.academicYear)}</span><span>Issued ${esc(issueDate)}</span></div>
