@@ -522,6 +522,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
           <button class="active" id="unitCm" onclick="setUnit('metric')">cm / kg</button>
           <button id="unitIn" onclick="setUnit('imperial')">in / lbs</button>
         </div>
+        <button class="btn btn-sm btn-ghost" onclick="showPromoteClassModal()" title="Move every HCS student up one Chinese class">↑ Move up a year</button>
         <button class="btn btn-sm btn-ghost" id="viewRosterBtn" onclick="setPeopleView('roster')">Roster</button>
         <button class="btn btn-sm btn-navy" id="viewProfileBtn" onclick="setPeopleView('profile')">Profiles</button>
         <button class="btn btn-sm btn-ghost" onclick="showAddPersonModal('teacher')">+ Teacher</button>
@@ -2379,7 +2380,8 @@ function renderDetailsTab(p,type,latest){
   if(type==='student'){
     html+=`<div class="info-field"><div class="info-field-label">Chinese name</div><div class="info-field-val${p.chineseName?'':' empty'}">${p.chineseName||'—'}</div></div>
     <div class="info-field"><div class="info-field-label">Class</div><div class="info-field-val">${p.classStatus==='junior'?'Junior (初班)':p.classStatus==='senior'?'Senior (高班)':'Both'}</div></div>`;
-    if(p.hcsStudent)html+=`<div class="info-field" style="grid-column:span 2;"><div class="info-field-label">HCS Student</div><div class="info-field-val">Yes — Harrow Chinese School</div></div>`;
+    if(p.hcsStudent)html+=`<div class="info-field"><div class="info-field-label">HCS Student</div><div class="info-field-val">Yes</div></div>
+    <div class="info-field"><div class="info-field-label">Chinese class</div><div class="info-field-val${p.chineseClass?'':' empty'}">${p.chineseClass?esc(p.chineseClass):'Not set'}</div></div>`;
   }
   html+='</div>';
   const hasMeas=MEAS_FIELDS.some(mf=>latest[mf.field]!==null&&latest[mf.field]!==undefined&&latest[mf.field]!=='');
@@ -2448,11 +2450,11 @@ function renderRoster(){
   const teachers=APP.teachers.filter(t=>!t.archived);
   const students=APP.students.filter(s=>!s.archived);
   const all=[...teachers.map(t=>({...t,_type:'teacher'})),...students.map(s=>({...s,_type:'student'}))];
-  let html=`<div style="overflow-x:auto;margin-top:8px;"><table class="roster-table"><thead><tr><th>Name</th><th>Type</th><th>Birth yr</th>${MEAS_FIELDS.map(m=>`<th>${m.label.replace('circumference','circ.').replace('Trouser — waist to ','Tr→').replace('Shoulder to ','Sh→').replace(' to wrist','→wrist')}</th>`).join('')}</tr></thead><tbody>`;
+  let html=`<div style="overflow-x:auto;margin-top:8px;"><table class="roster-table"><thead><tr><th>Name</th><th>Type</th><th>Birth yr</th><th>Chinese class</th>${MEAS_FIELDS.map(m=>`<th>${m.label.replace('circumference','circ.').replace('Trouser — waist to ','Tr→').replace('Shoulder to ','Sh→').replace(' to wrist','→wrist')}</th>`).join('')}</tr></thead><tbody>`;
   let lastType='';
   all.forEach(p=>{
     if(p._type!==lastType){
-      html+=`<tr><td colspan="${3+MEAS_FIELDS.length}" style="background:var(--navy);color:white;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:6px 10px;">${p._type==='teacher'?'Teachers':'Students'}</td></tr>`;
+      html+=`<tr><td colspan="${4+MEAS_FIELDS.length}" style="background:var(--navy);color:white;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:6px 10px;">${p._type==='teacher'?'Teachers':'Students'}</td></tr>`;
       lastType=p._type;
     }
     const latest=getLatestMeasurements(p);
@@ -2461,6 +2463,7 @@ function renderRoster(){
       <td><strong>${esc(p.name)}</strong>${p.chineseName?`<br><span style="font-size:10px;color:var(--ink-muted);">${esc(p.chineseName)}</span>`:''}</td>
       <td>${p._type==='teacher'?'Teacher':p.classStatus==='junior'?'Junior':p.classStatus==='senior'?'Senior':'Both'}</td>
       <td>${p.birthYear?p.birthYear+age:'—'}</td>
+      <td>${p._type==='student'&&p.chineseClass?esc(p.chineseClass):'<span style="color:var(--ink-muted);">—</span>'}</td>
       ${MEAS_FIELDS.map(mf=>{const dv=dispVal(latest[mf.field],mf.field);return`<td class="${dv===''?'empty-meas':''}">${dv!==''?dv+'<span style="font-size:9px;color:var(--ink-muted);margin-left:1px;">'+dispUnit(mf.field)+'</span>':'—'}</td>`;}).join('')}
     </tr>`;
   });
@@ -2470,7 +2473,7 @@ function renderRoster(){
 
 function showAddPersonModal(type){
   if(type==='teacher'){openModal(`<div class="modal-title">Add Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" placeholder="Full name"></div><div class="form-group"><label class="form-label">Birth Year</label><input type="number" class="form-input" id="mpBirthYear" placeholder="e.g. 1990" min="1940" max="2015"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher',null)">Add</button></div>`);}
-  else{openModal(`<div class="modal-title">Add Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" placeholder="Full name"></div><div class="form-group"><label class="form-label">Birth Year</label><input type="number" class="form-input" id="mpBirthYear" placeholder="e.g. 2015" min="2000" max="2025"></div><div class="form-group"><label class="form-label">Chinese Name (optional)</label><input type="text" class="form-input" id="mpChinese" placeholder="中文名"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill active" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="junior"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" style="width:16px;height:16px;"> Also an HCS student</label></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student',null)">Add</button></div>`);}
+  else{openModal(`<div class="modal-title">Add Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" placeholder="Full name"></div><div class="form-group"><label class="form-label">Birth Year</label><input type="number" class="form-input" id="mpBirthYear" placeholder="e.g. 2015" min="2000" max="2025"></div><div class="form-group"><label class="form-label">Chinese Name (optional)</label><input type="text" class="form-input" id="mpChinese" placeholder="中文名"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill active" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="junior"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" style="width:16px;height:16px;" onchange="toggleChineseClassRow()"> Also an HCS student</label></div><div class="form-group" id="mpChineseClassRow" style="display:none;"><label class="form-label">Chinese School Class</label><select class="form-input" id="mpChineseClass">${chineseClassOptions('')}</select><div style="font-size:11px;color:var(--ink-muted);margin-top:5px;">Their year group at Chinese school — separate from the dance class above.</div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student',null)">Add</button></div>`);}
 }
 function showEditPersonModal(type,id){
   if(type==='teacher'){
@@ -2479,13 +2482,96 @@ function showEditPersonModal(type,id){
     openModal(`<div class="modal-title">Edit Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${esc(t.name)}"></div><div class="form-group"><label class="form-label">Birth Year</label><input type="number" class="form-input" id="mpBirthYear" value="${t.birthYear||''}" placeholder="e.g. 1990" min="1940" max="2015"></div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="mpAddress" rows="3">${esc(t.address||'')}</textarea></div><div class="vault-note">🔒 <strong>Payment details stay on this device.</strong> They are saved in this browser only — never uploaded to the database and never shared with other devices. Leave blank to omit the payment box from invoices.</div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="mpBank" value="${esc(pd.bankName)}" autocomplete="off"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="mpSort" value="${esc(pd.sortCode)}" placeholder="00-00-00" autocomplete="off"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="mpAcc" value="${esc(pd.accountNo)}" autocomplete="off"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="mpPrefix" value="${esc(t.invoicePrefix||'')}"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher','${id}')">Save</button></div>`);
   } else {
     const s=APP.students.find(x=>x.id===id);if(!s)return;
-    openModal(`<div class="modal-title">Edit Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${esc(s.name)}"></div><div class="form-group"><label class="form-label">Birth Year</label><input type="number" class="form-input" id="mpBirthYear" value="${s.birthYear||''}" placeholder="e.g. 2015" min="2000" max="2025"></div><div class="form-group"><label class="form-label">Chinese Name</label><input type="text" class="form-input" id="mpChinese" value="${esc(s.chineseName||'')}"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill ${s.classStatus==='junior'?'active':''}" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill ${s.classStatus==='senior'?'active':''}" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill ${s.classStatus==='both'?'active':''}" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="${esc(s.classStatus)}"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" ${s.hcsStudent?'checked':''} style="width:16px;height:16px;"> Also an HCS student</label></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student','${id}')">Save</button></div>`);
+    openModal(`<div class="modal-title">Edit Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${esc(s.name)}"></div><div class="form-group"><label class="form-label">Birth Year</label><input type="number" class="form-input" id="mpBirthYear" value="${s.birthYear||''}" placeholder="e.g. 2015" min="2000" max="2025"></div><div class="form-group"><label class="form-label">Chinese Name</label><input type="text" class="form-input" id="mpChinese" value="${esc(s.chineseName||'')}"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill ${s.classStatus==='junior'?'active':''}" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill ${s.classStatus==='senior'?'active':''}" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill ${s.classStatus==='both'?'active':''}" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="${esc(s.classStatus)}"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" ${s.hcsStudent?'checked':''} style="width:16px;height:16px;" onchange="toggleChineseClassRow()"> Also an HCS student</label></div><div class="form-group" id="mpChineseClassRow" style="display:${s.hcsStudent?'':'none'};"><label class="form-label">Chinese School Class</label><select class="form-input" id="mpChineseClass">${chineseClassOptions(s.chineseClass||'')}</select><div style="font-size:11px;color:var(--ink-muted);margin-top:5px;">Their year group at Chinese school — separate from the dance class above.</div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student','${id}')">Save</button></div>`);
   }
 }
 function selClass(c){
   const hidden=document.getElementById('mpClass');if(hidden)hidden.value=c;
   ['Junior','Senior','Both'].forEach(x=>{const el=document.getElementById('p'+x);if(el)el.classList.toggle('active',x.toLowerCase()===c||(x==='Both'&&c==='both'));});
 }
+// ── CHINESE SCHOOL CLASSES ─────────────────────────────────────────────────
+// The year groups at Harrow Chinese School, in the order pupils move through
+// them. Only applies to students who also attend the Chinese school, so it is
+// optional and sits behind the 'Also an HCS student' tick.
+const CHINESE_CLASSES=[
+  'Playgroup','Lower Reception','Upper Reception',
+  'Year 1','Year 2','Year 3','Year 4','Year 5','Year 6',
+  'GCSE Year 1','GCSE Year 2'
+];
+// One rung up the ladder. GCSE Year 2 is the top — pupils leave after it, so
+// they stay put rather than rolling off the end.
+function nextChineseClass(cls){
+  const i=CHINESE_CLASSES.indexOf(cls);
+  if(i<0)return null;                              // not set, or unrecognised
+  if(i>=CHINESE_CLASSES.length-1)return null;      // already at the top
+  return CHINESE_CLASSES[i+1];
+}
+function chineseClassOptions(sel){
+  return['<option value="">— not set —</option>']
+    .concat(CHINESE_CLASSES.map(c=>`<option value="${esc(c)}"${c===sel?' selected':''}>${esc(c)}</option>`))
+    .join('');
+}
+// Shows or hides the class picker as the HCS tick changes.
+function toggleChineseClassRow(){
+  const box=document.getElementById('mpHCS');
+  const row=document.getElementById('mpChineseClassRow');
+  if(row)row.style.display=(box&&box.checked)?'':'none';
+}
+
+// ── ANNUAL CLASS PROMOTION ─────────────────────────────────────────────────
+// Pupils move up one Chinese class each academic year. Doing that by hand for
+// every student is tedious and easy to get wrong, so this previews the whole
+// move first and applies it in one go. Undoable like any other change.
+function promotionPlan(){
+  const moving=[],leaving=[],unset=[];
+  APP.students.filter(s=>!s.archived&&s.hcsStudent).forEach(s=>{
+    const cur=s.chineseClass||'';
+    if(!cur){unset.push({s});return;}   // same shape as the other two lists
+    const nxt=nextChineseClass(cur);
+    if(nxt)moving.push({s,from:cur,to:nxt});
+    else leaving.push({s,from:cur});
+  });
+  return{moving,leaving,unset};
+}
+function showPromoteClassModal(){
+  const{moving,leaving,unset}=promotionPlan();
+  if(!moving.length&&!leaving.length&&!unset.length){
+    showToast('No HCS students to move up');return;
+  }
+  const row=(l,r,muted)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;${muted?'color:var(--ink-muted);':''}">
+    <span>${esc(l)}</span><span style="text-align:right;">${r}</span></div>`;
+  let body=`<div class="modal-title">Move up a year</div>
+    <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;line-height:1.5;">
+      Moves every HCS student up one Chinese class. Check the list below before confirming — you can undo straight after.
+    </div>`;
+  if(moving.length){
+    body+=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted);margin:10px 0 4px;">Moving up (${moving.length})</div>`;
+    body+=moving.map(m=>row(m.s.name,`${esc(m.from)} <span style="color:var(--teal);">&rarr;</span> <strong>${esc(m.to)}</strong>`)).join('');
+  }
+  if(leaving.length){
+    body+=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted);margin:14px 0 4px;">Staying put — already at the top (${leaving.length})</div>`;
+    body+=leaving.map(m=>row(m.s.name,`${esc(m.from)}`,true)).join('');
+  }
+  if(unset.length){
+    body+=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted);margin:14px 0 4px;">Skipped — no class set (${unset.length})</div>`;
+    body+=unset.map(m=>row(m.s.name,'—',true)).join('');
+  }
+  body+=`<div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" style="flex:1;" onclick="applyPromoteClass()"${moving.length?'':' disabled'}>
+      ${moving.length?`Move ${moving.length} up &rarr;`:'Nothing to move'}</button></div>`;
+  openModal(body);
+}
+function applyPromoteClass(){
+  const{moving}=promotionPlan();
+  if(!moving.length){closeModal();return;}
+  pushUndoSnapshot();
+  moving.forEach(m=>{m.s.chineseClass=m.to;});
+  saveLocal();markDirty();closeModal();
+  loadPeoplePage();
+  showToast(`Moved ${moving.length} student${moving.length===1?'':'s'} up ✓ — tap Undo to reverse`);
+  if(getFbUrl()&&!isLocked())syncToDb();
+}
+
 function savePerson(type,id){
   const nameEl=document.getElementById('mpName');const name=nameEl?nameEl.value.trim():'';
   if(!name){showToast('Enter a name');return;}
@@ -2516,8 +2602,12 @@ function savePerson(type,id){
     if(id){
       const s=APP.students.find(x=>x.id===id);if(!s){showToast('Student not found');return;}
       s.name=name;s.classStatus=cls;s.chineseName=chinese;s.hcsStudent=hcs;s.birthYear=birthYear;
+      // Chinese class only means anything for HCS students — clear it otherwise
+      s.chineseClass=hcs?((document.getElementById('mpChineseClass')||{}).value||''):'';
     }else{
-      APP.students.push({id:'S'+Date.now(),name,chineseName:chinese,birthYear,classStatus:cls,hcsStudent:hcs,archived:false,measurements:[]});
+      APP.students.push({id:'S'+Date.now(),name,chineseName:chinese,birthYear,classStatus:cls,hcsStudent:hcs,
+        chineseClass:hcs?((document.getElementById('mpChineseClass')||{}).value||''):'',
+        archived:false,measurements:[]});
     }
   }
   pushUndoSnapshot();saveLocal();closeModal();loadPeoplePage();showToast('Saved ✓');markDirty();
