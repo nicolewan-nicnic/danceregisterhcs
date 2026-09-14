@@ -119,7 +119,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .invoice-header-bar{background:var(--navy);margin:-24px -24px 20px;padding:18px 24px;display:flex;justify-content:space-between;align-items:flex-start}
 .invoice-brand{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--salmon);font-weight:600}
 .invoice-meta{text-align:right;color:rgba(255,255,255,.65);font-size:11px;line-height:1.8}
-.invoice-from-to{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.invoice-from-to{align-items:stretch;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.invoice-from-to>div{background:var(--paper-warm);border-radius:var(--radius-sm);padding:11px 13px 17px}
+.invoice-address{line-height:1.6}
+.invoice-address strong{display:block;margin-bottom:3px}
 .invoice-section-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-muted);font-weight:600;margin-bottom:4px}
 .invoice-address{font-size:12px;line-height:1.6;color:var(--ink)}
 .invoice-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:12px 0}
@@ -1399,16 +1402,7 @@ function genCombinedPDF(payee,calc,customDate){
   // Thin separator
   doc.setDrawColor(220,216,210);doc.setLineWidth(0.3);doc.line(M,34,W-M,34);
   // From / To blocks
-  y=44;const bw=(W-M*2-8)/2;
-  doc.setFillColor(244,240,234);doc.rect(M,y,bw,28,'F');doc.rect(M+bw+8,y,bw,28,'F');
-  doc.setFontSize(7);doc.setTextColor(144,152,168);doc.text('FROM (TEACHER)',M+4,y+5);doc.text('TO (SCHOOL)',M+bw+12,y+5);
-  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(26,35,64);doc.text(payee.name,M+4,y+12);
-  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(74,74,90);
-  (payee.address||'').split('\n').slice(0,3).forEach((l,i)=>doc.text(l,M+4,y+18+i*5));
-  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(26,35,64);doc.text('Harrow Chinese School Dance Group',M+bw+12,y+12);
-  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(74,74,90);
-  APP.settings.schoolAddress.split('\n').slice(0,3).forEach((l,i)=>doc.text(l,M+bw+12,y+18+i*5));
-  y+=36;
+  y=drawFromTo(doc,W,M,44,payee.name,payee.address,'Harrow Chinese School Dance Group',APP.settings.schoolAddress);
   // Table
   //   Term 104mm | Lessons 40mm | Amount 30mm
   const cols=[M,M+104,M+144];
@@ -2594,6 +2588,45 @@ function fmtShortDate(iso){
   return`${parseInt(p[2],10)} ${m} ${p[0]}`;
 }
 
+// ── FROM / TO ADDRESS BOXES ────────────────────────────────────────────────
+// Both boxes are drawn to one shared height, taken from whichever address is
+// longer, so they always line up. The height is computed from the line count
+// rather than fixed, so a four or five line address is not clipped and there is
+// always a clear margin under the last line.
+const ADDR_MAX_LINES=6;      // hard ceiling, so a pasted essay cannot break the page
+const ADDR_MIN_LINES=4;      // keeps the box a sensible size for short addresses
+const ADDR_FIRST_Y=18;       // baseline of the first address line, from box top
+const ADDR_STEP=5;           // line spacing
+const ADDR_PAD_BOTTOM=6;     // clear space under the last line
+
+function addrLines(raw){
+  return String(raw||'').split('\n').map(l=>l.trim()).filter(Boolean).slice(0,ADDR_MAX_LINES);
+}
+// Draws both boxes at y and returns the y to continue from.
+function drawFromTo(doc,W,M,y,fromName,fromAddr,toName,toAddr){
+  const bw=(W-M*2-8)/2;
+  const fromL=addrLines(fromAddr);
+  const toL=addrLines(toAddr);
+  const n=Math.max(fromL.length,toL.length,ADDR_MIN_LINES);
+  const boxH=ADDR_FIRST_Y+(n-1)*ADDR_STEP+ADDR_PAD_BOTTOM;
+  // Same height for both, so they align
+  doc.setFillColor(244,240,234);
+  doc.rect(M,y,bw,boxH,'F');
+  doc.rect(M+bw+8,y,bw,boxH,'F');
+  doc.setFontSize(7);doc.setTextColor(144,152,168);
+  doc.text('FROM (TEACHER)',M+4,y+5);
+  doc.text('TO (SCHOOL)',M+bw+12,y+5);
+  const col=(x,name,lines)=>{
+    doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(26,35,64);
+    doc.text(pdfSafe(name),x,y+12);
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(74,74,90);
+    lines.forEach((l,i)=>doc.text(pdfSafe(l),x,y+ADDR_FIRST_Y+i*ADDR_STEP));
+  };
+  col(M+4,fromName,fromL);
+  col(M+bw+12,toName,toL);
+  return y+boxH+8;
+}
+
 function calcPay(teacherId,fromId,toId){
   const fi=APP.terms.findIndex(t=>t.id===fromId),ti=APP.terms.findIndex(t=>t.id===toId);
   if(fi<0||ti<0)return null;
@@ -2668,7 +2701,7 @@ function previewInvoice(){
         Date: ${issueDate}
       </div>
     </div>
-    <div class="invoice-from-to"><div><div class="invoice-section-label">From (Teacher)</div><div class="invoice-address"><strong>${esc(teacher.name)}</strong><br>${esc(teacher.address||'—').replace(/\n/g,'<br>')}</div></div><div><div class="invoice-section-label">To (School)</div><div class="invoice-address"><strong>Harrow Chinese School Dance Group</strong><br>${esc(APP.settings.schoolAddress).replace(/\n/g,'<br>')}</div></div></div>
+    <div class="invoice-from-to"><div><div class="invoice-section-label">From (Teacher)</div><div class="invoice-address"><strong>${esc(teacher.name)}</strong>${esc(teacher.address||'—').replace(/\n/g,'<br>')}</div></div><div><div class="invoice-section-label">To (School)</div><div class="invoice-address"><strong>Harrow Chinese School Dance Group</strong>${esc(APP.settings.schoolAddress).replace(/\n/g,'<br>')}</div></div></div>
     <div class="invoice-table-wrap"><table class="invoice-table" style="table-layout:fixed;width:100%;"><colgroup><col style="width:20%"><col style="width:13%"><col style="width:50%"><col style="width:17%"></colgroup><thead><tr><th>Term</th><th style="text-align:center;">Lessons</th><th>Breakdown</th><th style="text-align:right;">Amount</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="invoice-total-row"><td colspan="3" style="text-align:right;padding-right:12px;">Total Due</td><td style="text-align:right;">£${calc.total.toFixed(2)}</td></tr></tfoot></table></div>
     ${(()=>{const ce=celebrationsInRange(fromId,toId);
       return ce.length?`<div class="inv-nocharge"><b>Not charged</b>${ce.map(c=>`${esc(c.label)} — ${fmtShortDate(c.date)}`).join(' &nbsp;·&nbsp; ')}</div>`:'';})()}
@@ -2697,16 +2730,7 @@ function genPDF(teacherId,fromId,toId,customDate){
   doc.text(`Date: ${issueDate}`,W-M,19,{align:'right'});
   doc.setDrawColor(220,216,210);doc.setLineWidth(0.3);doc.line(M,34,W-M,34);
   // From / To
-  y=44;const bw=(W-M*2-8)/2;
-  doc.setFillColor(244,240,234);doc.rect(M,y,bw,28,'F');doc.rect(M+bw+8,y,bw,28,'F');
-  doc.setFontSize(7);doc.setTextColor(144,152,168);doc.text('FROM (TEACHER)',M+4,y+5);doc.text('TO (SCHOOL)',M+bw+12,y+5);
-  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(26,35,64);doc.text(teacher.name,M+4,y+12);
-  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(74,74,90);
-  (teacher.address||'').split('\n').slice(0,3).forEach((l,i)=>doc.text(l,M+4,y+18+i*5));
-  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(26,35,64);doc.text('Harrow Chinese School Dance Group',M+bw+12,y+12);
-  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(74,74,90);
-  APP.settings.schoolAddress.split('\n').slice(0,3).forEach((l,i)=>doc.text(l,M+bw+12,y+18+i*5));
-  y+=36;
+  y=drawFromTo(doc,W,M,44,teacher.name,teacher.address,'Harrow Chinese School Dance Group',APP.settings.schoolAddress);
   // Column geometry. The table spans M..W-M (174mm on A4). Term and Lessons only
   // need enough for 'Summer 2024' and '12 / 13', so the slack goes to Breakdown,
   // which carries by far the longest text.
@@ -2839,9 +2863,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,san
 .addr{color:#9098a8;font-size:11px;margin-top:4px}
 .meta{text-align:right;font-size:11px;color:#5a6070;white-space:nowrap}
 .meta strong{color:#1a2340}
-.ft{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:20px}
+.ft{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;align-items:stretch}
+.ft>div{background:#f4f0ea;border-radius:6px;padding:12px 14px 18px;display:flex;flex-direction:column}
 .lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9098a8;margin-bottom:5px}
-.who{font-size:12.5px;line-height:1.55}
+.who{font-size:12.5px;line-height:1.6}
+.who strong{display:block;font-size:14px;margin-bottom:4px}
 .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:18px}
 table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;min-width:580px}
 .w-term{width:20%}.w-les{width:13%}.w-brk{width:50%}.w-amt{width:17%}
@@ -2870,8 +2896,8 @@ tfoot .amt{color:#e8a090}
     <div class="meta">Invoice: <strong>${esc(invNum)}</strong><br>Date: ${esc(issueDate)}</div>
   </div>
   <div class="ft">
-    <div><div class="lbl">From (Teacher)</div><div class="who"><strong>${esc(teacher.name)}</strong><br>${esc(teacher.address||'—').replace(/\n/g,'<br>')}</div></div>
-    <div><div class="lbl">To (School)</div><div class="who"><strong>Harrow Chinese School Dance Group</strong><br>${esc(APP.settings.schoolAddress).replace(/\n/g,'<br>')}</div></div>
+    <div><div class="lbl">From (Teacher)</div><div class="who"><strong>${esc(teacher.name)}</strong>${esc(teacher.address||'—').replace(/\n/g,'<br>')}</div></div>
+    <div><div class="lbl">To (School)</div><div class="who"><strong>Harrow Chinese School Dance Group</strong>${esc(APP.settings.schoolAddress).replace(/\n/g,'<br>')}</div></div>
   </div>
   <div class="tablewrap"><table><colgroup><col class="w-term"><col class="w-les"><col class="w-brk"><col class="w-amt"></colgroup>
   <thead><tr><th>Term</th><th class="c">Lessons</th><th>Breakdown</th><th class="r">Amount</th></tr></thead>
