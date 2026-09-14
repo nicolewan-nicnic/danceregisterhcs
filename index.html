@@ -3347,9 +3347,9 @@ function renderLockScreen(){
   }else{
     icon.textContent='🔑';
     sub.textContent='Set up this device';
-    f.innerHTML='<input type="text" class="lock-input" id="lockToken" style="letter-spacing:0;font-size:13px;" autocomplete="off" placeholder="Database token"><input type="password" class="lock-input" id="lockPass" style="margin-top:9px;" autocomplete="new-password" placeholder="New passcode" onkeydown="if(event.key===\'Enter\')submitLock()"><input type="password" class="lock-input" id="lockPass2" style="margin-top:9px;" autocomplete="new-password" placeholder="Confirm passcode" onkeydown="if(event.key===\'Enter\')submitLock()">';
+    f.innerHTML='<input type="text" class="lock-input" id="lockToken" style="letter-spacing:0;font-size:13px;" autocomplete="off" placeholder="Database token (optional)"><input type="password" class="lock-input" id="lockPass" style="margin-top:9px;" autocomplete="new-password" placeholder="New passcode" onkeydown="if(event.key===\'Enter\')submitLock()"><input type="password" class="lock-input" id="lockPass2" style="margin-top:9px;" autocomplete="new-password" placeholder="Confirm passcode" onkeydown="if(event.key===\'Enter\')submitLock()">';
     btn.textContent='Set up →';
-    hint.innerHTML='Paste the database token from a device that is already working, then choose a passcode for this one. The token is encrypted with your passcode and never stored in the clear.';
+    hint.innerHTML='Choose a passcode to lock this device. The database token is optional — you can leave it blank now and add it later in Settings, but this device cannot sync without it once the database rules are closed.';
   }
   setTimeout(()=>{const el=document.getElementById(_lockMode==='enrol'?'lockToken':'lockPass');if(el)el.focus();},60);
 }
@@ -3385,8 +3385,10 @@ async function submitLock(){
   if(pass!==pass2){lockError('The two passcodes do not match');return;}
   let token=(APP.settings.firebaseToken||'').trim();
   if(_lockMode==='enrol'){
+    // Optional: a device can be locked with a passcode and have its token added
+    // later from Settings. Without one it can still read while the database rules
+    // are open, but it cannot sync once they are closed.
     token=((document.getElementById('lockToken')||{}).value||'').trim();
-    if(!token){lockError('Paste the database token');return;}
   }
   btn.disabled=true;btn.textContent='Securing…';
   // Fold any plaintext bank details from the older build into the new vault
@@ -3398,7 +3400,7 @@ async function submitLock(){
   APP.settings.firebaseToken='';
   saveLocal();
   btn.disabled=false;
-  showToast('This device is protected 🔒');
+  showToast(token?'This device is protected 🔒':'Locked 🔒 — add the database token in Settings when ready');
   finishUnlock();
 }
 
