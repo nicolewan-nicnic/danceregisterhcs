@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
+<meta name="googlebot" content="noindex,nofollow">
 <title>HCS Dance Group</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -144,6 +146,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .cell-popup-item{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
 .cell-popup-item:last-child{border-bottom:none}.cell-popup-item:hover{background:var(--paper-warm)}
 .cell-popup-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.vault-note{background:#fff8e6;border:1px solid #f0dca8;border-radius:var(--radius-sm);padding:9px 11px;font-size:11.5px;line-height:1.45;color:#6b5420;margin-bottom:12px}
+.vault-note strong{color:#4a3a12}
+.pay-missing{color:var(--crimson);font-style:italic}
+.lock-overlay{position:fixed;inset:0;background:var(--navy);z-index:1000;display:none;align-items:center;justify-content:center;padding:24px}
+.lock-card{background:white;border-radius:var(--radius);padding:30px 26px;max-width:380px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.35);text-align:center}
+.lock-brand{font-family:'Cormorant Garamond',serif;font-size:23px;font-weight:300;color:var(--navy);line-height:1.15;margin-bottom:4px}
+.lock-brand span{color:var(--crimson)}
+.lock-sub{font-size:12px;color:var(--ink-soft);margin-bottom:20px}
+.lock-icon{font-size:32px;margin-bottom:10px}
+.lock-input{width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:17px;text-align:center;letter-spacing:.14em;background:white;color:var(--ink);-webkit-appearance:none}
+.lock-input:focus{outline:none;border-color:var(--navy)}
+.lock-err{color:var(--crimson);font-size:12px;margin-top:10px;min-height:16px;font-weight:500}
+.lock-hint{font-size:11px;color:var(--ink-muted);margin-top:16px;line-height:1.5}
+.lock-btn{margin-top:14px}
+.lock-btn-row{display:flex;gap:8px;margin-top:14px}
+.lock-now{background:rgba(255,255,255,.12);color:rgba(255,255,255,.75);border:none;border-radius:20px;font-size:11px;padding:4px 11px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;white-space:nowrap}
+.inv-nocharge{background:#eef4f1;border-left:3px solid var(--teal);border-radius:var(--radius-sm);padding:10px 12px;margin-top:12px;font-size:11.5px;color:var(--ink-soft);line-height:1.5}
+.inv-nocharge b{color:var(--teal);text-transform:uppercase;letter-spacing:.06em;font-size:10px;display:block;margin-bottom:3px}
 /* TOAST */
 .toast{position:fixed;bottom:calc(78px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(12px);background:var(--navy);color:white;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:500;z-index:400;opacity:0;transition:all .3s;white-space:nowrap;box-shadow:0 4px 20px rgba(26,35,64,.3)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -381,6 +401,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
     <div class="cell-popup-item" onclick="setCellClosed('')"><div class="cell-popup-dot" style="background:var(--teal);"></div>Other (no label)</div>
   </div>
 </div>
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-card">
+    <div class="lock-icon" id="lockIcon">🔒</div>
+    <div class="lock-brand">Harrow <span>Chinese School</span> Dance Group</div>
+    <div class="lock-sub" id="lockSub">Enter your passcode to unlock</div>
+    <div id="lockFields"></div>
+    <div class="lock-err" id="lockErr"></div>
+    <button class="btn btn-primary btn-full lock-btn" id="lockBtn" onclick="submitLock()">Unlock</button>
+    <div class="lock-hint" id="lockHint"></div>
+  </div>
+</div>
 <div class="setup-overlay" id="setupOverlay">
   <div class="setup-card">
     <div class="setup-brand">Harrow <span>Chinese School</span> Dance Group</div>
@@ -431,8 +462,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
   <div class="modal"><div class="modal-handle"></div><div id="modalBody"></div></div>
 </div>
 <header class="app-header">
-  <div class="app-title-block"><div class="app-title">Harrow Chinese School Dance Group</div><div class="app-subtitle">Register & Invoice System · v3.7</div></div>
+  <div class="app-title-block"><div class="app-title">Harrow Chinese School Dance Group</div><div class="app-subtitle">Register & Invoice System · v3.8</div></div>
   <button class="undo-btn" id="undoBtn" onclick="performUndo()" title="Undo last action">↩ Undo</button>
+  <button class="lock-now" id="lockNowBtn" onclick="secLock()" title="Lock this device now">🔒 Lock</button>
   <div class="sync-status sync-none" id="syncStatus" onclick="syncNow()">Offline</div>
 </header>
 <main class="main">
@@ -534,6 +566,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
       <div class="card-body">
         <div class="form-group"><label class="form-label">Teacher</label><select class="form-input" id="invoiceTeacher" onchange="previewInvoice()"></select></div>
         <button class="btn btn-primary btn-full" onclick="downloadSingleInvoice()">⬇ Download PDF</button>
+        <button class="btn btn-ghost btn-full" style="margin-top:8px;" onclick="downloadInvoiceHTML()">⬇ Download HTML</button>
       </div>
     </div>
 
@@ -742,6 +775,8 @@ function loadLocal(){
       if(!APP.invoiceLog)APP.invoiceLog=[];
       // Migration: ensure every teacher has an invoiceWeight (default 1 part)
       APP.teachers.forEach(t=>{if(t.invoiceWeight===undefined||t.invoiceWeight===null||t.invoiceWeight==='')t.invoiceWeight=1;});
+      // Migration: bank details never live on the teacher record any more
+      APP.teachers=absorbBankFields(APP.teachers);
       // If we have real data, always treat as set up — prevents welcome screen on cached devices
       if(!APP.setupDone && (APP.terms.length||APP.teachers.length||APP.students.length)){
         APP.setupDone=true;
@@ -754,6 +789,123 @@ function loadLocal(){
 // Stubs — real implementations defined in OFFLINE SYNC QUEUE section below
 function markDirty(){try{localStorage.setItem('hcs_dirty','1');}catch(e){}}
 function markClean(){try{localStorage.removeItem('hcs_dirty');}catch(e){}}
+
+// ── SECURE VAULT (passcode-encrypted, device-local) ────────────────────────
+// Everything sensitive on this device lives inside one AES-GCM blob whose key
+// is derived from the user's passcode with PBKDF2. That blob holds:
+//   - firebaseToken : the credential the app needs to read/write the database
+//   - bank          : payment details per teacher
+// Nothing here is ever synced. Because the Firebase token itself is inside the
+// blob, a person who cannot supply the passcode has no credential, and the
+// database rules reject them — the lock is enforced by the server, not just by
+// hiding the UI.
+const SEC_KEY='hcs_secure_v1';
+const LEGACY_VAULT_KEY='hcs_bank_vault';
+const PBKDF2_ITER=250000;
+const BANK_FIELDS=['bankName','sortCode','accountNo'];
+const AUTOLOCK_MS=30*60*1000;
+
+let _SECRETS=null;      // {firebaseToken, bank:{}} — only while unlocked
+let _cryptoKey=null;    // derived key kept in memory so we can re-encrypt
+let _salt=null;
+let _lastActivity=Date.now();
+
+const _b64=u8=>btoa(String.fromCharCode(...new Uint8Array(u8)));
+const _unb64=b=>Uint8Array.from(atob(b),c=>c.charCodeAt(0));
+
+function isLocked(){return _SECRETS===null;}
+function secBlobExists(){try{return!!localStorage.getItem(SEC_KEY);}catch(e){return false;}}
+
+async function deriveKey(pass,salt){
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'PBKDF2',salt,iterations:PBKDF2_ITER,hash:'SHA-256'},
+    base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function secPersist(){
+  if(!_cryptoKey||!_SECRETS)return false;
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},_cryptoKey,
+    new TextEncoder().encode(JSON.stringify(_SECRETS)));
+  try{
+    localStorage.setItem(SEC_KEY,JSON.stringify({v:1,iter:PBKDF2_ITER,salt:_b64(_salt),iv:_b64(iv),ct:_b64(ct)}));
+    return true;
+  }catch(e){showToast('Could not save to the vault on this device');return false;}
+}
+// Create the vault for the first time (or after a passcode change).
+async function secCreate(pass,secrets){
+  _salt=crypto.getRandomValues(new Uint8Array(16));
+  _cryptoKey=await deriveKey(pass,_salt);
+  _SECRETS=secrets;
+  return secPersist();
+}
+// Returns true on success; false means the passcode was wrong.
+async function secUnlock(pass){
+  let raw;
+  try{raw=JSON.parse(localStorage.getItem(SEC_KEY));}catch(e){return false;}
+  if(!raw)return false;
+  try{
+    const salt=_unb64(raw.salt);
+    const key=await deriveKey(pass,salt);
+    // AES-GCM is authenticated: a wrong passcode throws here rather than
+    // returning garbage, so this doubles as the passcode check.
+    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:_unb64(raw.iv)},key,_unb64(raw.ct));
+    _cryptoKey=key;_salt=salt;
+    _SECRETS=JSON.parse(new TextDecoder().decode(pt));
+    if(!_SECRETS.bank)_SECRETS.bank={};
+    if(typeof _SECRETS.firebaseToken!=='string')_SECRETS.firebaseToken='';
+    return true;
+  }catch(e){return false;}
+}
+function secLock(){
+  _SECRETS=null;_cryptoKey=null;_salt=null;
+  document.getElementById('lockOverlay').style.display='flex';
+  const f=document.getElementById('lockPass');if(f){f.value='';}
+  renderLockScreen();
+}
+function getFbToken(){return(_SECRETS&&_SECRETS.firebaseToken)||'';}
+async function setFbToken(tok){
+  if(isLocked())return false;
+  _SECRETS.firebaseToken=(tok||'').trim();
+  return secPersist();
+}
+
+// ── Payment details, held inside the encrypted vault ───────────────────────
+function getPayDetails(teacherId){
+  const r=(!isLocked()&&_SECRETS.bank[teacherId])||{};
+  return{bankName:r.bankName||'',sortCode:r.sortCode||'',accountNo:r.accountNo||''};
+}
+function setPayDetails(teacherId,d){
+  if(isLocked())return false;
+  const c={bankName:(d.bankName||'').trim(),sortCode:(d.sortCode||'').trim(),accountNo:(d.accountNo||'').trim()};
+  if(!c.bankName&&!c.sortCode&&!c.accountNo)delete _SECRETS.bank[teacherId];
+  else _SECRETS.bank[teacherId]=c;
+  secPersist();
+  return true;
+}
+function hasPayDetails(teacherId){
+  const d=getPayDetails(teacherId);return!!(d.sortCode||d.accountNo);
+}
+// Remove bank fields from teacher records — applied to every sync payload.
+function stripBankFields(teachers){
+  return(teachers||[]).map(t=>{const c={...t};BANK_FIELDS.forEach(f=>{delete c[f];});return c;});
+}
+// Rescue any bank details still living on teacher records (from an older
+// version, or already sitting in the shared DB) into the vault, then strip
+// them. Marks dirty so the next push scrubs them from Firebase.
+function absorbBankFields(teachers){
+  if(isLocked())return stripBankFields(teachers);
+  let found=0;
+  (teachers||[]).forEach(t=>{
+    if(!t||!t.id)return;
+    if(BANK_FIELDS.some(f=>String(t[f]||'').trim())){
+      found++;
+      if(!_SECRETS.bank[t.id])_SECRETS.bank[t.id]={bankName:(t.bankName||'').trim(),sortCode:(t.sortCode||'').trim(),accountNo:(t.accountNo||'').trim()};
+    }
+  });
+  if(found){secPersist();markDirty();console.log('[HCS] Moved bank details for '+found+' teacher(s) into the encrypted vault.');}
+  return stripBankFields(teachers);
+}
 
 function showPage(n){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -808,7 +960,7 @@ function finishSetup(){
   APP.settings.firebaseUrl=firebaseUrl; // restore — finishSetup rebuilt settings from scratch
   APP.teachers=[];
   document.querySelectorAll('.setup-teacher-name').forEach((el,i)=>{
-    if(el.value.trim())APP.teachers.push({id:'T'+(i+1),name:el.value.trim(),address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:el.value.trim().split(' ').map(w=>w[0]).join('').toUpperCase(),archived:false});
+    if(el.value.trim())APP.teachers.push({id:'T'+(i+1),name:el.value.trim(),address:'',invoicePrefix:el.value.trim().split(' ').map(w=>w[0]).join('').toUpperCase(),archived:false});
   });
   APP.terms=[];const tnames=['Autumn','Spring','Summer'];
   for(let t=1;t<=3;t++){
@@ -1283,11 +1435,12 @@ function genCombinedPDF(payee,calc,customDate){
   // Total row — guaranteed to fit via smart page-break above
   doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,10,'F');doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(255,255,255);doc.text('TOTAL DUE',cols[0]+2,y+7);doc.setTextColor(232,160,144);doc.text(`£${calc.total.toFixed(2)}`,W-M-2,y+7,{align:'right'});y+=16;
   // Payment details — Name (was Bank), Sort Code, Account
-  if(payee.accountNo||payee.sortCode){
+  const cpd=getPayDetails(payee.id);
+  if(cpd.accountNo||cpd.sortCode){
     doc.setFillColor(244,240,234);doc.rect(M,y,W-M*2,18,'F');
     doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(144,152,168);doc.text('PAYMENT DETAILS',M+4,y+5);
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(26,35,64);
-    doc.text(`Name: ${payee.name}   Sort Code: ${payee.sortCode||'—'}   Account: ${payee.accountNo||'—'}`,M+4,y+12);
+    doc.text(`Name: ${payee.name}   Sort Code: ${cpd.sortCode||'—'}   Account: ${cpd.accountNo||'—'}`,M+4,y+12);
   }
   // Footer drawn on every page (so multi-page invoices are consistent)
   drawFooterOnAllPages(doc,W,APP.settings.academicYear,issueDate);
@@ -2319,7 +2472,8 @@ function showAddPersonModal(type){
 function showEditPersonModal(type,id){
   if(type==='teacher'){
     const t=APP.teachers.find(x=>x.id===id);if(!t)return;
-    openModal(`<div class="modal-title">Edit Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${esc(t.name)}"></div><div class="form-group"><label class="form-label">Birth Year</label><input type="number" class="form-input" id="mpBirthYear" value="${t.birthYear||''}" placeholder="e.g. 1990" min="1940" max="2015"></div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="mpAddress" rows="3">${esc(t.address||'')}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="mpBank" value="${esc(t.bankName||'')}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="mpSort" value="${esc(t.sortCode||'')}" placeholder="00-00-00"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="mpAcc" value="${esc(t.accountNo||'')}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="mpPrefix" value="${esc(t.invoicePrefix||'')}"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher','${id}')">Save</button></div>`);
+    const pd=getPayDetails(id);
+    openModal(`<div class="modal-title">Edit Teacher</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${esc(t.name)}"></div><div class="form-group"><label class="form-label">Birth Year</label><input type="number" class="form-input" id="mpBirthYear" value="${t.birthYear||''}" placeholder="e.g. 1990" min="1940" max="2015"></div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="mpAddress" rows="3">${esc(t.address||'')}</textarea></div><div class="vault-note">🔒 <strong>Payment details stay on this device.</strong> They are saved in this browser only — never uploaded to the database and never shared with other devices. Leave blank to omit the payment box from invoices.</div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="mpBank" value="${esc(pd.bankName)}" autocomplete="off"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="mpSort" value="${esc(pd.sortCode)}" placeholder="00-00-00" autocomplete="off"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="mpAcc" value="${esc(pd.accountNo)}" autocomplete="off"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="mpPrefix" value="${esc(t.invoicePrefix||'')}"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('teacher','${id}')">Save</button></div>`);
   } else {
     const s=APP.students.find(x=>x.id===id);if(!s)return;
     openModal(`<div class="modal-title">Edit Student</div><div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="mpName" value="${esc(s.name)}"></div><div class="form-group"><label class="form-label">Birth Year</label><input type="number" class="form-input" id="mpBirthYear" value="${s.birthYear||''}" placeholder="e.g. 2015" min="2000" max="2025"></div><div class="form-group"><label class="form-label">Chinese Name</label><input type="text" class="form-input" id="mpChinese" value="${esc(s.chineseName||'')}"></div><div class="form-group"><label class="form-label">Class</label><div class="pill-row"><div class="pill ${s.classStatus==='junior'?'active':''}" id="pJunior" onclick="selClass('junior')">Junior (初班)</div><div class="pill ${s.classStatus==='senior'?'active':''}" id="pSenior" onclick="selClass('senior')">Senior (高班)</div><div class="pill ${s.classStatus==='both'?'active':''}" id="pBoth" onclick="selClass('both')">Both (Transitioning)</div></div><input type="hidden" id="mpClass" value="${esc(s.classStatus)}"></div><div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="mpHCS" ${s.hcsStudent?'checked':''} style="width:16px;height:16px;"> Also an HCS student</label></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="savePerson('student','${id}')">Save</button></div>`);
@@ -2339,13 +2493,17 @@ function savePerson(type,id){
       const t=APP.teachers.find(x=>x.id===id);if(!t){showToast('Teacher not found');return;}
       t.name=name;t.birthYear=birthYear;
       const addrEl=document.getElementById('mpAddress');if(addrEl)t.address=addrEl.value;
-      const bankEl=document.getElementById('mpBank');if(bankEl)t.bankName=bankEl.value;
-      const sortEl=document.getElementById('mpSort');if(sortEl)t.sortCode=sortEl.value;
-      const accEl=document.getElementById('mpAcc');if(accEl)t.accountNo=accEl.value;
+      // Payment details go to the device-local vault, never onto the synced record
+      setPayDetails(id,{
+        bankName:(document.getElementById('mpBank')||{}).value||'',
+        sortCode:(document.getElementById('mpSort')||{}).value||'',
+        accountNo:(document.getElementById('mpAcc')||{}).value||''
+      });
+      BANK_FIELDS.forEach(f=>{delete t[f];});
       const pfxEl=document.getElementById('mpPrefix');if(pfxEl)t.invoicePrefix=pfxEl.value;
     }else{
       if(APP.teachers.filter(t=>!t.archived).length>=4){showToast('Max 4 teachers');return;}
-      APP.teachers.push({id:'T'+Date.now(),name,birthYear,address:'',bankName:'',sortCode:'',accountNo:'',invoicePrefix:name.split(' ').map(w=>w[0]).join('').toUpperCase(),archived:false,measurements:[]});
+      APP.teachers.push({id:'T'+Date.now(),name,birthYear,address:'',invoicePrefix:name.split(' ').map(w=>w[0]).join('').toUpperCase(),archived:false,measurements:[]});
     }
   }else{
     const clsEl=document.getElementById('mpClass');const cls=clsEl?clsEl.value:'junior';
@@ -2375,6 +2533,45 @@ function loadInvoicesPage(){
   renderCombinedSummary();
   previewInvoice();
 }
+// ── WHAT MAY BE CHARGED ────────────────────────────────────────────────────
+// Only ordinary teaching dates are billable. Celebrations — Chinese New Year,
+// the End of Year ceremony and the like — are never charged for, even if one
+// has been left typed as a lesson by mistake: the label is checked too, so a
+// mis-typed celebration still cannot slip onto an invoice.
+const CELEBRATION_PATTERNS=[
+  /chinese\s*new\s*year/i, /\bcny\b/i, /end\s*of\s*year/i, /ceremony/i,
+  /celebration/i, /performance/i, /年初/, /散學禮/, /新年/
+];
+function isCelebrationDate(d){
+  if(!d)return false;
+  if(d.type==='performance')return true;
+  const lab=String(d.label||'').trim();
+  return!!lab&&CELEBRATION_PATTERNS.some(re=>re.test(lab));
+}
+function isChargeable(d){
+  return!!d&&d.type==='lesson'&&!isCelebrationDate(d);
+}
+// Celebration dates falling inside an invoice period, for the "not charged"
+// note printed on the invoice.
+function celebrationsInRange(fromId,toId){
+  const fi=APP.terms.findIndex(t=>t.id===fromId),ti=APP.terms.findIndex(t=>t.id===toId);
+  if(fi<0||ti<0)return[];
+  const out=[];
+  APP.terms.slice(fi,ti+1).forEach(term=>{
+    (term.dates||[]).forEach(d=>{
+      if(d.type==='removed')return;
+      if(isCelebrationDate(d))out.push({date:d.date,label:(d.label||'').trim()||'Celebration',term:term.label});
+    });
+  });
+  return out.sort((a,b)=>a.date.localeCompare(b.date));
+}
+function fmtShortDate(iso){
+  const p=String(iso||'').split('-');
+  if(p.length!==3)return iso||'';
+  const m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(p[1],10)-1]||'';
+  return`${parseInt(p[2],10)} ${m} ${p[0]}`;
+}
+
 function calcPay(teacherId,fromId,toId){
   const fi=APP.terms.findIndex(t=>t.id===fromId),ti=APP.terms.findIndex(t=>t.id===toId);
   if(fi<0||ti<0)return null;
@@ -2383,7 +2580,7 @@ function calcPay(teacherId,fromId,toId){
   const myWeight=parseFloat(myTeacher.invoiceWeight)||1;
   let total=0;const breakdown=[];
   APP.terms.slice(fi,ti+1).forEach(term=>{
-    const lessons=term.dates.filter(d=>d.type==='lesson').sort((a,b)=>a.date.localeCompare(b.date));
+    const lessons=term.dates.filter(isChargeable).sort((a,b)=>a.date.localeCompare(b.date));
     let termPayRaw=0,attended=0;const sessions=[];
     lessons.forEach(d=>{
       // Sum the weights of all present teachers for this lesson
@@ -2452,7 +2649,12 @@ function previewInvoice(){
     </div>
     <div class="invoice-from-to"><div><div class="invoice-section-label">From (Teacher)</div><div class="invoice-address"><strong>${esc(teacher.name)}</strong><br>${esc(teacher.address||'—').replace(/\n/g,'<br>')}</div></div><div><div class="invoice-section-label">To (School)</div><div class="invoice-address"><strong>Harrow Chinese School Dance Group</strong><br>${esc(APP.settings.schoolAddress).replace(/\n/g,'<br>')}</div></div></div>
     <table class="invoice-table"><thead><tr><th>Term</th><th style="text-align:center;">Lessons</th><th>Breakdown</th><th style="text-align:right;">Amount</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="invoice-total-row"><td colspan="3" style="text-align:right;padding-right:12px;">Total Due</td><td style="text-align:right;">£${calc.total.toFixed(2)}</td></tr></tfoot></table>
-    ${(teacher.accountNo||teacher.sortCode)?`<div class="invoice-payment"><div class="invoice-payment-title">Payment Details</div>Name: ${esc(teacher.name)} &nbsp;|&nbsp; Sort Code: ${teacher.sortCode||'—'} &nbsp;|&nbsp; Account: ${teacher.accountNo||'—'}</div>`:''}
+    ${(()=>{const ce=celebrationsInRange(fromId,toId);
+      return ce.length?`<div class="inv-nocharge"><b>Not charged</b>${ce.map(c=>`${esc(c.label)} — ${fmtShortDate(c.date)}`).join(' &nbsp;·&nbsp; ')}</div>`:'';})()}
+    ${(()=>{const pd=getPayDetails(tid);
+      return(pd.accountNo||pd.sortCode)
+        ?`<div class="invoice-payment"><div class="invoice-payment-title">Payment Details</div>Name: ${esc(teacher.name)} &nbsp;|&nbsp; Sort Code: ${esc(pd.sortCode||'—')} &nbsp;|&nbsp; Account: ${esc(pd.accountNo||'—')}</div>`
+        :`<div class="invoice-payment"><div class="invoice-payment-title">Payment Details</div><span class="pay-missing">Not set on this device — add them in People → tap ${esc(teacher.name)}. The payment box will be left off the invoice until you do.</span></div>`;})()}
   </div>`;
 }
 function genPDF(teacherId,fromId,toId,customDate){
@@ -2515,11 +2717,25 @@ function genPDF(teacherId,fromId,toId,customDate){
   });
   // Total row — guaranteed to fit because of the smart page-break in the loop above
   doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,10,'F');doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(255,255,255);doc.text('TOTAL DUE',cols[0]+2,y+7);doc.setTextColor(232,160,144);doc.text(`£${calc.total.toFixed(2)}`,W-M-2,y+7,{align:'right'});y+=16;
-  if(teacher.accountNo||teacher.sortCode){
+  // Celebration dates in this period — stated on the invoice so the school can
+  // see they were deliberately not billed.
+  const ceP=celebrationsInRange(fromId,toId);
+  if(ceP.length){
+    const lines=doc.splitTextToSize('Not charged: '+ceP.map(c=>`${c.label} (${fmtShortDate(c.date)})`).join('; '),W-M*2-8);
+    const boxH=6+lines.length*4;
+    if(y+boxH>288){doc.addPage();y=18;}
+    doc.setFillColor(238,244,241);doc.rect(M,y,W-M*2,boxH,'F');
+    doc.setFillColor(29,92,74);doc.rect(M,y,1.2,boxH,'F');
+    doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(90,96,112);
+    lines.forEach((ln,i)=>doc.text(ln,M+4,y+5+i*4));
+    y+=boxH+5;
+  }
+  const pd=getPayDetails(teacherId);
+  if(pd.accountNo||pd.sortCode){
     doc.setFillColor(244,240,234);doc.rect(M,y,W-M*2,18,'F');
     doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(144,152,168);doc.text('PAYMENT DETAILS',M+4,y+5);
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(26,35,64);
-    doc.text(`Name: ${teacher.name}   Sort Code: ${teacher.sortCode||'—'}   Account: ${teacher.accountNo||'—'}`,M+4,y+12);
+    doc.text(`Name: ${teacher.name}   Sort Code: ${pd.sortCode||'—'}   Account: ${pd.accountNo||'—'}`,M+4,y+12);
   }
   // Footer drawn on every page (so multi-page invoices are consistent)
   drawFooterOnAllPages(doc,W,APP.settings.academicYear,issueDate);
@@ -2539,6 +2755,107 @@ function autoLogInvoice(teacherId,toTermId,customDate){
     combined:false
   });
 }
+
+// ── STANDALONE HTML INVOICE EXPORT ─────────────────────────────────────────
+// Produces a single self-contained .html file (inline CSS, embedded logo) that
+// opens in any browser and prints cleanly to A4. Payment details are read from
+// the device-local vault at export time, exactly like the PDF.
+function buildInvoiceHTML(teacherId,fromId,toId,customDate){
+  const teacher=APP.teachers.find(t=>t.id===teacherId);if(!teacher)return null;
+  const calc=calcPay(teacherId,fromId,toId);if(!calc)return null;
+  const pd=getPayDetails(teacherId);
+  const issueDate=fmtInvoiceDate(customDate);
+  const invNum=`${teacher.invoicePrefix||'INV'}-${APP.settings.academicYear}-${nextInvoiceNumber(teacherId)}`;
+  const rows=calc.breakdown.filter(b=>b.sessions.length>0).map(b=>{
+    const groups={};b.sessions.forEach(x=>{const k=x.share.toFixed(2);if(!groups[k])groups[k]={count:0,share:x.share};groups[k].count++;});
+    const detail=Object.values(groups).map(g=>`${g.count}&times;&pound;${g.share.toFixed(2)}`).join(', ');
+    return`<tr><td>${esc(b.term.label)}</td><td class="c">${b.attended} / ${b.total}</td><td class="muted">${detail}</td><td class="r b">&pound;${b.termPay.toFixed(2)}</td></tr>`;
+  }).join('');
+  const ce=celebrationsInRange(fromId,toId);
+  const noChargeBlock=ce.length
+    ?`<div class="nocharge"><b>Not charged</b>${ce.map(c=>`${esc(c.label)} — ${esc(fmtShortDate(c.date))}`).join(' &nbsp;&middot;&nbsp; ')}</div>`
+    :'';
+  const payBlock=(pd.accountNo||pd.sortCode)
+    ?`<div class="pay"><div class="pay-t">Payment Details</div>Name: ${esc(teacher.name)} &nbsp;|&nbsp; Sort Code: ${esc(pd.sortCode||'—')} &nbsp;|&nbsp; Account: ${esc(pd.accountNo||'—')}</div>`
+    :'';
+  return`<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Invoice ${esc(invNum)} — ${esc(teacher.name)}</title>
+<style>
+@page{size:A4;margin:16mm}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:#f4f0ea;color:#1a2340;font-size:14px;line-height:1.5;padding:24px}
+.sheet{max-width:780px;margin:0 auto;background:#fff;padding:34px 38px;border-radius:8px;box-shadow:0 2px 18px rgba(26,35,64,.10)}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding-bottom:16px;border-bottom:1px solid #ddd8d0;margin-bottom:20px}
+.brand{display:flex;align-items:flex-start;gap:14px}
+.brand img{width:54px;height:54px;border-radius:50%;flex-shrink:0}
+.school{font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:400;line-height:1.15}
+.addr{color:#9098a8;font-size:11px;margin-top:4px}
+.meta{text-align:right;font-size:11px;color:#5a6070;white-space:nowrap}
+.meta strong{color:#1a2340}
+.ft{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:20px}
+.lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9098a8;margin-bottom:5px}
+.who{font-size:12.5px;line-height:1.55}
+table{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:13px}
+th{background:#1a2340;color:#fff;padding:9px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+td{padding:9px 10px;border-bottom:1px solid #eee9e1}
+tbody tr:nth-child(even){background:#faf9f7}
+.c{text-align:center}.r{text-align:right}.b{font-weight:700}
+.muted{font-size:11.5px;color:#5a6070}
+tfoot td{background:#1a2340;color:#fff;font-weight:700;font-size:15px;border:none;padding:12px 10px}
+tfoot .amt{color:#e8a090}
+.pay{background:#f4f0ea;border-radius:6px;padding:12px 14px;font-size:12.5px}
+.nocharge{background:#eef4f1;border-left:3px solid #1d5c4a;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:11.5px;color:#5a6070;line-height:1.5}
+.nocharge b{color:#1d5c4a;text-transform:uppercase;letter-spacing:.06em;font-size:10px;display:block;margin-bottom:3px}
+.pay-t{font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#5a6070;margin-bottom:5px}
+.foot{margin-top:22px;padding-top:12px;border-top:1px solid #ddd8d0;font-size:10.5px;color:#9098a8;display:flex;justify-content:space-between;gap:12px}
+@media print{body{background:#fff;padding:0}.sheet{box-shadow:none;border-radius:0;max-width:none;padding:0}}
+@media (max-width:640px){.ft{grid-template-columns:1fr}.top{flex-direction:column}.meta{text-align:left}body{padding:12px}.sheet{padding:20px}}
+</style></head><body>
+<div class="sheet">
+  <div class="top">
+    <div class="brand"><img src="${HCS_LOGO}" alt="">
+      <div><div class="school">Harrow Chinese School Dance Group</div>
+        <div class="addr">${esc(APP.settings.schoolAddress).replace(/\n/g,', ')}</div></div></div>
+    <div class="meta">Invoice: <strong>${esc(invNum)}</strong><br>Date: ${esc(issueDate)}<br>Year: ${esc(APP.settings.academicYear)}</div>
+  </div>
+  <div class="ft">
+    <div><div class="lbl">From (Teacher)</div><div class="who"><strong>${esc(teacher.name)}</strong><br>${esc(teacher.address||'—').replace(/\n/g,'<br>')}</div></div>
+    <div><div class="lbl">To (School)</div><div class="who"><strong>Harrow Chinese School Dance Group</strong><br>${esc(APP.settings.schoolAddress).replace(/\n/g,'<br>')}</div></div>
+  </div>
+  <table><thead><tr><th>Term</th><th class="c">Lessons</th><th>Breakdown</th><th class="r">Amount</th></tr></thead>
+  <tbody>${rows}</tbody>
+  <tfoot><tr><td colspan="3" class="r">TOTAL DUE</td><td class="r amt">&pound;${calc.total.toFixed(2)}</td></tr></tfoot></table>
+  ${noChargeBlock}
+  ${payBlock}
+  <div class="foot"><span>Harrow Chinese School Dance Group &middot; ${esc(APP.settings.academicYear)}</span><span>Issued ${esc(issueDate)}</span></div>
+</div>
+</body></html>`;
+}
+
+function downloadInvoiceHTML(){
+  const tid=document.getElementById('invoiceTeacher')?.value;
+  const fid=document.getElementById('invoiceFromTerm')?.value||APP.terms[0]?.id;
+  const eid=document.getElementById('invoiceToTerm')?.value||APP.terms[APP.terms.length-1]?.id;
+  const cd=document.getElementById('invoiceDate')?.value||'';
+  if(!tid){showToast('Select a teacher');return;}
+  const teacher=APP.teachers.find(t=>t.id===tid);if(!teacher){showToast('Teacher not found');return;}
+  const html=buildInvoiceHTML(tid,fid,eid,cd);
+  if(!html){showToast('Could not build invoice');return;}
+  if(!hasPayDetails(tid))showToast('Note: no payment details on this device — payment box omitted');
+  pushUndoSnapshot();
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`${teacher.name.replace(/ /g,'_')}_Invoice_${APP.settings.academicYear}.html`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  autoLogInvoice(tid,eid,cd);
+  saveLocal();markDirty();renderInvoiceLog();
+}
+
 function downloadSingleInvoice(){
   const tid=document.getElementById('invoiceTeacher')?.value;
   const fid=document.getElementById('invoiceFromTerm')?.value||APP.terms[0]?.id;
@@ -2582,10 +2899,11 @@ function loadSettingsPage(){
   document.getElementById('settLessonValue').value=APP.settings.lessonValue;
   document.getElementById('settAcYear').value=APP.settings.academicYear;
   const fbUrlEl=document.getElementById('settFirebaseUrl');if(fbUrlEl)fbUrlEl.value=APP.settings.firebaseUrl||'';
-  const fbTokEl=document.getElementById('settFirebaseToken');if(fbTokEl)fbTokEl.value=APP.settings.firebaseToken||'';
+  // The token is held in the encrypted vault, never in APP.settings
+  const fbTokEl=document.getElementById('settFirebaseToken');if(fbTokEl)fbTokEl.value=getFbToken();
   document.getElementById('termManageList').innerHTML=APP.terms.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:600;font-size:14px;">${t.label}</div><div style="font-size:12px;color:var(--ink-muted);">${t.dates.filter(d=>d.type==='lesson').length} lessons · ${t.dates.filter(d=>d.type==='performance').length} performances</div></div><div style="display:flex;gap:6px;"><button class="btn btn-sm btn-ghost" onclick="showEditTermModal('${t.id}')">Edit</button><button class="btn btn-sm" style="background:var(--salmon-light);color:var(--crimson);" onclick="confirmDeleteTerm('${t.id}')">Delete</button></div></div>`).join('');
   const teachers=APP.teachers.filter(t=>!t.archived);
-  document.getElementById('teacherSettingsBody').innerHTML=teachers.length?teachers.map(t=>`<div style="padding:14px 16px;border-bottom:1px solid var(--border);"><div style="font-weight:700;font-size:14px;margin-bottom:10px;">${esc(t.name)}</div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="ts_addr_${t.id}" rows="3">${esc(t.address||'')}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="ts_bank_${t.id}" value="${esc(t.bankName||'')}"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="ts_sort_${t.id}" value="${esc(t.sortCode||'')}"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="ts_acc_${t.id}" value="${esc(t.accountNo||'')}"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="ts_pfx_${t.id}" value="${esc(t.invoicePrefix||'')}"></div></div><button class="btn btn-sm btn-ghost" onclick="saveTeacherDetails('${t.id}')">Save ${esc(t.name.split(' ')[0])}'s Details</button></div>`).join(''):`<div style="padding:14px 16px;color:var(--ink-muted);font-size:13px;">No teachers added yet.</div>`;
+  document.getElementById('teacherSettingsBody').innerHTML=teachers.length?teachers.map(t=>`<div style="padding:14px 16px;border-bottom:1px solid var(--border);"><div style="font-weight:700;font-size:14px;margin-bottom:10px;">${esc(t.name)}</div><div class="form-group"><label class="form-label">Address</label><textarea class="form-input" id="ts_addr_${t.id}" rows="3">${esc(t.address||'')}</textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Bank</label><input type="text" class="form-input" id="ts_bank_${t.id}" value="${esc(getPayDetails(t.id).bankName)}" autocomplete="off"></div><div class="form-group"><label class="form-label">Sort Code</label><input type="text" class="form-input" id="ts_sort_${t.id}" value="${esc(getPayDetails(t.id).sortCode)}" autocomplete="off"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Account No.</label><input type="text" class="form-input" id="ts_acc_${t.id}" value="${esc(getPayDetails(t.id).accountNo)}" autocomplete="off"></div><div class="form-group"><label class="form-label">Invoice Prefix</label><input type="text" class="form-input" id="ts_pfx_${t.id}" value="${esc(t.invoicePrefix||'')}"></div></div><button class="btn btn-sm btn-ghost" onclick="saveTeacherDetails('${t.id}')">Save ${esc(t.name.split(' ')[0])}'s Details</button></div>`).join(''):`<div style="padding:14px 16px;color:var(--ink-muted);font-size:13px;">No teachers added yet.</div>`;
   renderWeightingList();
 }
 function renderWeightingList(){
@@ -2708,7 +3026,10 @@ let _fbConnected=false;
 function getFbUrl(){
   const base=(APP.settings.firebaseUrl||'').replace(/\/?$/,'');
   if(!base)return null;
-  const token=APP.settings.firebaseToken?`?auth=${encodeURIComponent(APP.settings.firebaseToken)}`:'';
+  // The credential lives in the encrypted vault — while locked there is none,
+  // so every request goes out unauthenticated and the rules reject it.
+  const tok=getFbToken();
+  const token=tok?`?auth=${encodeURIComponent(tok)}`:'';
   return`${base}/hcs.json${token}`;
 }
 
@@ -2729,7 +3050,7 @@ async function syncToDb(){
     const payload=JSON.stringify({
       terms: APP.terms,
       students: APP.students,
-      teachers: APP.teachers,
+      teachers: stripBankFields(APP.teachers),  // bank details never leave this device
       attendance: encodedAttendance,
       invoiceTracker: APP.invoiceTracker,
       studentOrder: APP.studentOrder,
@@ -2801,7 +3122,8 @@ async function loadFromDb(silent=false){
     console.log('[HCS] attendance keys:', data.attendance?Object.keys(data.attendance).length:'none');
 
     // Replace every data field — be explicit and unconditional so nothing is skipped
-    APP.teachers     = Array.isArray(data.teachers)    ? data.teachers    : (APP.teachers||[]);
+    // absorbBankFields: rescue then strip any bank details still in the shared DB
+    APP.teachers     = absorbBankFields(Array.isArray(data.teachers) ? data.teachers : (APP.teachers||[]));
     APP.students     = Array.isArray(data.students)    ? data.students    : (APP.students||[]);
     APP.terms        = Array.isArray(data.terms)       ? data.terms       : (APP.terms||[]);
     APP.studentOrder = Array.isArray(data.studentOrder)? data.studentOrder: (APP.studentOrder||[]);
@@ -2888,14 +3210,29 @@ function trySilentConnect(){
   }
 }
 
-function saveFirebaseSettings(){
+async function saveFirebaseSettings(){
+  if(isLocked()){showToast('Unlock this device first');return;}
   APP.settings.firebaseUrl=(document.getElementById('settFirebaseUrl')?.value||'').trim();
-  APP.settings.firebaseToken=(document.getElementById('settFirebaseToken')?.value||'').trim();
+  // Token goes into the encrypted vault, never into the synced settings object
+  await setFbToken(document.getElementById('settFirebaseToken')?.value||'');
+  APP.settings.firebaseToken='';
   saveLocal();showToast('Saved ✓');
   trySilentConnect();
 }
 
-function saveTeacherDetails(id){const t=APP.teachers.find(x=>x.id===id);if(!t)return;t.address=document.getElementById(`ts_addr_${id}`)?.value||'';t.bankName=document.getElementById(`ts_bank_${id}`)?.value||'';t.sortCode=document.getElementById(`ts_sort_${id}`)?.value||'';t.accountNo=document.getElementById(`ts_acc_${id}`)?.value||'';t.invoicePrefix=document.getElementById(`ts_pfx_${id}`)?.value||'';saveLocal();showToast(`${t.name.split(' ')[0]}'s details saved ✓`);markDirty();}
+function saveTeacherDetails(id){
+  const t=APP.teachers.find(x=>x.id===id);if(!t)return;
+  t.address=document.getElementById(`ts_addr_${id}`)?.value||'';
+  t.invoicePrefix=document.getElementById(`ts_pfx_${id}`)?.value||'';
+  // Payment details go to the encrypted vault, never onto the synced record
+  setPayDetails(id,{
+    bankName:document.getElementById(`ts_bank_${id}`)?.value||'',
+    sortCode:document.getElementById(`ts_sort_${id}`)?.value||'',
+    accountNo:document.getElementById(`ts_acc_${id}`)?.value||''
+  });
+  BANK_FIELDS.forEach(f=>{delete t[f];});
+  saveLocal();showToast(`${t.name.split(' ')[0]}'s details saved ✓`);markDirty();
+}
 function showEditTermModal(termId){const term=APP.terms.find(t=>t.id===termId);if(!term)return;openModal(`<div class="modal-title">Edit Term</div><div class="form-group"><label class="form-label">Label</label><input type="text" class="form-input" id="etLabel" value="${term.label}"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" style="flex:1;" onclick="saveTermEdit('${termId}')">Save</button></div>`);}
 function saveTermEdit(id){const term=APP.terms.find(t=>t.id===id);if(!term)return;pushUndoSnapshot();term.label=document.getElementById('etLabel').value;saveLocal();closeModal();loadSettingsPage();populateTermSelectors();showToast('Saved ✓');markDirty();}
 function confirmDeleteTerm(termId){
@@ -2922,6 +3259,118 @@ function ini(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().sl
 // Escape HTML special chars to prevent broken modals when names contain quotes or angle brackets
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
+
+// ── LOCK SCREEN ────────────────────────────────────────────────────────────
+// Three modes:
+//   'unlock'  — a vault exists on this device, ask for the passcode
+//   'protect' — an older plaintext token is present, wrap it in a new passcode
+//   'enrol'   — nothing here yet, ask for the database token and a new passcode
+let _lockMode='unlock';
+let _failCount=0;
+let _lockoutUntil=0;
+
+function lockModeFor(){
+  if(secBlobExists())return'unlock';
+  if((APP.settings.firebaseToken||'').trim())return'protect';
+  return'enrol';
+}
+function renderLockScreen(){
+  _lockMode=lockModeFor();
+  const f=document.getElementById('lockFields');
+  const sub=document.getElementById('lockSub');
+  const hint=document.getElementById('lockHint');
+  const btn=document.getElementById('lockBtn');
+  const icon=document.getElementById('lockIcon');
+  document.getElementById('lockErr').textContent='';
+  if(_lockMode==='unlock'){
+    icon.textContent='🔒';
+    sub.textContent='Enter your passcode to unlock';
+    f.innerHTML='<input type="password" class="lock-input" id="lockPass" inputmode="numeric" autocomplete="current-password" placeholder="••••••" onkeydown="if(event.key===\'Enter\')submitLock()">';
+    btn.textContent='Unlock';
+    hint.innerHTML='Forgotten it? There is no reset — the passcode is the key. Clear this browser’s site data and set the device up again with your database token.';
+  }else if(_lockMode==='protect'){
+    icon.textContent='🛡️';
+    sub.textContent='Protect this device with a passcode';
+    f.innerHTML='<input type="password" class="lock-input" id="lockPass" autocomplete="new-password" placeholder="New passcode" onkeydown="if(event.key===\'Enter\')submitLock()"><input type="password" class="lock-input" id="lockPass2" style="margin-top:9px;" autocomplete="new-password" placeholder="Confirm passcode" onkeydown="if(event.key===\'Enter\')submitLock()">';
+    btn.textContent='Protect this device →';
+    hint.innerHTML='Your database token and payment details are already on this device in plain text. Setting a passcode encrypts them and removes the plain copies. Minimum 6 characters.';
+  }else{
+    icon.textContent='🔑';
+    sub.textContent='Set up this device';
+    f.innerHTML='<input type="text" class="lock-input" id="lockToken" style="letter-spacing:0;font-size:13px;" autocomplete="off" placeholder="Database token"><input type="password" class="lock-input" id="lockPass" style="margin-top:9px;" autocomplete="new-password" placeholder="New passcode" onkeydown="if(event.key===\'Enter\')submitLock()"><input type="password" class="lock-input" id="lockPass2" style="margin-top:9px;" autocomplete="new-password" placeholder="Confirm passcode" onkeydown="if(event.key===\'Enter\')submitLock()">';
+    btn.textContent='Set up →';
+    hint.innerHTML='Paste the database token from a device that is already working, then choose a passcode for this one. The token is encrypted with your passcode and never stored in the clear.';
+  }
+  setTimeout(()=>{const el=document.getElementById(_lockMode==='enrol'?'lockToken':'lockPass');if(el)el.focus();},60);
+}
+function lockError(msg){document.getElementById('lockErr').textContent=msg;}
+
+async function submitLock(){
+  const now=Date.now();
+  if(now<_lockoutUntil){
+    lockError(`Too many attempts — wait ${Math.ceil((_lockoutUntil-now)/1000)}s`);return;
+  }
+  const pass=(document.getElementById('lockPass')||{}).value||'';
+  const btn=document.getElementById('lockBtn');
+  if(_lockMode==='unlock'){
+    if(!pass){lockError('Enter your passcode');return;}
+    btn.disabled=true;btn.textContent='Unlocking…';
+    const ok=await secUnlock(pass);
+    btn.disabled=false;btn.textContent='Unlock';
+    if(!ok){
+      _failCount++;
+      // Back off after repeated failures — slows brute forcing to a crawl.
+      if(_failCount>=5){_lockoutUntil=Date.now()+Math.min(60000,2000*Math.pow(2,_failCount-5));}
+      lockError('Incorrect passcode');
+      const el=document.getElementById('lockPass');if(el){el.value='';el.focus();}
+      return;
+    }
+    _failCount=0;
+    finishUnlock();
+    return;
+  }
+  // 'protect' and 'enrol' both create a brand new vault
+  const pass2=(document.getElementById('lockPass2')||{}).value||'';
+  if(pass.length<6){lockError('Use at least 6 characters');return;}
+  if(pass!==pass2){lockError('The two passcodes do not match');return;}
+  let token=(APP.settings.firebaseToken||'').trim();
+  if(_lockMode==='enrol'){
+    token=((document.getElementById('lockToken')||{}).value||'').trim();
+    if(!token){lockError('Paste the database token');return;}
+  }
+  btn.disabled=true;btn.textContent='Securing…';
+  // Fold any plaintext bank details from the older build into the new vault
+  let legacyBank={};
+  try{legacyBank=JSON.parse(localStorage.getItem(LEGACY_VAULT_KEY)||'{}');}catch(e){}
+  await secCreate(pass,{firebaseToken:token,bank:legacyBank});
+  // Remove every plaintext copy now that the encrypted one exists
+  try{localStorage.removeItem(LEGACY_VAULT_KEY);}catch(e){}
+  APP.settings.firebaseToken='';
+  saveLocal();
+  btn.disabled=false;
+  showToast('This device is protected 🔒');
+  finishUnlock();
+}
+
+function finishUnlock(){
+  document.getElementById('lockOverlay').style.display='none';
+  _lastActivity=Date.now();
+  // Migration can only run once the vault is open
+  APP.teachers=absorbBankFields(APP.teachers);
+  saveLocal();
+  initApp();
+  loadFromDb(false);
+}
+
+// Auto-lock after a period of no interaction.
+['click','keydown','touchstart'].forEach(ev=>
+  document.addEventListener(ev,()=>{_lastActivity=Date.now();},{passive:true}));
+setInterval(()=>{
+  if(!isLocked()&&Date.now()-_lastActivity>AUTOLOCK_MS){
+    secLock();showToast('Locked after inactivity');
+  }
+},30000);
+
 function initApp(){
   populateTermSelectors();populateRegisterNav();loadRegister();loadSettingsPage();
   // Show reorder button if students exist
@@ -2943,14 +3392,16 @@ window.addEventListener('DOMContentLoaded',()=>{
   const fbUrl=APP.settings.firebaseUrl;
 
   if(fbUrl){
-    // Firebase URL is known — always boot straight into the app and sync.
-    // Never show the welcome screen when we have a URL to connect to.
+    // Firebase URL is known — boot into the app, but behind the lock screen.
+    // initApp() and the first sync run only once the vault has been opened
+    // (see finishUnlock), so a visitor without the passcode gets no data and
+    // no credential.
     APP.setupDone=true;
     APP.demoMode=false;
     saveLocal();
     document.getElementById('setupOverlay').style.display='none';
-    initApp();
-    loadFromDb(false);
+    document.getElementById('lockOverlay').style.display='flex';
+    renderLockScreen();
   } else if(has && APP.setupDone){
     // No Firebase, but returning visit with completed local setup
     document.getElementById('setupOverlay').style.display='none';

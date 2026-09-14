@@ -1,0 +1,4 @@
+# This is a private register for Harrow Chinese School Dance Group.
+# It is not intended for search indexing.
+User-agent: *
+Disallow: /
