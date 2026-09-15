@@ -51,6 +51,12 @@ The saved sign-in expires after 60 days. If the vault is later rebuilt under a
 different passcode, the stored key stops matching, and it is discarded and the
 lock screen shown rather than failing in place.
 
+**Lock now cannot be raced.** Deleting from IndexedDB is asynchronous, so a
+reload immediately after locking could once have found the key still present.
+A marker in `localStorage` is now written alongside the key and removed
+*synchronously* when locking; unlock-from-memory requires both. A reload that
+beats the IndexedDB delete still finds no marker and stays locked.
+
 **The trade-off, plainly:** while a device is remembered, anyone who can open
 that browser can open the app. That is what the option is for. Untick it on a
 shared or borrowed device, and use **Lock now** when stepping away.

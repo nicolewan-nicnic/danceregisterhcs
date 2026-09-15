@@ -169,6 +169,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .lock-btn{margin-top:14px}
 .lock-btn-row{display:flex;gap:8px;margin-top:14px}
 .lock-now{background:rgba(255,255,255,.12);color:rgba(255,255,255,.75);border:none;border-radius:20px;font-size:11px;padding:4px 11px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;white-space:nowrap}
+.inv-warn{background:#fff8e6;border-left:3px solid #b8860b;border-radius:var(--radius-sm);padding:10px 12px;margin-top:12px;font-size:11.5px;color:#6b5420;line-height:1.5}
+.inv-warn b{color:#8a6410;text-transform:uppercase;letter-spacing:.06em;font-size:10px;display:block;margin-bottom:3px}
 .inv-nocharge{background:#eef4f1;border-left:3px solid var(--teal);border-radius:var(--radius-sm);padding:10px 12px;margin-top:12px;font-size:11.5px;color:var(--ink-soft);line-height:1.5}
 .inv-nocharge b{color:var(--teal);text-transform:uppercase;letter-spacing:.06em;font-size:10px;display:block;margin-bottom:3px}
 /* TOAST */
@@ -786,8 +788,6 @@ function loadLocal(){
       if(!APP.invoiceLog)APP.invoiceLog=[];
       // Migration: ensure every teacher has an invoiceWeight (default 1 part)
       APP.teachers.forEach(t=>{if(t.invoiceWeight===undefined||t.invoiceWeight===null||t.invoiceWeight==='')t.invoiceWeight=1;});
-      // Migration: bank details never live on the teacher record any more
-      APP.teachers=absorbBankFields(APP.teachers);
       // If we have real data, always treat as set up — prevents welcome screen on cached devices
       if(!APP.setupDone && (APP.terms.length||APP.teachers.length||APP.students.length)){
         APP.setupDone=true;
@@ -877,6 +877,10 @@ async function secUnlock(pass){
 // decrypted secrets in localStorage.
 // 'Lock now' deletes it, so locking really locks.
 const IDB_NAME='hcs_session', IDB_STORE='keys', IDB_ID='current';
+// Written synchronously alongside the IndexedDB key. Deleting a localStorage
+// key cannot be raced, so even if the async IndexedDB delete is still in flight
+// when the page reloads, the missing marker keeps the device locked.
+const REMEMBER_FLAG='hcs_remember_ok';
 const REMEMBER_DAYS=60;
 let _remembered=false;
 
@@ -918,13 +922,27 @@ async function idbDel(){
 // Keep this device signed in.
 async function rememberSession(){
   if(!_cryptoKey||!_salt)return false;
-  try{ await idbPut({key:_cryptoKey,salt:_salt,savedAt:Date.now()}); _remembered=true; return true; }
-  catch(e){ console.warn('[HCS] Could not remember this session:',e); return false; }
+  try{
+    await idbPut({key:_cryptoKey,salt:_salt,savedAt:Date.now()});
+    try{localStorage.setItem(REMEMBER_FLAG,'1');}catch(e){}
+    _remembered=true;
+    return true;
+  }catch(e){ console.warn('[HCS] Could not remember this session:',e); return false; }
 }
-async function forgetSession(){ _remembered=false; return idbDel(); }
+async function forgetSession(){
+  _remembered=false;
+  // Drop the marker first and synchronously — this is the part that cannot race.
+  try{localStorage.removeItem(REMEMBER_FLAG);}catch(e){}
+  return idbDel();
+}
 // Try to open the vault with a previously remembered key, skipping the passcode.
 async function tryRememberedUnlock(){
   if(!secBlobExists())return false;
+  // No marker means the device was locked, even if the key deletion had not
+  // finished before the page went away.
+  let flagged=false;
+  try{flagged=!!localStorage.getItem(REMEMBER_FLAG);}catch(e){}
+  if(!flagged){ await forgetSession(); return false; }
   let rec=null;
   try{ rec=await idbGet(); }catch(e){ return false; }
   if(!rec||!rec.key)return false;
@@ -947,12 +965,14 @@ async function tryRememberedUnlock(){
   }
 }
 
-function secLock(){
-  forgetSession();               // locking must really lock
+async function secLock(){
+  // Clear state and show the lock immediately so the UI never lags behind the
+  // user's intent, then wait for the stored key to actually be gone.
   _SECRETS=null;_cryptoKey=null;_salt=null;
   document.getElementById('lockOverlay').style.display='flex';
   const f=document.getElementById('lockPass');if(f){f.value='';}
   renderLockScreen();
+  await forgetSession();         // locking must really lock
 }
 function getFbToken(){return(_SECRETS&&_SECRETS.firebaseToken)||'';}
 async function setFbToken(tok){
@@ -966,13 +986,18 @@ function getPayDetails(teacherId){
   const r=(!isLocked()&&_SECRETS.bank[teacherId])||{};
   return{bankName:r.bankName||'',sortCode:r.sortCode||'',accountNo:r.accountNo||''};
 }
-function setPayDetails(teacherId,d){
+async function setPayDetails(teacherId,d){
   if(isLocked())return false;
   const c={bankName:(d.bankName||'').trim(),sortCode:(d.sortCode||'').trim(),accountNo:(d.accountNo||'').trim()};
+  const prev=_SECRETS.bank[teacherId];
   if(!c.bankName&&!c.sortCode&&!c.accountNo)delete _SECRETS.bank[teacherId];
   else _SECRETS.bank[teacherId]=c;
-  secPersist();
-  return true;
+  const ok=await secPersist();
+  if(!ok){
+    // Put memory back the way it was so it matches what is actually stored.
+    if(prev)_SECRETS.bank[teacherId]=prev;else delete _SECRETS.bank[teacherId];
+  }
+  return ok;
 }
 function hasPayDetails(teacherId){
   const d=getPayDetails(teacherId);return!!(d.sortCode||d.accountNo);
@@ -984,8 +1009,12 @@ function stripBankFields(teachers){
 // Rescue any bank details still living on teacher records (from an older
 // version, or already sitting in the shared DB) into the vault, then strip
 // them. Marks dirty so the next push scrubs them from Firebase.
-function absorbBankFields(teachers){
-  if(isLocked())return stripBankFields(teachers);
+async function absorbBankFields(teachers){
+  // While the vault is shut there is nowhere to put them, so leave the records
+  // untouched. Stripping here would throw the details away: the caller has no
+  // vault to save them into yet. They stay on the record until unlock, which is
+  // safe because syncToDb() strips every payload regardless.
+  if(isLocked())return teachers||[];
   let found=0;
   (teachers||[]).forEach(t=>{
     if(!t||!t.id)return;
@@ -994,7 +1023,17 @@ function absorbBankFields(teachers){
       if(!_SECRETS.bank[t.id])_SECRETS.bank[t.id]={bankName:(t.bankName||'').trim(),sortCode:(t.sortCode||'').trim(),accountNo:(t.accountNo||'').trim()};
     }
   });
-  if(found){secPersist();markDirty();console.log('[HCS] Moved bank details for '+found+' teacher(s) into the encrypted vault.');}
+  if(found){
+    const ok=await secPersist();
+    if(!ok){
+      // Could not save the rescue. Leave the records alone rather than strip
+      // them — a failed write must not be the last copy destroyed.
+      showToast('Could not save payment details to this device — left them in place');
+      return teachers||[];
+    }
+    markDirty();
+    console.log('[HCS] Moved bank details for '+found+' teacher(s) into the encrypted vault.');
+  }
   return stripBankFields(teachers);
 }
 
@@ -1430,7 +1469,7 @@ function downloadCombinedInvoice(){
   const customDate=document.getElementById('invoiceDate')?.value||'';
   const calc=calcCombinedPay(conf.includeIds,fromId,toId);
   if(!calc){showToast('Could not calculate');return;}
-  genCombinedPDF(payee,calc,customDate);
+  genCombinedPDF(payee,calc,customDate,fromId,toId);
   // Auto-log as sent for the payee and all included teachers
   const today=new Date().toISOString().slice(0,10);
   pushUndoSnapshot();
@@ -1469,7 +1508,7 @@ function fmtInvoiceDate(iso){
   const d=new Date(iso+'T12:00:00');
   return d.toLocaleDateString('en-GB',opts);
 }
-function genCombinedPDF(payee,calc,customDate){
+function genCombinedPDF(payee,calc,customDate,fromId,toId){
   const{jsPDF}=window.jspdf;
   const doc=new jsPDF({unit:'mm',format:'a4'});const W=210,M=18;let y=M;
   // Logo at top-left
@@ -1523,6 +1562,19 @@ function genCombinedPDF(payee,calc,customDate){
   });
   // Total row — guaranteed to fit via smart page-break above
   doc.setFillColor(26,35,64);doc.rect(M,y,W-M*2,10,'F');doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(255,255,255);doc.text('TOTAL DUE',cols[0]+2,y+7);doc.setTextColor(232,160,144);doc.text(`£${calc.total.toFixed(2)}`,W-M-2,y+7,{align:'right'});y+=16;
+  // Celebration dates in this period — stated here too, so a combined invoice
+  // discloses exactly what a single-teacher one does.
+  const ceC=celebrationsInRange(fromId,toId);
+  if(ceC.length){
+    const lines=doc.splitTextToSize(pdfSafe('Not charged: '+ceC.map(c=>`${c.label} (${fmtShortDate(c.date)})`).join('; ')),W-M*2-8);
+    const boxH=6+lines.length*4;
+    if(y+boxH>288){doc.addPage();y=18;}
+    doc.setFillColor(238,244,241);doc.rect(M,y,W-M*2,boxH,'F');
+    doc.setFillColor(29,92,74);doc.rect(M,y,1.2,boxH,'F');
+    doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(90,96,112);
+    lines.forEach((ln,i)=>doc.text(ln,M+4,y+5+i*4));
+    y+=boxH+5;
+  }
   // Payment details — Name (was Bank), Sort Code, Account
   const cpd=getPayDetails(payee.id);
   if(cpd.accountNo||cpd.sortCode){
@@ -2657,7 +2709,7 @@ function applyPromoteClass(){
   if(getFbUrl()&&!isLocked())syncToDb();
 }
 
-function savePerson(type,id){
+async function savePerson(type,id){
   const nameEl=document.getElementById('mpName');const name=nameEl?nameEl.value.trim():'';
   if(!name){showToast('Enter a name');return;}
   const byEl=document.getElementById('mpBirthYear');
@@ -2667,13 +2719,15 @@ function savePerson(type,id){
       const t=APP.teachers.find(x=>x.id===id);if(!t){showToast('Teacher not found');return;}
       t.name=name;t.birthYear=birthYear;
       const addrEl=document.getElementById('mpAddress');if(addrEl)t.address=addrEl.value;
-      // Payment details go to the device-local vault, never onto the synced record
-      setPayDetails(id,{
+      // Payment details go to the device-local vault, never onto the synced record.
+      // Only clear them off the record once the vault has confirmed the write.
+      const savedPay=await setPayDetails(id,{
         bankName:(document.getElementById('mpBank')||{}).value||'',
         sortCode:(document.getElementById('mpSort')||{}).value||'',
         accountNo:(document.getElementById('mpAcc')||{}).value||''
       });
-      BANK_FIELDS.forEach(f=>{delete t[f];});
+      if(savedPay)BANK_FIELDS.forEach(f=>{delete t[f];});
+      else{showToast('Could not save payment details on this device');return;}
       const pfxEl=document.getElementById('mpPrefix');if(pfxEl)t.invoicePrefix=pfxEl.value;
     }else{
       if(APP.teachers.filter(t=>!t.archived).length>=4){showToast('Max 4 teachers');return;}
@@ -2712,33 +2766,55 @@ function loadInvoicesPage(){
   previewInvoice();
 }
 // ── WHAT MAY BE CHARGED ────────────────────────────────────────────────────
-// Only ordinary teaching dates are billable. Celebrations — Chinese New Year,
-// the End of Year ceremony and the like — are never charged for, even if one
-// has been left typed as a lesson by mistake: the label is checked too, so a
-// mis-typed celebration still cannot slip onto an invoice.
+// The date's TYPE decides whether it is billable, and nothing else. A date
+// typed 'performance' is a celebration and is never charged; a date typed
+// 'lesson' was taught and is always charged.
+//
+// The label is advisory only. It used to veto payment too, which silently cost
+// the teacher money: a genuine lesson labelled 'Performance practice' or
+// 'CNY rehearsal' was dropped from the invoice. Now a suspicious label raises a
+// visible warning asking you to check the date's type, and payment is unaffected
+// until you actually change it.
 const CELEBRATION_PATTERNS=[
   /chinese\s*new\s*year/i, /\bcny\b/i, /end\s*of\s*year/i, /ceremony/i,
   /celebration/i, /performance/i, /年初/, /散學禮/, /新年/
 ];
+// Authoritative: a celebration is a date typed as one.
 function isCelebrationDate(d){
-  if(!d)return false;
-  if(d.type==='performance')return true;
-  const lab=String(d.label||'').trim();
+  return!!d&&d.type==='performance';
+}
+// Advisory: the wording hints at a celebration, whatever the type says.
+function looksLikeCelebration(d){
+  const lab=d?String(d.label||'').trim():'';
   return!!lab&&CELEBRATION_PATTERNS.some(re=>re.test(lab));
 }
 function isChargeable(d){
-  return!!d&&d.type==='lesson'&&!isCelebrationDate(d);
+  return!!d&&d.type==='lesson';
 }
 // Celebration dates falling inside an invoice period, for the "not charged"
-// note printed on the invoice.
+// note printed on the invoice. Typed celebrations only — a closed date labelled
+// 'End of Year Holiday' is a holiday, not an event, and does not belong here.
 function celebrationsInRange(fromId,toId){
   const fi=APP.terms.findIndex(t=>t.id===fromId),ti=APP.terms.findIndex(t=>t.id===toId);
   if(fi<0||ti<0)return[];
   const out=[];
   APP.terms.slice(fi,ti+1).forEach(term=>{
     (term.dates||[]).forEach(d=>{
-      if(d.type==='removed')return;
       if(isCelebrationDate(d))out.push({date:d.date,label:(d.label||'').trim()||'Celebration',term:term.label});
+    });
+  });
+  return out.sort((a,b)=>a.date.localeCompare(b.date));
+}
+// Lessons whose wording suggests they were really celebrations. These ARE being
+// charged for — the warning exists so a genuine mis-type gets noticed and fixed
+// on the Dates page, rather than silently swallowing someone's pay.
+function mistypedCelebrations(fromId,toId){
+  const fi=APP.terms.findIndex(t=>t.id===fromId),ti=APP.terms.findIndex(t=>t.id===toId);
+  if(fi<0||ti<0)return[];
+  const out=[];
+  APP.terms.slice(fi,ti+1).forEach(term=>{
+    (term.dates||[]).forEach(d=>{
+      if(d.type==='lesson'&&looksLikeCelebration(d))out.push({date:d.date,label:(d.label||'').trim(),term:term.label});
     });
   });
   return out.sort((a,b)=>a.date.localeCompare(b.date));
@@ -2879,7 +2955,9 @@ function previewInvoice(){
     <div class="invoice-from-to"><div><div class="invoice-section-label">From (Teacher)</div><div class="invoice-address"><strong>${esc(teacher.name)}</strong>${esc(teacher.address||'—').replace(/\n/g,'<br>')}</div></div><div><div class="invoice-section-label">To (School)</div><div class="invoice-address"><strong>Harrow Chinese School Dance Group</strong>${esc(APP.settings.schoolAddress).replace(/\n/g,'<br>')}</div></div></div>
     <div class="invoice-table-wrap"><table class="invoice-table" style="table-layout:fixed;width:100%;"><colgroup><col style="width:20%"><col style="width:13%"><col style="width:50%"><col style="width:17%"></colgroup><thead><tr><th>Term</th><th style="text-align:center;">Lessons</th><th>Breakdown</th><th style="text-align:right;">Amount</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="invoice-total-row"><td colspan="3" style="text-align:right;padding-right:12px;">Total Due</td><td style="text-align:right;">£${calc.total.toFixed(2)}</td></tr></tfoot></table></div>
     ${(()=>{const ce=celebrationsInRange(fromId,toId);
-      return ce.length?`<div class="inv-nocharge"><b>Not charged</b>${ce.map(c=>`${esc(c.label)} — ${fmtShortDate(c.date)}`).join(' &nbsp;·&nbsp; ')}</div>`:'';})()}
+      return ce.length?`<div class="inv-nocharge"><b>Not charged</b>${ce.map(c=>`${esc(c.label)} — ${esc(fmtShortDate(c.date))}`).join(' &nbsp;·&nbsp; ')}</div>`:'';})()}
+    ${(()=>{const mt=mistypedCelebrations(fromId,toId);
+      return mt.length?`<div class="inv-warn"><b>Check these dates</b>These are typed as lessons and <strong>are being charged for</strong>, but the wording suggests a celebration. If any is really a celebration, change its type on the Dates page.<br>${mt.map(c=>`${esc(c.label)} — ${esc(fmtShortDate(c.date))}`).join(' &nbsp;·&nbsp; ')}</div>`:'';})()}
     ${(()=>{const pd=getPayDetails(tid);
       return(pd.accountNo||pd.sortCode)
         ?`<div class="invoice-payment"><div class="invoice-payment-title">Payment Details</div>Name: ${esc(teacher.name)} &nbsp;|&nbsp; Sort Code: ${esc(pd.sortCode||'—')} &nbsp;|&nbsp; Account: ${esc(pd.accountNo||'—')}</div>`
@@ -3374,7 +3452,7 @@ async function loadFromDb(silent=false){
 
     // Replace every data field — be explicit and unconditional so nothing is skipped
     // absorbBankFields: rescue then strip any bank details still in the shared DB
-    APP.teachers     = absorbBankFields(Array.isArray(data.teachers) ? data.teachers : (APP.teachers||[]));
+    APP.teachers     = await absorbBankFields(Array.isArray(data.teachers) ? data.teachers : (APP.teachers||[]));
     APP.students     = Array.isArray(data.students)    ? data.students    : (APP.students||[]);
     APP.terms        = Array.isArray(data.terms)       ? data.terms       : (APP.terms||[]);
     APP.studentOrder = Array.isArray(data.studentOrder)? data.studentOrder: (APP.studentOrder||[]);
@@ -3471,16 +3549,18 @@ async function saveFirebaseSettings(){
   trySilentConnect();
 }
 
-function saveTeacherDetails(id){
+async function saveTeacherDetails(id){
   const t=APP.teachers.find(x=>x.id===id);if(!t)return;
   t.address=document.getElementById(`ts_addr_${id}`)?.value||'';
   t.invoicePrefix=document.getElementById(`ts_pfx_${id}`)?.value||'';
-  // Payment details go to the encrypted vault, never onto the synced record
-  setPayDetails(id,{
+  // Payment details go to the encrypted vault, never onto the synced record.
+  // Only clear them off the record once the vault has confirmed the write.
+  const savedPay=await setPayDetails(id,{
     bankName:document.getElementById(`ts_bank_${id}`)?.value||'',
     sortCode:document.getElementById(`ts_sort_${id}`)?.value||'',
     accountNo:document.getElementById(`ts_acc_${id}`)?.value||''
   });
+  if(!savedPay){showToast('Could not save payment details on this device');return;}
   BANK_FIELDS.forEach(f=>{delete t[f];});
   saveLocal();showToast(`${t.name.split(' ')[0]}'s details saved ✓`);markDirty();
 }
@@ -3616,11 +3696,13 @@ async function submitLock(){
   finishUnlock();
 }
 
-function finishUnlock(){
+async function finishUnlock(){
   document.getElementById('lockOverlay').style.display='none';
   _lastActivity=Date.now();
-  // Migration can only run once the vault is open
-  APP.teachers=absorbBankFields(APP.teachers);
+  // Migration can only run once the vault is open — this is the one place that
+  // may move bank details off the teacher records, because only here is there
+  // somewhere to put them.
+  APP.teachers=await absorbBankFields(APP.teachers);
   saveLocal();
   initApp();
   loadFromDb(false);
